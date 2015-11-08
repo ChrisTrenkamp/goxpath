@@ -3,7 +3,7 @@ package parser
 import (
 	"bytes"
 	"encoding/xml"
-	"errors"
+	"fmt"
 	"io"
 )
 
@@ -41,15 +41,17 @@ func parseXMLString(x string) (*xmlTree, error) {
 	return parseXML(bytes.NewBufferString(x))
 }
 
-func attachTree(data interface{}, parent *xmlTree) *xmlTree {
+func attachTree(data xml.Token, parent *xmlTree) *xmlTree {
+	//Create a copy because the token is reused by the decoder
+	//If not copied, there will be corrupt data
+	d := xml.CopyToken(data)
 	ret := &xmlTree{
-		value:    data,
-		children: make([]*xmlTree, 0),
+		value:    d,
+		children: []*xmlTree{},
 		parent:   parent,
 	}
 
 	if parent != nil {
-		ret.parent = parent
 		parent.children = append(parent.children, ret)
 	}
 
@@ -83,7 +85,7 @@ func parseXML(r io.Reader) (*xmlTree, error) {
 
 		case xml.EndElement:
 			if pos.parent == nil {
-				return nil, errors.New("Malformed XML found.")
+				return nil, fmt.Errorf("Malformed XML found.")
 			}
 
 			pos = pos.parent
