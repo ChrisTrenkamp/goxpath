@@ -1,5 +1,5 @@
 # goxpath
-An XPATH implementation in Go.
+An XPath implementation in Go.
 
 Currently only supports abbreviated element names.  More to come later.
 
@@ -34,7 +34,7 @@ Currently only supports abbreviated element names.  More to come later.
     <p3></p3>
     <p3></p3>
 
-#####Relative path
+#####Abbreviated Relative path
     $ goxpath '//p2' test.xml 
     <p2>
     &#x9;&#x9;<p3></p3>
