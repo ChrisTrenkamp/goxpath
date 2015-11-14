@@ -9,7 +9,6 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/parser/result/attribute"
 	"github.com/ChrisTrenkamp/goxpath/parser/result/chardata"
 	"github.com/ChrisTrenkamp/goxpath/parser/result/comment"
-	"github.com/ChrisTrenkamp/goxpath/parser/result/directive"
 	"github.com/ChrisTrenkamp/goxpath/parser/result/element"
 	"github.com/ChrisTrenkamp/goxpath/parser/result/pathres"
 	"github.com/ChrisTrenkamp/goxpath/parser/result/procinst"
@@ -56,13 +55,11 @@ func ParseXML(r io.Reader) (pathres.PathRes, error) {
 		case xml.Comment:
 			ch := &comment.PathResComment{Value: xml.CopyToken(t), Parent: pos}
 			pos.Children = append(pos.Children, ch)
-		case xml.Directive:
-			ch := &directive.PathResDirective{Value: xml.CopyToken(t), Parent: pos}
-			pos.Children = append(pos.Children, ch)
 		case xml.ProcInst:
-			ch := &procinst.PathResProcInst{Value: xml.CopyToken(t), Parent: pos}
-			pos.Children = append(pos.Children, ch)
-
+			if pos.Parent != pos {
+				ch := &procinst.PathResProcInst{Value: xml.CopyToken(t), Parent: pos}
+				pos.Children = append(pos.Children, ch)
+			}
 		case xml.EndElement:
 			if pos.Parent == pos {
 				return nil, fmt.Errorf("Malformed XML found.")

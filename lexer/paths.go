@@ -30,6 +30,11 @@ func stepState(l *Lexer) stateFn {
 	r := l.next()
 	state := XItemQName
 
+	if r == eof {
+		l.emit(XItemEndPath)
+		return nil
+	}
+
 	for string(r) != ":" && string(r) != "/" &&
 		(unicode.Is(first, r) || unicode.Is(second, r)) &&
 		r != eof {
@@ -55,6 +60,10 @@ func stepState(l *Lexer) stateFn {
 	} else if string(r) == "(" {
 		if string(l.peekAt(2)) == ")" {
 			state = XItemNodeType
+		} else if tok == xconst.NodeTypeProcInst && (string(l.peekAt(2)) == `"` || string(l.peekAt(2)) == `'`) {
+			l.emit(XItemNodeType)
+			l.next()
+			return procLitState
 		} else {
 			return l.errorf("Missing ) at end of NodeType declaration.")
 		}
@@ -92,6 +101,27 @@ func stepState(l *Lexer) stateFn {
 		return relLocPathState
 	}
 
+	return stepState
+}
+
+func procLitState(l *Lexer) stateFn {
+	q := l.next()
+	l.ignore()
+	var r rune
+
+	for r != q {
+		r = l.next()
+		if r == eof {
+			return l.errorf("Unexpected end of input.")
+		}
+	}
+	l.backup()
+	l.emit(XItemProcLit)
+	l.next()
+	if string(l.next()) != ")" {
+		return l.errorf("Expecting ) at end of processing instruction literal")
+	}
+	l.ignore()
 	return stepState
 }
 

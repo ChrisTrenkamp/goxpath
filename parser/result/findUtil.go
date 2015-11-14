@@ -89,9 +89,38 @@ func findDescendentOrSelf(x pathres.PathRes, p *pathexpr.PathExpr, ret *[]pathre
 }
 
 func findFollowing(x pathres.PathRes, p *pathexpr.PathExpr, ret *[]pathres.PathRes) {
+	if x == x.GetParent() {
+		return
+	}
+	par := x.GetParent()
+	ch := par.GetChildren()
+	i := 0
+	for x != ch[i] {
+		i++
+	}
+	i++
+	for i < len(ch) {
+		findDescendentOrSelf(ch[i], p, ret)
+		i++
+	}
+	findFollowing(par, p, ret)
 }
 
 func findFollowingSibling(x pathres.PathRes, p *pathexpr.PathExpr, ret *[]pathres.PathRes) {
+	if x == x.GetParent() {
+		return
+	}
+	par := x.GetParent()
+	ch := par.GetChildren()
+	i := 0
+	for x != ch[i] {
+		i++
+	}
+	i++
+	for i < len(ch) {
+		findSelf(ch[i], p, ret)
+		i++
+	}
 }
 
 func findNamespace(x pathres.PathRes, p *pathexpr.PathExpr, ret *[]pathres.PathRes) {
@@ -104,9 +133,38 @@ func findParent(x pathres.PathRes, p *pathexpr.PathExpr, ret *[]pathres.PathRes)
 }
 
 func findPreceding(x pathres.PathRes, p *pathexpr.PathExpr, ret *[]pathres.PathRes) {
+	if x == x.GetParent() {
+		return
+	}
+	par := x.GetParent()
+	ch := par.GetChildren()
+	i := len(ch) - 1
+	for x != ch[i] {
+		i--
+	}
+	i--
+	for i >= 0 {
+		findDescendentOrSelf(ch[i], p, ret)
+		i--
+	}
+	findPreceding(par, p, ret)
 }
 
 func findPrecedingSibling(x pathres.PathRes, p *pathexpr.PathExpr, ret *[]pathres.PathRes) {
+	if x == x.GetParent() {
+		return
+	}
+	par := x.GetParent()
+	ch := par.GetChildren()
+	i := len(ch) - 1
+	for x != ch[i] {
+		i--
+	}
+	i--
+	for i >= 0 {
+		findSelf(ch[i], p, ret)
+		i--
+	}
 }
 
 func findSelf(x pathres.PathRes, p *pathexpr.PathExpr, ret *[]pathres.PathRes) {

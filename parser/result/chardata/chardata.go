@@ -5,6 +5,7 @@ import (
 
 	"github.com/ChrisTrenkamp/goxpath/parser/result/pathexpr"
 	"github.com/ChrisTrenkamp/goxpath/parser/result/pathres"
+	"github.com/ChrisTrenkamp/goxpath/xconst"
 )
 
 //PathResCharData is an implementation of PathRes for XML attributes
@@ -46,6 +47,8 @@ func (cd *PathResCharData) Print(e *xml.Encoder) error {
 
 //EvalPath evaluates the XPath path instruction on the character data
 func (cd *PathResCharData) EvalPath(p *pathexpr.PathExpr) bool {
-	//TODO: Implement
+	if p.NodeType == xconst.NodeTypeText || p.NodeType == xconst.NodeTypeNode {
+		return true
+	}
 	return false
 }

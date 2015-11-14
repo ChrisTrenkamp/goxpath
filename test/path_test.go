@@ -120,3 +120,59 @@ func TestNodeTypeParentAbbr(t *testing.T) {
 	exp := []string{`<p1 test="foo"><p2></p2></p1>`}
 	exec(p, x, exp, t)
 }
+
+func TestFollowing(t *testing.T) {
+	p := `//p3/following::node()`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2><p3/><p4/></p2><p5><p6/></p5></p1>`
+	exp := []string{`<p4></p4>`, `<p5><p6></p6></p5>`, `<p6></p6>`}
+	exec(p, x, exp, t)
+}
+
+func TestPreceding(t *testing.T) {
+	p := `//p6/preceding::node()`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2><p3/><p4/></p2><p5><p6/></p5></p1>`
+	exp := []string{`<p2><p3></p3><p4></p4></p2>`, `<p3></p3>`, `<p4></p4>`}
+	exec(p, x, exp, t)
+}
+
+func TestPrecedingSibling(t *testing.T) {
+	p := `//p4/preceding-sibling::node()`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2><p3><p31/></p3><p4/></p2><p5><p6/></p5></p1>`
+	exp := []string{`<p3><p31></p31></p3>`}
+	exec(p, x, exp, t)
+}
+
+func TestFollowingSibling(t *testing.T) {
+	p := `//p2/following-sibling::node()`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2><p3/><p4/></p2><p5><p6/></p5></p1>`
+	exp := []string{`<p5><p6></p6></p5>`}
+	exec(p, x, exp, t)
+}
+
+func TestComment(t *testing.T) {
+	p := `//comment()`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><!-- comment --></p1>`
+	exp := []string{`<!-- comment -->`}
+	exec(p, x, exp, t)
+}
+
+func TestText(t *testing.T) {
+	p := `//text()`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1>text</p1>`
+	exp := []string{`text`}
+	exec(p, x, exp, t)
+}
+
+func TestProcInst(t *testing.T) {
+	p := `//processing-instruction()`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><?proc?></p1>`
+	exp := []string{`<?proc?>`}
+	exec(p, x, exp, t)
+}
+
+func TestProcInst2(t *testing.T) {
+	p := `//processing-instruction('proc2')`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><?proc1?><?proc2?></p1>`
+	exp := []string{`<?proc2?>`}
+	exec(p, x, exp, t)
+}

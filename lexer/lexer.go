@@ -31,6 +31,8 @@ const (
 	XItemQName
 	//XItemNodeType marks a node type in a node test
 	XItemNodeType
+	//XItemProcLit marks a processing-instruction literal
+	XItemProcLit
 	//XItemPredicate marks a predicate in an axis
 	XItemPredicate
 )

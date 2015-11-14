@@ -10,18 +10,16 @@ An XPath implementation in Go.
     descendant-or-self
     parent
     self
-
-###Axii not supported (yet):
     following
     following-sibling
     preceding
     preceding-sibling
+
+###Axii not supported (yet):
     namespace
 
 ###NodeTypes supported:
     node()
-
-###NodeTypes not supported (yet):
     comment()
     text()
     processing-instruction()
@@ -30,6 +28,7 @@ An XPath implementation in Go.
     .
     ..
     @
+    //
 
 ###Installation
     go get github.com/ChrisTrenkamp/goxpath

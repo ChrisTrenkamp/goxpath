@@ -34,6 +34,7 @@ var parseMap = map[lexer.XItemType]lexFn{
 	lexer.XItemNCName:         ncName,
 	lexer.XItemQName:          qName,
 	lexer.XItemNodeType:       nodeType,
+	lexer.XItemProcLit:        procInstLit,
 	lexer.XItemEndPath:        endPath,
 }
 
@@ -158,6 +159,15 @@ func qName(p *Parser, val string) (expTkns, error) {
 
 func nodeType(p *Parser, val string) (expTkns, error) {
 	p.pExpr.NodeType = val
+	ret := expTkns{lexer.XItemPredicate, lexer.XItemEndPath}
+	if val == xconst.NodeTypeProcInst {
+		ret = append(ret, lexer.XItemProcLit)
+	}
+	return ret, nil
+}
+
+func procInstLit(p *Parser, val string) (expTkns, error) {
+	p.pExpr.ProcInstLit = val
 	return expTkns{lexer.XItemPredicate, lexer.XItemEndPath}, nil
 }
 

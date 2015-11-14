@@ -5,6 +5,7 @@ import (
 
 	"github.com/ChrisTrenkamp/goxpath/parser/result/pathexpr"
 	"github.com/ChrisTrenkamp/goxpath/parser/result/pathres"
+	"github.com/ChrisTrenkamp/goxpath/xconst"
 )
 
 //PathResProcInst is an implementation of PathRes for XML processing-instructions
@@ -46,6 +47,12 @@ func (pi *PathResProcInst) Print(e *xml.Encoder) error {
 
 //EvalPath evaluates the XPath path instruction on the processing-instruction
 func (pi *PathResProcInst) EvalPath(p *pathexpr.PathExpr) bool {
-	//TODO: Implement
+	val := pi.Value.(xml.ProcInst)
+	if p.ProcInstLit != "" && p.NodeType == xconst.NodeTypeProcInst {
+		return p.ProcInstLit == val.Target
+	}
+	if p.NodeType == xconst.NodeTypeProcInst || p.NodeType == xconst.NodeTypeNode {
+		return true
+	}
 	return false
 }
