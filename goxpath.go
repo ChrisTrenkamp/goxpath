@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/ChrisTrenkamp/goxpath/eval"
+	"github.com/ChrisTrenkamp/goxpath/xpath"
 )
 
 func main() {
@@ -32,8 +32,8 @@ func main() {
 	}
 }
 
-func runXPath(xpath string, r io.Reader) {
-	res, err := eval.FromReader(xpath, r)
+func runXPath(x string, r io.Reader) {
+	res, err := xpath.FromReader(x, r)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
@@ -41,6 +41,10 @@ func runXPath(xpath string, r io.Reader) {
 	}
 
 	for i := range res {
-		fmt.Println(res[i].XPathString())
+		str, err := xpath.Print(res[i])
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(str)
 	}
 }

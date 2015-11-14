@@ -136,7 +136,7 @@ func (l *Lexer) peekAt(n int) rune {
 		r, s := utf8.DecodeRuneInString(l.input[l.pos+width:])
 		width += s
 
-		if l.pos+width >= len(l.input) {
+		if l.pos+width > len(l.input) {
 			return eof
 		}
 

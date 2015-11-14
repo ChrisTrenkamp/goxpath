@@ -1,6 +1,10 @@
 package lexer
 
-import "unicode"
+import (
+	"unicode"
+
+	"github.com/ChrisTrenkamp/goxpath/xconst"
+)
 
 func absLocPathState(l *Lexer) stateFn {
 	l.emit(XItemAbsLocPath)
@@ -36,8 +40,8 @@ func stepState(l *Lexer) stateFn {
 	tok := l.input[l.start:l.pos]
 
 	if string(r) == ":" && string(l.peekAt(2)) == ":" {
-		for i := range axisNames {
-			if tok == axisNames[i] {
+		for i := range xconst.AxisNames {
+			if tok == xconst.AxisNames[i] {
 				state = XItemAxis
 			}
 		}
@@ -48,10 +52,12 @@ func stepState(l *Lexer) stateFn {
 		state = XItemNCName
 	} else if string(r) == "@" {
 		state = XItemAbbrAxis
-		return l.errorf("Abbreviated axii are not supported yet")
 	} else if string(r) == "(" {
-		state = XItemNodeType
-		return l.errorf("NodeTypes are not supported yet")
+		if string(l.peekAt(2)) == ")" {
+			state = XItemNodeType
+		} else {
+			return l.errorf("Missing ) at end of NodeType declaration.")
+		}
 	} else if string(r) == "[" {
 		state = XItemPredicate
 		return l.errorf("Predicates are not supported yet.")
@@ -64,14 +70,14 @@ func stepState(l *Lexer) stateFn {
 	l.emit(state)
 
 	if state != XItemQName {
-		if state == XItemAxis {
+		if state == XItemAxis || state == XItemNodeType {
 			l.next()
 		}
 		l.next()
 		l.ignore()
 	}
 
-	if r == eof {
+	if r == eof || l.peek() == eof {
 		l.emit(XItemEndPath)
 		return nil
 	} else if string(r) == "/" {
@@ -87,29 +93,6 @@ func stepState(l *Lexer) stateFn {
 	}
 
 	return stepState
-}
-
-var axisNames = []string{
-	"ancestor",
-	"ancestor-or-self",
-	"attribute",
-	"child",
-	"descendant",
-	"descendant-or-self",
-	"following",
-	"following-sibling",
-	"namespace",
-	"parent",
-	"preceding",
-	"preceding-sibling",
-	"self",
-}
-
-var nodeTypes = []string{
-	"comment",
-	"text",
-	"processing-instruction",
-	"node",
 }
 
 //first and second was copied from src/encoding/xml/xml.go
