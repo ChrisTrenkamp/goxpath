@@ -14,8 +14,6 @@ An XPath implementation in Go.
     following-sibling
     preceding
     preceding-sibling
-
-###Axii not supported (yet):
     namespace
 
 ###NodeTypes supported:
