@@ -36,7 +36,7 @@ func stepState(l *Lexer) stateFn {
 	}
 
 	for string(r) != ":" && string(r) != "/" &&
-		(unicode.Is(first, r) || unicode.Is(second, r)) &&
+		(unicode.Is(first, r) || unicode.Is(second, r) || string(r) == "*") &&
 		r != eof {
 		r = l.next()
 	}

@@ -176,3 +176,17 @@ func TestProcInst2(t *testing.T) {
 	exp := []string{`<?proc2?>`}
 	exec(p, x, exp, t)
 }
+
+func TestNamespace(t *testing.T) {
+	p := `//namespace::*`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns="http://foo.bar"><p2 xmlns:foo="http://test"></p2></p1>`
+	exp := []string{`<?namespace http://foo.bar?>`, `<?namespace http://test?>`}
+	exec(p, x, exp, t)
+}
+
+func TestNamespace2(t *testing.T) {
+	p := `//namespace::test`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns:foo="http://test"><p2 xmlns:test="http://foo.bar"></p2></p1>`
+	exp := []string{`<?namespace http://foo.bar?>`}
+	exec(p, x, exp, t)
+}

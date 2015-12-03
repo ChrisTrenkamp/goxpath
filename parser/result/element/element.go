@@ -11,6 +11,7 @@ import (
 //PathResElement is an implementation of PathRes for XML elements
 type PathResElement struct {
 	Value    interface{}
+	NS       map[xml.Name]string
 	Attrs    []pathres.PathRes
 	Children []pathres.PathRes
 	Parent   pathres.PathRes

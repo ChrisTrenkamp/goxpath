@@ -19,7 +19,7 @@ func (a *PathResAttribute) Interface() interface{} {
 	return a.Value
 }
 
-//GetParent returns the parent node, or itself if it's the root
+//GetParent returns the parent node
 func (a *PathResAttribute) GetParent() pathres.PathRes {
 	return a.Parent
 }

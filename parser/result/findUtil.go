@@ -1,7 +1,10 @@
 package result
 
 import (
+	"encoding/xml"
+
 	"github.com/ChrisTrenkamp/goxpath/parser/result/element"
+	"github.com/ChrisTrenkamp/goxpath/parser/result/namespace"
 	"github.com/ChrisTrenkamp/goxpath/parser/result/pathexpr"
 	"github.com/ChrisTrenkamp/goxpath/parser/result/pathres"
 	"github.com/ChrisTrenkamp/goxpath/xconst"
@@ -124,6 +127,17 @@ func findFollowingSibling(x pathres.PathRes, p *pathexpr.PathExpr, ret *[]pathre
 }
 
 func findNamespace(x pathres.PathRes, p *pathexpr.PathExpr, ret *[]pathres.PathRes) {
+	if ele, ok := x.(*element.PathResElement); ok {
+		for k, v := range ele.NS {
+			ns := &namespace.PathResNamespace{
+				Value:  xml.Attr{Name: k, Value: v},
+				Parent: ele,
+			}
+			if ns.EvalPath(p) {
+				*ret = append(*ret, ns)
+			}
+		}
+	}
 }
 
 func findParent(x pathres.PathRes, p *pathexpr.PathExpr, ret *[]pathres.PathRes) {
