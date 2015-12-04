@@ -48,7 +48,7 @@ func ParseXML(r io.Reader) (pathres.PathRes, error) {
 			ele := t.(xml.StartElement)
 			attrs := make([]pathres.PathRes, 0, len(ele.Attr))
 			ns := make(map[xml.Name]string)
-			for k, v := range pos.Parent.(*element.PathResElement).NS {
+			for k, v := range pos.NS {
 				ns[k] = v
 			}
 			for i := range ele.Attr {
