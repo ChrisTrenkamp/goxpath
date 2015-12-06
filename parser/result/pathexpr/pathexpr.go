@@ -8,4 +8,5 @@ type PathExpr struct {
 	Axis        string
 	NodeType    string
 	ProcInstLit string
+	NS          map[string]string
 }

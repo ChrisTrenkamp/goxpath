@@ -40,7 +40,7 @@ func (a *PathResAttribute) Print(e *xml.Encoder) error {
 	attr := a.Value.(*xml.Attr)
 	str := attr.Name.Local + `="` + attr.Value + `"`
 	if attr.Name.Space != "" {
-		str = attr.Name.Space + ":" + str
+		str += ` xmlns="` + attr.Name.Space + `"`
 	}
 	pi := xml.ProcInst{
 		Target: "attribute",
@@ -54,11 +54,9 @@ func (a *PathResAttribute) EvalPath(p *pathexpr.PathExpr) bool {
 	val := a.Value.(*xml.Attr)
 
 	if p.NodeType == "" {
-		if p.Name.Space != "" {
-			if p.Name.Space != "*" {
-				if p.Name.Space != val.Name.Space {
-					return false
-				}
+		if p.Name.Space != "*" {
+			if val.Name.Space != p.NS[p.Name.Space] {
+				return false
 			}
 		}
 

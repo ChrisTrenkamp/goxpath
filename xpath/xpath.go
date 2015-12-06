@@ -11,9 +11,9 @@ import (
 )
 
 //FromStr runs an XPath expression on the XML string
-func FromStr(xpath, x string) ([]pathres.PathRes, error) {
+func FromStr(xpath, x string, ns map[string]string) ([]pathres.PathRes, error) {
 	it := lexer.Lex(xpath)
-	p, err := parser.CreateParserStr(x)
+	p, err := parser.CreateParserStr(x, ns)
 
 	if err != nil {
 		return nil, err
@@ -23,9 +23,9 @@ func FromStr(xpath, x string) ([]pathres.PathRes, error) {
 }
 
 //FromReader runs an XPath expression on the XML reader
-func FromReader(xpath string, r io.Reader) ([]pathres.PathRes, error) {
+func FromReader(xpath string, r io.Reader, ns map[string]string) ([]pathres.PathRes, error) {
 	it := lexer.Lex(xpath)
-	p, err := parser.CreateParser(r)
+	p, err := parser.CreateParser(r, ns)
 
 	if err != nil {
 		return nil, err

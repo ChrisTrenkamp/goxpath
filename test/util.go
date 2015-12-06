@@ -6,8 +6,8 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/xpath"
 )
 
-func exec(xp, x string, exp []string, t *testing.T) {
-	res, err := xpath.FromStr(xp, x)
+func exec(xp, x string, exp []string, ns map[string]string, t *testing.T) {
+	res, err := xpath.FromStr(xp, x, ns)
 	if err != nil {
 		t.Error(err)
 		return
@@ -21,14 +21,20 @@ func exec(xp, x string, exp []string, t *testing.T) {
 		return
 	}
 
-	for i := range exp {
+	for i := range res {
 		r, err := xpath.Print(res[i])
 		if err != nil {
 			t.Error(err.Error())
 			return
 		}
-		if r != exp[i] {
-			t.Error("Incorrect result:" + r + "\nExpected: " + exp[i])
+		valid := false
+		for j := range exp {
+			if r == exp[j] {
+				valid = true
+			}
+		}
+		if !valid {
+			t.Error("Incorrect result:" + r)
 			return
 		}
 	}

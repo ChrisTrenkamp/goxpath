@@ -22,15 +22,16 @@ func ParseXMLStr(x string) (pathres.PathRes, error) {
 //ParseXML creates an XMLTree structure from an io.Reader
 func ParseXML(r io.Reader) (pathres.PathRes, error) {
 	dec := xml.NewDecoder(r)
+	done := false
 	tree := &element.PathResElement{
 		Value:    xml.StartElement{},
 		NS:       make(map[xml.Name]string),
 		Children: []pathres.PathRes{},
 		Parent:   nil,
 	}
-	tree.Parent = tree
 	pos := tree
-	done := false
+
+	tree.Parent = tree
 
 	for !done {
 		t, err := dec.Token()
@@ -48,12 +49,15 @@ func ParseXML(r io.Reader) (pathres.PathRes, error) {
 			ele := t.(xml.StartElement)
 			attrs := make([]pathres.PathRes, 0, len(ele.Attr))
 			ns := make(map[xml.Name]string)
+
 			for k, v := range pos.NS {
 				ns[k] = v
 			}
+
 			for i := range ele.Attr {
 				attr := ele.Attr[i].Name
 				val := ele.Attr[i].Value
+
 				if (attr.Local == "xmlns" && attr.Space == "") || attr.Space == "xmlns" {
 					if attr.Local == "xmlns" && attr.Space == "" && val == "" {
 						delete(ns, attr)
@@ -64,6 +68,7 @@ func ParseXML(r io.Reader) (pathres.PathRes, error) {
 					attrs = append(attrs, &attribute.PathResAttribute{Value: &ele.Attr[i], Parent: pos})
 				}
 			}
+
 			ch := &element.PathResElement{
 				Value:    xml.CopyToken(ele),
 				NS:       ns,
@@ -71,6 +76,7 @@ func ParseXML(r io.Reader) (pathres.PathRes, error) {
 				Children: []pathres.PathRes{},
 				Parent:   pos,
 			}
+
 			pos.Children = append(pos.Children, ch)
 			pos = ch
 

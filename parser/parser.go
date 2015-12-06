@@ -19,6 +19,7 @@ type Parser struct {
 	ctx    pathres.PathRes
 	pExpr  pathexpr.PathExpr
 	filter []pathres.PathRes
+	ns     map[string]string
 }
 
 type expTkns []lexer.XItemType
@@ -39,25 +40,17 @@ var parseMap = map[lexer.XItemType]lexFn{
 }
 
 //CreateParserStr creates a Parser from an XML string
-func CreateParserStr(x string) (Parser, error) {
+func CreateParserStr(x string, nsLookup map[string]string) (Parser, error) {
 	t, err := xmltree.ParseXMLStr(x)
 
-	if err != nil {
-		return Parser{}, err
-	}
-
-	return Parser{tree: t, ctx: t}, err
+	return Parser{tree: t, ctx: t, ns: nsLookup}, err
 }
 
 //CreateParser creates a Parser from a XML reader
-func CreateParser(r io.Reader) (Parser, error) {
+func CreateParser(r io.Reader, nsLookup map[string]string) (Parser, error) {
 	t, err := xmltree.ParseXML(r)
 
-	if err != nil {
-		return Parser{}, err
-	}
-
-	return Parser{tree: t, ctx: t}, err
+	return Parser{tree: t, ctx: t, ns: nsLookup}, err
 }
 
 //Parse generates output from the Lexer
@@ -177,6 +170,8 @@ func endPath(p *Parser, val string) (expTkns, error) {
 }
 
 func (p *Parser) find() {
+	vals := []pathres.PathRes{}
+
 	if p.pExpr.Axis == "" && p.pExpr.NodeType == "" && p.pExpr.Name.Space == "" {
 		if p.pExpr.Name.Local == "." {
 			p.pExpr = pathexpr.PathExpr{
@@ -194,10 +189,12 @@ func (p *Parser) find() {
 			}
 		}
 	}
-	vals := []pathres.PathRes{}
+
 	if p.filter == nil {
 		p.filter = []pathres.PathRes{p.ctx}
 	}
+
+	p.pExpr.NS = p.ns
 
 	for i := range p.filter {
 		vals = append(vals, result.Find(p.filter[i], p.pExpr)...)
