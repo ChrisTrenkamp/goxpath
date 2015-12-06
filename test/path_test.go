@@ -232,3 +232,17 @@ func TestAttrNamespace(t *testing.T) {
 	exp := []string{`<?attribute test="foo" xmlns="http://foo.bar"?>`}
 	exec(p, x, exp, map[string]string{"test": "http://test", "foo": "http://foo.bar"}, t)
 }
+
+func TestWildcardNS(t *testing.T) {
+	p := `//*:p1`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns="http://test" xmlns:foo="http://foo.bar"><foo:p1/></p1>`
+	exp := []string{`<p1 xmlns="http://test"><p1 xmlns="http://foo.bar"></p1></p1>`, `<p1 xmlns="http://foo.bar"></p1>`}
+	exec(p, x, exp, map[string]string{"test": "http://test", "foo": "http://foo.bar"}, t)
+}
+
+func TestWildcardLocal(t *testing.T) {
+	p := `//foo:*`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p3 xmlns="http://test" xmlns:foo="http://foo.bar"><foo:p1/><foo:p2/></p3>`
+	exp := []string{`<p1 xmlns="http://foo.bar"></p1>`, `<p2 xmlns="http://foo.bar"></p2>`}
+	exec(p, x, exp, map[string]string{"test": "http://test", "foo": "http://foo.bar"}, t)
+}

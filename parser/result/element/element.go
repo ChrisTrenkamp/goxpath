@@ -43,8 +43,8 @@ func (x *PathResElement) Print(e *xml.Encoder) error {
 	var err error
 	if _, ok := x.Value.(xml.StartElement); ok {
 		val := x.Value.(xml.StartElement)
-		for i := range val.Attr {
-			if val.Attr[i].Name.Local == "xmlns" && val.Attr[i].Name.Space == "" {
+		for i := 0; i < len(val.Attr); i++ {
+			if val.Attr[i].Name.Local == "xmlns" || val.Attr[i].Name.Space == "xmlns" {
 				val.Attr = append(val.Attr[:i], val.Attr[i+1:]...)
 				i--
 			}
