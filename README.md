@@ -1,78 +1,42 @@
 # goxpath
 An XPath implementation in Go.
 
-###Axii supported:
-    ancestor
-    ancestor-or-self
-    attribute
-    child
-    descendant
-    descendant-or-self
-    parent
-    self
-    following
-    following-sibling
-    preceding
-    preceding-sibling
-    namespace
-
-###NodeTypes supported:
-    node()
-    comment()
-    text()
-    processing-instruction()
-
-###Shorthand's supported
-    .
-    ..
-    @
-    //
-
 ###Installation
     go get github.com/ChrisTrenkamp/goxpath
 
 ###Example
 
-
-#####test.xml
+#####montypython.xml
     <?xml version="1.0" encoding="UTF-8"?>
-    <p1>
-      <p2>
-        <p3/>
-      </p2>
-      <p2>
-        <p3/>
-      </p2>
-    </p1>
+    <grail>
+        <quest>
+            <for>shrubbery</for>
+        </quest>
+        <knight xmlns="http://monty.python">
+            <who say="ni!"/>
+        </knight>
+    </grail>
 
 #####Absolute path
-    $ goxpath '/p1' test.xml
-    <p1>
-      <p2>
-        <p3></p3>
-      </p2>
-      <p2>
-        <p3></p3>
-      </p2>
-    </p1>
+    $ goxpath '/grail/quest' montypython.xml
+    <quest>
+            <for>shrubbery</for>
+        </quest>
 
-    $ goxpath '/p1/p2/p3' test.xml
-    <p3></p3>
-    <p3></p3>
+#####Absolute path value
+    $ goxpath -v '/grail/quest' montypython.xml
+    shrubbery
 
-#####Abbreviated Relative path
-    $ goxpath '//p2' test.xml
-    <p2>
-        <p3></p3>
-      </p2>
-    <p2>
-        <p3></p3>
-      </p2>
-
-    $ goxpath '//p3' test.xml
-    <p3></p3>
-    <p3></p3>
-
+#####Namespace mapping
+    $ goxpath '/grail/knight' montypython.xml
+    $ #Nothing is returned because 'knight' is not in a known namespace
+    $ goxpath -ns monty=http://monty.python '/grail/monty:knight' montypython.xml
+    <knight xmlns="http://monty.python">
+            <who xmlns="http://monty.python" say="ni"></who>
+        </knight>
+    $ goxpath -v -ns monty=http://monty.python '/grail/monty:knight/monty:who/@say' montypython.xml
+    ni!
+    
 ###API
 
 ####import
