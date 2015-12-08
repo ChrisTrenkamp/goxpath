@@ -39,13 +39,6 @@ var parseMap = map[lexer.XItemType]lexFn{
 	lexer.XItemEndPath:        endPath,
 }
 
-//CreateParserStr creates a Parser from an XML string
-func CreateParserStr(x string, nsLookup map[string]string) (Parser, error) {
-	t, err := xmltree.ParseXMLStr(x)
-
-	return Parser{tree: t, ctx: t, ns: nsLookup}, err
-}
-
 //CreateParser creates a Parser from a XML reader
 func CreateParser(r io.Reader, nsLookup map[string]string) (Parser, error) {
 	t, err := xmltree.ParseXML(r)

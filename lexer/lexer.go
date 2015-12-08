@@ -2,7 +2,6 @@ package lexer
 
 import (
 	"fmt"
-	"strings"
 	"unicode/utf8"
 )
 
@@ -48,17 +47,6 @@ type XItemType int
 type XItem struct {
 	Typ XItemType
 	Val string
-}
-
-func (i XItem) String() string {
-	switch i.Typ {
-	case XItemEOF:
-		return "EOF"
-	case XItemError:
-		return fmt.Sprintf("ERROR: %q", i.Val)
-	}
-
-	return fmt.Sprintf("%q", i.Val)
 }
 
 type stateFn func(*Lexer) stateFn
@@ -148,6 +136,7 @@ func (l *Lexer) peekAt(n int) rune {
 	return ret
 }
 
+/*
 func (l *Lexer) accept(valid string) bool {
 	if strings.IndexRune(valid, l.next()) >= 0 {
 		return true
@@ -162,11 +151,12 @@ func (l *Lexer) acceptRun(valid string) {
 	}
 	l.backup()
 }
+*/
 
 func (l *Lexer) errorf(format string, args ...interface{}) stateFn {
 	l.items <- XItem{
 		XItemError,
-		fmt.Sprintf(format, args),
+		fmt.Sprintf(format, args...),
 	}
 
 	return nil

@@ -12,14 +12,7 @@ import (
 
 //FromStr runs an XPath expression on the XML string
 func FromStr(xpath, x string, ns map[string]string) ([]pathres.PathRes, error) {
-	it := lexer.Lex(xpath)
-	p, err := parser.CreateParserStr(x, ns)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return p.Parse(it)
+	return FromReader(xpath, bytes.NewBufferString(x), ns)
 }
 
 //FromReader runs an XPath expression on the XML reader

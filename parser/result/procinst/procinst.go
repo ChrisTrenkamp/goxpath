@@ -31,8 +31,7 @@ func (pi *PathResProcInst) GetChildren() []pathres.PathRes {
 
 //GetValue returns the value of the processing-instruction
 func (pi *PathResProcInst) GetValue() string {
-	//TODO: Make this return the value
-	return ""
+	return string(pi.Value.(xml.ProcInst).Inst)
 }
 
 //Print prints the XML processing-instruction in string form

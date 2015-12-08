@@ -3,6 +3,7 @@ package element
 import (
 	"encoding/xml"
 
+	"github.com/ChrisTrenkamp/goxpath/parser/result/chardata"
 	"github.com/ChrisTrenkamp/goxpath/parser/result/pathexpr"
 	"github.com/ChrisTrenkamp/goxpath/parser/result/pathres"
 	"github.com/ChrisTrenkamp/goxpath/xconst"
@@ -34,8 +35,16 @@ func (x *PathResElement) GetChildren() []pathres.PathRes {
 
 //GetValue returns all text nodes in the element, as per the spec
 func (x *PathResElement) GetValue() string {
-	//TODO: Replace with a text-node query.  Return all nodes if root
-	return ""
+	ret := ""
+	for i := range x.Children {
+		switch t := x.Children[i].(type) {
+		case *chardata.PathResCharData:
+			ret += t.GetValue()
+		case *PathResElement:
+			ret += t.GetValue()
+		}
+	}
+	return ret
 }
 
 //Print prints the XML element in string form

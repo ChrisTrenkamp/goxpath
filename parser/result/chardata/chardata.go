@@ -31,8 +31,7 @@ func (cd *PathResCharData) GetChildren() []pathres.PathRes {
 
 //GetValue returns the value of the element
 func (cd *PathResCharData) GetValue() string {
-	//TODO: Make this return the value
-	return ""
+	return string(cd.Value.(xml.CharData))
 }
 
 //Print prints the XML character data in string form

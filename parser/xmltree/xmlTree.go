@@ -1,7 +1,6 @@
 package xmltree
 
 import (
-	"bytes"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -13,11 +12,6 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/parser/result/pathres"
 	"github.com/ChrisTrenkamp/goxpath/parser/result/procinst"
 )
-
-//ParseXMLStr creates an XMLTree structure from an XML string
-func ParseXMLStr(x string) (pathres.PathRes, error) {
-	return ParseXML(bytes.NewBufferString(x))
-}
 
 //ParseXML creates an XMLTree structure from an io.Reader
 func ParseXML(r io.Reader) (pathres.PathRes, error) {
@@ -47,12 +41,20 @@ func ParseXML(r io.Reader) (pathres.PathRes, error) {
 		switch t.(type) {
 		case xml.StartElement:
 			ele := t.(xml.StartElement)
-			attrs := make([]pathres.PathRes, 0, len(ele.Attr))
 			ns := make(map[xml.Name]string)
 
 			for k, v := range pos.NS {
 				ns[k] = v
 			}
+
+			ch := &element.PathResElement{
+				Value:    xml.CopyToken(ele),
+				NS:       ns,
+				Children: []pathres.PathRes{},
+				Parent:   pos,
+			}
+
+			attrs := make([]pathres.PathRes, 0, len(ele.Attr))
 
 			for i := range ele.Attr {
 				attr := ele.Attr[i].Name
@@ -65,18 +67,11 @@ func ParseXML(r io.Reader) (pathres.PathRes, error) {
 						ns[attr] = val
 					}
 				} else {
-					attrs = append(attrs, &attribute.PathResAttribute{Value: &ele.Attr[i], Parent: pos})
+					attrs = append(attrs, &attribute.PathResAttribute{Value: &ele.Attr[i], Parent: ch})
 				}
 			}
 
-			ch := &element.PathResElement{
-				Value:    xml.CopyToken(ele),
-				NS:       ns,
-				Attrs:    attrs,
-				Children: []pathres.PathRes{},
-				Parent:   pos,
-			}
-
+			ch.Attrs = attrs
 			pos.Children = append(pos.Children, ch)
 			pos = ch
 

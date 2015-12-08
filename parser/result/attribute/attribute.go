@@ -31,8 +31,7 @@ func (a *PathResAttribute) GetChildren() []pathres.PathRes {
 
 //GetValue returns the value of the element
 func (a *PathResAttribute) GetValue() string {
-	//TODO: Make this return the value
-	return ""
+	return a.Value.(*xml.Attr).Value
 }
 
 //Print prints the XML attribute in string form

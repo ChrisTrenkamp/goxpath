@@ -89,7 +89,10 @@ func stepState(l *Lexer) stateFn {
 	if r == eof || l.peek() == eof {
 		l.emit(XItemEndPath)
 		return nil
-	} else if string(r) == "/" {
+	} else if string(r) == "/" || string(l.peek()) == "/" {
+		if string(r) != "/" && string(l.peek()) == "/" {
+			l.ignore()
+		}
 		l.emit(XItemEndPath)
 		l.next()
 		l.ignore()

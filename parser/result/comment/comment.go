@@ -31,8 +31,7 @@ func (c *PathResComment) GetChildren() []pathres.PathRes {
 
 //GetValue returns the value of the comment
 func (c *PathResComment) GetValue() string {
-	//TODO: Make this return the value
-	return ""
+	return string(c.Value.(xml.Comment))
 }
 
 //Print prints the XML comment in string form

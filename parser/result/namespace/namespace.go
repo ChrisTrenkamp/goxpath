@@ -48,12 +48,8 @@ func (a *PathResNamespace) EvalPath(p *pathexpr.PathExpr) bool {
 	val := a.Value
 
 	if p.NodeType == "" {
-		if p.Name.Space != "" {
-			if p.Name.Space != "*" {
-				if p.Name.Space != val.Name.Space {
-					return false
-				}
-			}
+		if p.Name.Space != "" && p.Name.Space != "*" {
+			return false
 		}
 
 		if p.Name.Local == "*" && p.Axis == xconst.AxisNamespace {
