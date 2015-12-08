@@ -193,28 +193,28 @@ func TestNodeTypeParentAbbr(t *testing.T) {
 
 func TestFollowing(t *testing.T) {
 	p := `//p3/following::node()`
-	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2><p3/><p4/></p2><p5><p6/></p5></p1>`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2><p31/><p3/><p4/></p2><p5><p6/></p5></p1>`
 	exp := []string{`<p4></p4>`, `<p5><p6></p6></p5>`, `<p6></p6>`}
 	execPath(p, x, exp, nil, t)
 }
 
 func TestPreceding(t *testing.T) {
 	p := `//p6/preceding::node()`
-	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2><p3/><p4/></p2><p5><p6/></p5></p1>`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2><p3/><p4/></p2><p5><p6/><p7/></p5></p1>`
 	exp := []string{`<p2><p3></p3><p4></p4></p2>`, `<p3></p3>`, `<p4></p4>`}
 	execPath(p, x, exp, nil, t)
 }
 
 func TestPrecedingSibling(t *testing.T) {
 	p := `//p4/preceding-sibling::node()`
-	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2><p3><p31/></p3><p4/></p2><p5><p6/></p5></p1>`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2><p3><p31/></p3><p4/><p51/></p2><p5><p6/></p5></p1>`
 	exp := []string{`<p3><p31></p31></p3>`}
 	execPath(p, x, exp, nil, t)
 }
 
 func TestFollowingSibling(t *testing.T) {
 	p := `//p2/following-sibling::node()`
-	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2><p3/><p4/></p2><p5><p6/></p5></p1>`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p21/><p2><p3/><p4/></p2><p5><p6/></p5></p1>`
 	exp := []string{`<p5><p6></p6></p5>`}
 	execPath(p, x, exp, nil, t)
 }

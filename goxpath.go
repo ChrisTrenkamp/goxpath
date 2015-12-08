@@ -27,6 +27,7 @@ func (n *namespace) Set(value string) error {
 
 func main() {
 	ns := make(namespace)
+	value := flag.Bool("v", false, "Output the string value of the XPath result")
 
 	flag.Var(&ns, "ns", "Namespace mappings. e.g. -ns myns=http://example.com")
 	flag.Parse()
@@ -36,7 +37,7 @@ func main() {
 	}
 
 	if flag.NArg() == 1 {
-		runXPath(flag.Arg(0), os.Stdin)
+		runXPath(flag.Arg(0), os.Stdin, ns, *value)
 	}
 
 	for i := 1; i < flag.NArg(); i++ {
@@ -47,12 +48,12 @@ func main() {
 			continue
 		}
 
-		runXPath(flag.Arg(0), f)
+		runXPath(flag.Arg(0), f, ns, *value)
 	}
 }
 
-func runXPath(x string, r io.Reader) {
-	res, err := xpath.FromReader(x, r, nil)
+func runXPath(x string, r io.Reader, ns namespace, value bool) {
+	res, err := xpath.FromReader(x, r, ns)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
@@ -60,10 +61,14 @@ func runXPath(x string, r io.Reader) {
 	}
 
 	for i := range res {
-		str, err := xpath.Print(res[i])
-		if err != nil {
-			panic(err)
+		if value {
+			fmt.Print(res[i].GetValue())
+		} else {
+			str, err := xpath.Print(res[i])
+			if err != nil {
+				panic(err)
+			}
+			fmt.Print(str)
 		}
-		fmt.Println(str)
 	}
 }
