@@ -30,10 +30,12 @@ An XPath implementation in Go.
 #####Namespace mapping
     $ goxpath '/grail/knight' montypython.xml
     $ #Nothing is returned because 'knight' is not in a known namespace
+    
     $ goxpath -ns monty=http://monty.python '/grail/monty:knight' montypython.xml
     <knight xmlns="http://monty.python">
             <who xmlns="http://monty.python" say="ni"></who>
         </knight>
+    
     $ goxpath -v -ns monty=http://monty.python '/grail/monty:knight/monty:who/@say' montypython.xml
     ni!
     
