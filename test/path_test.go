@@ -285,7 +285,14 @@ func TestProcInst2(t *testing.T) {
 func TestNamespace(t *testing.T) {
 	p := `/*:p1/*:p2/namespace::*`
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns="http://foo.bar"><p2 xmlns:foo="http://test"></p2></p1>`
-	exp := []string{`<?namespace http://foo.bar?>`, `<?namespace http://test?>`}
+	exp := []string{`<?namespace http://foo.bar?>`, `<?namespace http://test?>`, `<?namespace http://www.w3.org/XML/1998/namespace?>`}
+	execPath(p, x, exp, nil, t)
+}
+
+func TestNamespaceXml(t *testing.T) {
+	p := `/*:p1/*:p2/namespace::xml`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns="http://foo.bar"><p2 xmlns:foo="http://test"></p2></p1>`
+	exp := []string{`<?namespace http://www.w3.org/XML/1998/namespace?>`}
 	execPath(p, x, exp, nil, t)
 }
 

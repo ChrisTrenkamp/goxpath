@@ -13,6 +13,15 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/parser/result/procinst"
 )
 
+func createRoot() *element.PathResElement {
+	return &element.PathResElement{
+		Value:    xml.StartElement{},
+		NS:       make(map[xml.Name]string),
+		Children: []pathres.PathRes{},
+		Parent:   nil,
+	}
+}
+
 //ParseXML creates an XMLTree structure from an io.Reader
 func ParseXML(r io.Reader) (pathres.PathRes, error) {
 	dec := xml.NewDecoder(r)
@@ -46,6 +55,8 @@ func ParseXML(r io.Reader) (pathres.PathRes, error) {
 			for k, v := range pos.NS {
 				ns[k] = v
 			}
+
+			ns[xml.Name{Space: "", Local: "xml"}] = "http://www.w3.org/XML/1998/namespace"
 
 			ch := &element.PathResElement{
 				Value:    xml.CopyToken(ele),
