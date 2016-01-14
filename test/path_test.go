@@ -1,28 +1,26 @@
 package test
 
 import (
+	"bytes"
 	"testing"
 
-	"github.com/ChrisTrenkamp/goxpath/xpath"
+	"github.com/ChrisTrenkamp/goxpath/parser"
+	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
 )
 
 func execPath(xp, x string, exp []string, ns map[string]string, t *testing.T) {
-	res, err := xpath.FromStr(xp, x, ns)
-	if err != nil {
-		t.Error(err)
-		return
-	}
+	res := xmltree.Exec(parser.MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns)
 
 	if len(res) != len(exp) {
 		t.Error("Result length not valid.  Recieved:")
 		for i := range res {
-			t.Error(xpath.Print(res[i]))
+			t.Error(xmltree.MarshalStr(res[i]))
 		}
 		return
 	}
 
 	for i := range res {
-		r, err := xpath.Print(res[i])
+		r, err := xmltree.MarshalStr(res[i])
 		if err != nil {
 			t.Error(err.Error())
 			return

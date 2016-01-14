@@ -3,27 +3,30 @@ package parser
 import (
 	"encoding/xml"
 	"fmt"
-	"io"
 
 	"github.com/ChrisTrenkamp/goxpath/lexer"
-	"github.com/ChrisTrenkamp/goxpath/parser/result"
-	"github.com/ChrisTrenkamp/goxpath/parser/result/pathexpr"
-	"github.com/ChrisTrenkamp/goxpath/parser/result/pathres"
-	"github.com/ChrisTrenkamp/goxpath/parser/xmltree"
+	"github.com/ChrisTrenkamp/goxpath/parser/findutil"
+	"github.com/ChrisTrenkamp/goxpath/parser/pathexpr"
+	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/xconst"
 )
 
 //Parser parses an XML document and generates output from the Lexer
 type Parser struct {
-	tree   pathres.PathRes
-	ctx    pathres.PathRes
+	Tree   tree.XPRes
+	NS     map[string]string
+	ctx    tree.XPRes
 	pExpr  pathexpr.PathExpr
-	filter []pathres.PathRes
-	ns     map[string]string
+	filter []tree.XPRes
 }
 
+type xpExec func(*Parser)
+
+//XPathExec is the XPath executor, compiled from an XPath string
+type XPathExec []xpExec
+
 type expTkns []lexer.XItemType
-type lexFn func(*Parser, string) (expTkns, error)
+type lexFn func(string) (expTkns, xpExec)
 
 var parseMap = map[lexer.XItemType]lexFn{
 	lexer.XItemAbsLocPath:     absLocPath,
@@ -39,34 +42,59 @@ var parseMap = map[lexer.XItemType]lexFn{
 	lexer.XItemEndPath:        endPath,
 }
 
-//CreateParser creates a Parser from a XML reader
-func CreateParser(r io.Reader, nsLookup map[string]string) (Parser, error) {
-	t, err := xmltree.ParseXML(r)
+//Exec executes the XPath expression, xp, against the tree, t, with the
+//namespace mappings, ns.
+func Exec(xp XPathExec, t tree.XPRes, ns map[string]string) []tree.XPRes {
+	if ns == nil {
+		ns = make(map[string]string)
+	}
 
-	return Parser{tree: t, ctx: t, ns: nsLookup}, err
+	p := Parser{Tree: t, NS: ns, ctx: t}
+
+	for _, i := range xp {
+		i(&p)
+	}
+
+	return p.filter
 }
 
-//Parse generates output from the Lexer
-func (p *Parser) Parse(c chan lexer.XItem) ([]pathres.PathRes, error) {
+//MustParse is like Parse, but panics instead of returning an error.
+func MustParse(xp string) XPathExec {
+	ret, err := Parse(xp)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return ret
+}
+
+//Parse parses the XPath expression, xp, returning an XPath executor.
+func Parse(xp string) (XPathExec, error) {
 	var err error
+	var next xpExec
 	tok := expTkns{}
+	ret := make(XPathExec, 0)
+	c := lexer.Lex(xp)
 
 	for item := range c {
 		if item.Typ == lexer.XItemError {
-			return []pathres.PathRes{}, fmt.Errorf(item.Val)
+			return nil, fmt.Errorf(item.Val)
 		}
 
-		tok, err = p.eval(item.Typ, item.Val, tok)
+		tok, next, err = eval(item.Typ, item.Val, tok)
 
 		if err != nil {
-			return []pathres.PathRes{}, err
+			return nil, err
 		}
+
+		ret = append(ret, next)
 	}
 
-	return p.filter, nil
+	return ret, nil
 }
 
-func (p *Parser) eval(typ lexer.XItemType, val string, tkns expTkns) (expTkns, error) {
+func eval(typ lexer.XItemType, val string, tkns expTkns) (expTkns, xpExec, error) {
 	ok := len(tkns) == 0
 
 	if !ok {
@@ -79,14 +107,15 @@ func (p *Parser) eval(typ lexer.XItemType, val string, tkns expTkns) (expTkns, e
 	}
 
 	if !ok {
-		return expTkns{}, fmt.Errorf("Unexpected token: %d", typ)
+		return expTkns{}, nil, fmt.Errorf("Unexpected token: %d", typ)
 	}
 
 	if f, ok := parseMap[typ]; ok {
-		return f(p, val)
+		tkns, next := f(val)
+		return tkns, next, nil
 	}
 
-	return expTkns{}, fmt.Errorf("Unsupported token emitted: %d", typ)
+	return expTkns{}, nil, fmt.Errorf("Unsupported token emitted: %d", typ)
 }
 
 func pathStartToks() expTkns {
@@ -101,69 +130,104 @@ func abbrPathExpr() pathexpr.PathExpr {
 	}
 }
 
-func absLocPath(p *Parser, val string) (expTkns, error) {
-	p.ctx = p.tree
-	return pathStartToks(), nil
+func absLocPath(val string) (expTkns, xpExec) {
+	ret := func(p *Parser) {
+		p.ctx = p.Tree
+	}
+
+	return pathStartToks(), ret
 }
 
-func abbrAbsLocPath(p *Parser, val string) (expTkns, error) {
-	p.ctx = p.tree
-	p.pExpr = abbrPathExpr()
-	p.find()
-	return pathStartToks(), nil
+func abbrAbsLocPath(val string) (expTkns, xpExec) {
+	ret := func(p *Parser) {
+		p.ctx = p.Tree
+		p.pExpr = abbrPathExpr()
+		p.find()
+	}
+
+	return pathStartToks(), ret
 }
 
-func relLocPath(p *Parser, val string) (expTkns, error) {
-	return pathStartToks(), nil
+func relLocPath(val string) (expTkns, xpExec) {
+	ret := func(p *Parser) {
+	}
+
+	return pathStartToks(), ret
 }
 
-func abbrRelLocPath(p *Parser, val string) (expTkns, error) {
-	p.pExpr = abbrPathExpr()
-	p.find()
-	return pathStartToks(), nil
+func abbrRelLocPath(val string) (expTkns, xpExec) {
+	ret := func(p *Parser) {
+		p.pExpr = abbrPathExpr()
+		p.find()
+	}
+
+	return pathStartToks(), ret
 }
 
-func axis(p *Parser, val string) (expTkns, error) {
-	p.pExpr.Axis = val
-	return expTkns{lexer.XItemNCName, lexer.XItemQName, lexer.XItemNodeType}, nil
+func axis(val string) (expTkns, xpExec) {
+	ret := func(p *Parser) {
+		p.pExpr.Axis = val
+	}
+
+	return expTkns{lexer.XItemNCName, lexer.XItemQName, lexer.XItemNodeType}, ret
 }
 
-func abbrAxis(p *Parser, val string) (expTkns, error) {
-	p.pExpr.Axis = xconst.AxisAttribute
-	return expTkns{lexer.XItemNCName, lexer.XItemQName}, nil
+func abbrAxis(val string) (expTkns, xpExec) {
+	ret := func(p *Parser) {
+		p.pExpr.Axis = xconst.AxisAttribute
+	}
+
+	return expTkns{lexer.XItemNCName, lexer.XItemQName}, ret
 }
 
-func ncName(p *Parser, val string) (expTkns, error) {
-	p.pExpr.Name.Space = val
-	return expTkns{lexer.XItemQName}, nil
+func ncName(val string) (expTkns, xpExec) {
+	ret := func(p *Parser) {
+		p.pExpr.Name.Space = val
+	}
+
+	return expTkns{lexer.XItemQName}, ret
 }
 
-func qName(p *Parser, val string) (expTkns, error) {
-	p.pExpr.Name.Local = val
-	return expTkns{lexer.XItemPredicate, lexer.XItemEndPath}, nil
+func qName(val string) (expTkns, xpExec) {
+	ret := func(p *Parser) {
+		p.pExpr.Name.Local = val
+	}
+
+	return expTkns{lexer.XItemPredicate, lexer.XItemEndPath}, ret
 }
 
-func nodeType(p *Parser, val string) (expTkns, error) {
-	p.pExpr.NodeType = val
+func nodeType(val string) (expTkns, xpExec) {
+	retFunc := func(p *Parser) {
+		p.pExpr.NodeType = val
+	}
+
 	ret := expTkns{lexer.XItemPredicate, lexer.XItemEndPath}
+
 	if val == xconst.NodeTypeProcInst {
 		ret = append(ret, lexer.XItemProcLit)
 	}
-	return ret, nil
+
+	return ret, retFunc
 }
 
-func procInstLit(p *Parser, val string) (expTkns, error) {
-	p.pExpr.ProcInstLit = val
-	return expTkns{lexer.XItemPredicate, lexer.XItemEndPath}, nil
+func procInstLit(val string) (expTkns, xpExec) {
+	ret := func(p *Parser) {
+		p.pExpr.ProcInstLit = val
+	}
+
+	return expTkns{lexer.XItemPredicate, lexer.XItemEndPath}, ret
 }
 
-func endPath(p *Parser, val string) (expTkns, error) {
-	p.find()
-	return expTkns{lexer.XItemRelLocPath, lexer.XItemAbbrRelLocPath}, nil
+func endPath(val string) (expTkns, xpExec) {
+	ret := func(p *Parser) {
+		p.find()
+	}
+
+	return expTkns{lexer.XItemRelLocPath, lexer.XItemAbbrRelLocPath}, ret
 }
 
 func (p *Parser) find() {
-	vals := []pathres.PathRes{}
+	vals := []tree.XPRes{}
 
 	if p.pExpr.Axis == "" && p.pExpr.NodeType == "" && p.pExpr.Name.Space == "" {
 		if p.pExpr.Name.Local == "." {
@@ -184,13 +248,13 @@ func (p *Parser) find() {
 	}
 
 	if p.filter == nil {
-		p.filter = []pathres.PathRes{p.ctx}
+		p.filter = []tree.XPRes{p.ctx}
 	}
 
-	p.pExpr.NS = p.ns
+	p.pExpr.NS = p.NS
 
 	for i := range p.filter {
-		vals = append(vals, result.Find(p.filter[i], p.pExpr)...)
+		vals = append(vals, findutil.Find(p.filter[i], p.pExpr)...)
 	}
 
 	p.filter = vals

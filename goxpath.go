@@ -7,7 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ChrisTrenkamp/goxpath/xpath"
+	"github.com/ChrisTrenkamp/goxpath/parser"
+	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
 )
 
 type namespace map[string]string
@@ -33,11 +34,19 @@ func main() {
 	flag.Parse()
 
 	if flag.NArg() < 1 {
-		fmt.Println("Specify an XPath expression with one or more files")
+		fmt.Println("Specify an XPath expression with one or more files, or pipe the XML from stdin.")
+		os.Exit(1)
+	}
+
+	xp, err := parser.Parse(flag.Arg(0))
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
 	}
 
 	if flag.NArg() == 1 {
-		runXPath(flag.Arg(0), os.Stdin, ns, *value)
+		runXPath(xp, os.Stdin, ns, *value)
 	}
 
 	for i := 1; i < flag.NArg(); i++ {
@@ -48,27 +57,35 @@ func main() {
 			continue
 		}
 
-		runXPath(flag.Arg(0), f, ns, *value)
+		err = runXPath(xp, f, ns, *value)
+
+		if err != nil {
+			fmt.Fprintf(os.Stderr, err.Error())
+			os.Exit(1)
+		}
 	}
 }
 
-func runXPath(x string, r io.Reader, ns namespace, value bool) {
-	res, err := xpath.FromReader(x, r, ns)
+func runXPath(x parser.XPathExec, r io.Reader, ns namespace, value bool) error {
+	t, err := xmltree.ParseXML(r)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		return
+		return err
 	}
+
+	res := xmltree.Exec(x, t, ns)
 
 	for i := range res {
 		if value {
-			fmt.Print(res[i].GetValue())
+			fmt.Print(res[i])
 		} else {
-			str, err := xpath.Print(res[i])
+			err = xmltree.Marshal(res[i], os.Stdout)
+
 			if err != nil {
-				panic(err)
+				return err
 			}
-			fmt.Print(str)
 		}
 	}
+
+	return nil
 }
