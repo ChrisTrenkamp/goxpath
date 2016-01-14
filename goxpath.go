@@ -47,6 +47,9 @@ func main() {
 
 	if flag.NArg() == 1 {
 		err = runXPath(xp, os.Stdin, ns, *value)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+		}
 	}
 
 	hasErr := err == nil
@@ -63,7 +66,7 @@ func main() {
 		err = runXPath(xp, f, ns, *value)
 
 		if err != nil {
-			fmt.Fprintf(os.Stderr, err.Error())
+			fmt.Fprintln(os.Stderr, err.Error())
 			hasErr = true
 		}
 	}
