@@ -42,11 +42,12 @@ An XPath implementation in Go.
 ###API
 
 ####import
-    import "github.com/ChrisTrenkamp/goxpath/xpath"
+    "github.com/ChrisTrenkamp/goxpath/parser"
+    "github.com/ChrisTrenkamp/goxpath/tree/xmltree"
 
 ####Usage
-    res, _ := xpath.FromStr(xp, x)
-    for i := range res {
-        str, _ := xpath.Print(res[i])
-        fmt.Println(str)
-    }
+    xp := parser.MustParse(`/path`)
+    t := xmltree.MustParseXML(bytes.NewBufferString(xml.Header + `<path>Hello world</path>`))
+    res := xmltree.Exec(xp, t, nil)
+    fmt.Println(res[0]) //Hello world
+    err := xmltree.Marshal(res[0], os.Stdout) //<path>Hello world</path>
