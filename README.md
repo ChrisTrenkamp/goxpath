@@ -26,7 +26,7 @@ An XPath implementation in Go.
 #####Absolute path value
     $ goxpath -v '/grail/quest' montypython.xml
     
-        shrubbery
+            shrubbery
 
 #####Namespace mapping
     $ goxpath '/grail/knight' montypython.xml
