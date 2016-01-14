@@ -46,14 +46,17 @@ func main() {
 	}
 
 	if flag.NArg() == 1 {
-		runXPath(xp, os.Stdin, ns, *value)
+		err = runXPath(xp, os.Stdin, ns, *value)
 	}
+
+	hasErr := err == nil
 
 	for i := 1; i < flag.NArg(); i++ {
 		f, err := os.Open(flag.Arg(i))
 
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Could not open file: %s\n", flag.Arg(i))
+			hasErr = true
 			continue
 		}
 
@@ -61,8 +64,12 @@ func main() {
 
 		if err != nil {
 			fmt.Fprintf(os.Stderr, err.Error())
-			os.Exit(1)
+			hasErr = true
 		}
+	}
+
+	if hasErr {
+		os.Exit(1)
 	}
 }
 
