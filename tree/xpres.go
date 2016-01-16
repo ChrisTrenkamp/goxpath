@@ -1,6 +1,6 @@
 package tree
 
-import "github.com/ChrisTrenkamp/goxpath/parser/pathexpr"
+import "github.com/ChrisTrenkamp/goxpath/goxpath/pathexpr"
 
 //XPRes is a XPath node within a tree
 type XPRes interface {

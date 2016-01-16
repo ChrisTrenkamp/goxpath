@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ChrisTrenkamp/goxpath/parser"
+	"github.com/ChrisTrenkamp/goxpath/goxpath"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlattr"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlchd"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlcomm"
@@ -16,8 +16,8 @@ import (
 )
 
 //Exec is like parser.Exec, but returns XMLXPRes for xml-printing on the XMLXPRes interface.
-func Exec(xp parser.XPathExec, t xmlxpres.XMLXPRes, ns map[string]string) []xmlxpres.XMLXPRes {
-	res := parser.Exec(xp, t, ns)
+func Exec(xp goxpath.XPathExec, t xmlxpres.XMLXPRes, ns map[string]string) []xmlxpres.XMLXPRes {
+	res := goxpath.Exec(xp, t, ns)
 
 	ret := make([]xmlxpres.XMLXPRes, len(res))
 	for i := range res {

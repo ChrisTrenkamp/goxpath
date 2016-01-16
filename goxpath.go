@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ChrisTrenkamp/goxpath/parser"
+	"github.com/ChrisTrenkamp/goxpath/goxpath"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
 )
 
@@ -38,7 +38,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	xp, err := parser.Parse(flag.Arg(0))
+	xp, err := goxpath.Parse(flag.Arg(0))
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
@@ -76,7 +76,7 @@ func main() {
 	}
 }
 
-func runXPath(x parser.XPathExec, r io.Reader, ns namespace, value bool) error {
+func runXPath(x goxpath.XPathExec, r io.Reader, ns namespace, value bool) error {
 	t, err := xmltree.ParseXML(r)
 
 	if err != nil {

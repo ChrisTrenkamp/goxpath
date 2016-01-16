@@ -25,29 +25,29 @@ An XPath implementation in Go.
 
 #####Absolute path value
     $ goxpath -v '/grail/quest' montypython.xml
-    
+
             shrubbery
 
 #####Namespace mapping
     $ goxpath '/grail/knight' montypython.xml
     $ #Nothing is returned because 'knight' is not in a known namespace
-    
+
     $ goxpath -ns monty=http://monty.python '/grail/monty:knight' montypython.xml
     <knight xmlns="http://monty.python">
             <who xmlns="http://monty.python" say="ni"></who>
         </knight>
-    
+
     $ goxpath -v -ns monty=http://monty.python '/grail/monty:knight/monty:who/@say' montypython.xml
     ni!
-    
+
 ###API
 
 ####import
-    "github.com/ChrisTrenkamp/goxpath/parser"
+    "github.com/ChrisTrenkamp/goxpath/goxpath"
     "github.com/ChrisTrenkamp/goxpath/tree/xmltree"
 
 ####Usage
-    xp := parser.MustParse(`/path`)
+    xp := goxpath.MustParse(`/path`)
     t := xmltree.MustParseXML(bytes.NewBufferString(xml.Header + `<path>Hello world</path>`))
     res := xmltree.Exec(xp, t, nil)
     fmt.Println(res[0]) //Hello world

@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/ChrisTrenkamp/goxpath/parser"
+	"github.com/ChrisTrenkamp/goxpath/goxpath"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
 )
 
 func execPath(xp, x string, exp []string, ns map[string]string, t *testing.T) {
-	res := xmltree.Exec(parser.MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns)
+	res := xmltree.Exec(goxpath.MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns)
 
 	if len(res) != len(exp) {
 		t.Error("Result length not valid.  Recieved:")

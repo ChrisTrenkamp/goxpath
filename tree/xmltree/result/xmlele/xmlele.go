@@ -3,12 +3,12 @@ package xmlele
 import (
 	"encoding/xml"
 
-	"github.com/ChrisTrenkamp/goxpath/parser/pathexpr"
+	"github.com/ChrisTrenkamp/goxpath/goxpath/pathexpr"
+	"github.com/ChrisTrenkamp/goxpath/goxpath/xconst"
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlattr"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlchd"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/xmlxpres"
-	"github.com/ChrisTrenkamp/goxpath/xconst"
 )
 
 //XMLEle is an implementation of XPRes for XML elements

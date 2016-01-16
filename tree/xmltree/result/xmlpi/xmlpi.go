@@ -3,9 +3,9 @@ package xmlpi
 import (
 	"encoding/xml"
 
-	"github.com/ChrisTrenkamp/goxpath/parser/pathexpr"
+	"github.com/ChrisTrenkamp/goxpath/goxpath/pathexpr"
+	"github.com/ChrisTrenkamp/goxpath/goxpath/xconst"
 	"github.com/ChrisTrenkamp/goxpath/tree"
-	"github.com/ChrisTrenkamp/goxpath/xconst"
 )
 
 //XMLPI is an implementation of XPRes for XML processing-instructions

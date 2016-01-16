@@ -3,11 +3,11 @@ package findutil
 import (
 	"encoding/xml"
 
-	"github.com/ChrisTrenkamp/goxpath/parser/pathexpr"
+	"github.com/ChrisTrenkamp/goxpath/goxpath/pathexpr"
+	"github.com/ChrisTrenkamp/goxpath/goxpath/xconst"
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlele"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlns"
-	"github.com/ChrisTrenkamp/goxpath/xconst"
 )
 
 type findFunc func(tree.XPRes, *pathexpr.PathExpr, *[]tree.XPRes)
