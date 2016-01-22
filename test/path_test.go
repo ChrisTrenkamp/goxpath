@@ -377,6 +377,13 @@ func TestAttrNamespace(t *testing.T) {
 	execPath(p, x, exp, map[string]string{"test": "http://test", "foo": "http://foo.bar"}, t)
 }
 
+func TestWildcard(t *testing.T) {
+	p := `/p1/*`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns:test="http://test" xmlns:foo="http://foo.bar"><p1/><test:p2/><foo:p3/></p1>`
+	exp := []string{`<p1></p1>`, `<p2 xmlns="http://test"></p2>`, `<p3 xmlns="http://foo.bar"></p3>`}
+	execPath(p, x, exp, nil, t)
+}
+
 func TestWildcardNS(t *testing.T) {
 	p := `//*:p1`
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns="http://test" xmlns:foo="http://foo.bar"><foo:p1/></p1>`

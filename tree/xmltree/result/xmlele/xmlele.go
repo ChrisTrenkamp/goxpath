@@ -79,6 +79,10 @@ func (x *XMLEle) XMLPrint(e *xml.Encoder) error {
 //EvalPath evaluates the XPath path instruction on the element
 func (x *XMLEle) EvalPath(p *pathexpr.PathExpr) bool {
 	if p.NodeType == "" {
+		if p.Name.Local == "*" && p.Name.Space == "" {
+			return true
+		}
+
 		if p.Name.Space != "*" {
 			if x.StartElement.Name.Space != p.NS[p.Name.Space] {
 				return false
