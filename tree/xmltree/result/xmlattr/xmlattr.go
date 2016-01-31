@@ -11,11 +11,16 @@ import (
 //XMLAttr is an implementation of XPRes for XML attributes
 type XMLAttr struct {
 	xml.Attr
-	Parent tree.XPResEle
+	Parent tree.Elem
+}
+
+//GetToken returns the xml.Token representation of the node
+func (a *XMLAttr) GetToken() xml.Token {
+	return a.Attr
 }
 
 //GetParent returns the parent node
-func (a *XMLAttr) GetParent() tree.XPResEle {
+func (a *XMLAttr) GetParent() tree.Elem {
 	return a.Parent
 }
 

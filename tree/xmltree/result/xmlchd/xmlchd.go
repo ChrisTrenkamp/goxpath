@@ -11,11 +11,16 @@ import (
 //XMLChd is an implementation of XPRes for XML attributes
 type XMLChd struct {
 	xml.CharData
-	Parent tree.XPResEle
+	Parent tree.Elem
+}
+
+//GetToken returns the xml.Token representation of the node
+func (cd *XMLChd) GetToken() xml.Token {
+	return cd.CharData
 }
 
 //GetParent returns the parent node
-func (cd *XMLChd) GetParent() tree.XPResEle {
+func (cd *XMLChd) GetParent() tree.Elem {
 	return cd.Parent
 }
 

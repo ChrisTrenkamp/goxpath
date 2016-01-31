@@ -2,38 +2,50 @@ package lexer
 
 import (
 	"fmt"
+	"strings"
+	"unicode"
 	"unicode/utf8"
 )
 
 const (
 	//XItemError is an error with the parser input
-	XItemError XItemType = iota
+	XItemError XItemType = "Error"
 	//XItemEOF is the end of the parser input
-	XItemEOF
+	XItemEOF = "EOF"
 	//XItemAbsLocPath is an absolute path
-	XItemAbsLocPath
+	XItemAbsLocPath = "Absolute path"
 	//XItemAbbrAbsLocPath represents an abbreviated absolute path
-	XItemAbbrAbsLocPath
+	XItemAbbrAbsLocPath = "Abbreviated absolute path"
 	//XItemAbbrRelLocPath marks the start of a path expression
-	XItemAbbrRelLocPath
+	XItemAbbrRelLocPath = "Abbreviated relative path"
 	//XItemRelLocPath represents a relative location path
-	XItemRelLocPath
+	XItemRelLocPath = "Relative path"
 	//XItemEndPath marks the end of a path
-	XItemEndPath
+	XItemEndPath = "End path instruction"
 	//XItemAxis marks an axis specifier of a path
-	XItemAxis
+	XItemAxis = "Axis"
 	//XItemAbbrAxis marks an abbreviated axis specifier (just @ at this point)
-	XItemAbbrAxis
+	XItemAbbrAxis = "Abbreviated attribute axis"
 	//XItemNCName marks a namespace name in a node test
-	XItemNCName
+	XItemNCName = "Namespace"
 	//XItemQName marks the local name in an a node test
-	XItemQName
+	XItemQName = "Local name"
 	//XItemNodeType marks a node type in a node test
-	XItemNodeType
+	XItemNodeType = "Node type"
 	//XItemProcLit marks a processing-instruction literal
-	XItemProcLit
+	XItemProcLit = "processing-instruction"
 	//XItemPredicate marks a predicate in an axis
-	XItemPredicate
+	XItemPredicate = "predicate"
+	//XItemFunction marks a function call
+	XItemFunction = "function"
+	//XItemArgument marks a function argument
+	XItemArgument = "function argument"
+	//XItemEndFunction marks the end of a function
+	XItemEndFunction = "end of function argument"
+	//XItemStrLit marks a string literal
+	XItemStrLit = "string literal"
+	//XItemNumLit marks a numeric literal
+	XItemNumLit = "numeric literal"
 )
 
 const (
@@ -41,7 +53,7 @@ const (
 )
 
 //XItemType is the parser token types
-type XItemType int
+type XItemType string
 
 //XItem is the token emitted from the parser
 type XItem struct {
@@ -58,7 +70,6 @@ type Lexer struct {
 	pos   int
 	width int
 	items chan XItem
-	inter bool
 }
 
 //Lex an XPath expresion on the io.Reader
@@ -72,17 +83,25 @@ func Lex(xpath string) chan XItem {
 }
 
 func (l *Lexer) run() {
-	for state := startState; state != nil && !l.inter; {
+	for state := startState; state != nil; {
 		state = state(l)
+	}
+
+	if l.peek() != eof {
+		l.errorf("Malformed XPath expression")
+		fmt.Println(l.input[l.pos:])
 	}
 
 	close(l.items)
 }
 
 func (l *Lexer) emit(t XItemType) {
-	if !l.inter {
-		l.items <- XItem{t, l.input[l.start:l.pos]}
-	}
+	l.items <- XItem{t, l.input[l.start:l.pos]}
+	l.start = l.pos
+}
+
+func (l *Lexer) emitVal(t XItemType, val string) {
+	l.items <- XItem{t, val}
 	l.start = l.pos
 }
 
@@ -136,7 +155,6 @@ func (l *Lexer) peekAt(n int) rune {
 	return ret
 }
 
-/*
 func (l *Lexer) accept(valid string) bool {
 	if strings.IndexRune(valid, l.next()) >= 0 {
 		return true
@@ -151,7 +169,29 @@ func (l *Lexer) acceptRun(valid string) {
 	}
 	l.backup()
 }
-*/
+
+func (l *Lexer) skip(num int) {
+	for i := 0; i < num; i++ {
+		l.next()
+	}
+	l.ignore()
+}
+
+func (l *Lexer) skipWS(ig bool) {
+	for true {
+		n := l.next()
+
+		if n == eof || !unicode.IsSpace(n) {
+			break
+		}
+	}
+
+	l.backup()
+
+	if ig {
+		l.ignore()
+	}
+}
 
 func (l *Lexer) errorf(format string, args ...interface{}) stateFn {
 	l.items <- XItem{
@@ -163,7 +203,17 @@ func (l *Lexer) errorf(format string, args ...interface{}) stateFn {
 }
 
 func startState(l *Lexer) stateFn {
-	if string(l.next()) == "/" {
+	l.skipWS(true)
+
+	if string(l.peek()) == `'` || string(l.peek()) == `"` {
+		if err := getStrLit(l, XItemStrLit); err != nil {
+			return l.errorf(err.Error())
+		}
+
+		return nil
+	} else if getNumLit(l) {
+		return nil
+	} else if string(l.next()) == "/" {
 		l.ignore()
 
 		if string(l.next()) == "/" {
@@ -177,4 +227,43 @@ func startState(l *Lexer) stateFn {
 
 	l.backup()
 	return relLocPathState
+}
+
+func getStrLit(l *Lexer, tok XItemType) error {
+	q := l.next()
+	var r rune
+
+	l.ignore()
+
+	for r != q {
+		r = l.next()
+		if r == eof {
+			return fmt.Errorf("Unexpected end of string literal.")
+		}
+	}
+
+	l.backup()
+	l.emit(tok)
+	l.next()
+	l.ignore()
+
+	return nil
+}
+
+func getNumLit(l *Lexer) bool {
+	const dig = "0123456789"
+	l.accept("-")
+	start := l.pos
+	l.acceptRun(dig)
+
+	if l.pos == start {
+		return false
+	}
+
+	if l.accept(".") {
+		l.acceptRun(dig)
+	}
+
+	l.emit(XItemNumLit)
+	return true
 }

@@ -11,11 +11,16 @@ import (
 //XMLPI is an implementation of XPRes for XML processing-instructions
 type XMLPI struct {
 	xml.ProcInst
-	Parent tree.XPResEle
+	Parent tree.Elem
+}
+
+//GetToken returns the xml.Token representation of the node
+func (pi *XMLPI) GetToken() xml.Token {
+	return pi.ProcInst
 }
 
 //GetParent returns the parent node
-func (pi *XMLPI) GetParent() tree.XPResEle {
+func (pi *XMLPI) GetParent() tree.Elem {
 	return pi.Parent
 }
 

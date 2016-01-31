@@ -8,7 +8,7 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlattr"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlchd"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/xmlxpres"
+	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/xmlres"
 )
 
 //XMLEle is an implementation of XPRes for XML elements
@@ -16,18 +16,23 @@ type XMLEle struct {
 	xml.StartElement
 	NS       map[xml.Name]string
 	Attrs    []*xmlattr.XMLAttr
-	Children []xmlxpres.XMLXPRes
-	Parent   xmlxpres.XMLXPResEle
+	Children []xmlres.XMLNode
+	Parent   xmlres.XMLElem
+}
+
+//GetToken returns the xml.Token representation of the node
+func (x *XMLEle) GetToken() xml.Token {
+	return x.StartElement
 }
 
 //GetParent returns the parent node, or itself if it's the root
-func (x *XMLEle) GetParent() tree.XPResEle {
+func (x *XMLEle) GetParent() tree.Elem {
 	return x.Parent
 }
 
 //GetChildren returns all child nodes of the element
-func (x *XMLEle) GetChildren() []tree.XPRes {
-	ret := make([]tree.XPRes, len(x.Children))
+func (x *XMLEle) GetChildren() []tree.Node {
+	ret := make([]tree.Node, len(x.Children))
 
 	for i := range x.Children {
 		ret[i] = x.Children[i]

@@ -10,7 +10,7 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlns"
 )
 
-type findFunc func(tree.XPRes, *pathexpr.PathExpr, *[]tree.XPRes)
+type findFunc func(tree.Node, *pathexpr.PathExpr, *[]tree.Node)
 
 var findMap = map[string]findFunc{
 	xconst.AxisAncestor:         findAncestor,
@@ -29,8 +29,8 @@ var findMap = map[string]findFunc{
 }
 
 //Find finds nodes based on the pathexpr.PathExpr
-func Find(x tree.XPRes, p pathexpr.PathExpr) []tree.XPRes {
-	ret := []tree.XPRes{}
+func Find(x tree.Node, p pathexpr.PathExpr) []tree.Node {
+	ret := []tree.Node{}
 
 	if p.Axis == "" {
 		findChild(x, &p, &ret)
@@ -43,7 +43,7 @@ func Find(x tree.XPRes, p pathexpr.PathExpr) []tree.XPRes {
 	return ret
 }
 
-func findAncestor(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes) {
+func findAncestor(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	if x.GetParent().EvalPath(p) {
 		*ret = append(*ret, x.GetParent())
 	}
@@ -52,12 +52,12 @@ func findAncestor(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes) {
 	}
 }
 
-func findAncestorOrSelf(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes) {
+func findAncestorOrSelf(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	findSelf(x, p, ret)
 	findAncestor(x, p, ret)
 }
 
-func findAttribute(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes) {
+func findAttribute(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	if ele, ok := x.(*xmlele.XMLEle); ok {
 		for i := range ele.Attrs {
 			if ele.Attrs[i].EvalPath(p) {
@@ -67,8 +67,8 @@ func findAttribute(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes) {
 	}
 }
 
-func findChild(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes) {
-	if ele, ok := x.(tree.XPResEle); ok {
+func findChild(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
+	if ele, ok := x.(tree.Elem); ok {
 		ch := ele.GetChildren()
 		for i := range ch {
 			if ch[i].EvalPath(p) {
@@ -78,8 +78,8 @@ func findChild(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes) {
 	}
 }
 
-func findDescendent(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes) {
-	if ele, ok := x.(tree.XPResEle); ok {
+func findDescendent(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
+	if ele, ok := x.(tree.Elem); ok {
 		ch := ele.GetChildren()
 		for i := range ch {
 			if ch[i].EvalPath(p) {
@@ -90,12 +90,12 @@ func findDescendent(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes) {
 	}
 }
 
-func findDescendentOrSelf(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes) {
+func findDescendentOrSelf(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	findSelf(x, p, ret)
 	findDescendent(x, p, ret)
 }
 
-func findFollowing(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes) {
+func findFollowing(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	if x == x.GetParent() {
 		return
 	}
@@ -113,7 +113,7 @@ func findFollowing(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes) {
 	findFollowing(par, p, ret)
 }
 
-func findFollowingSibling(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes) {
+func findFollowingSibling(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	if x == x.GetParent() {
 		return
 	}
@@ -130,7 +130,7 @@ func findFollowingSibling(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes)
 	}
 }
 
-func findNamespace(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes) {
+func findNamespace(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	if ele, ok := x.(*xmlele.XMLEle); ok {
 		for k, v := range ele.NS {
 			ns := &xmlns.XMLNS{
@@ -144,13 +144,13 @@ func findNamespace(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes) {
 	}
 }
 
-func findParent(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes) {
+func findParent(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	if x.GetParent() != x && x.GetParent().EvalPath(p) {
 		*ret = append(*ret, x.GetParent())
 	}
 }
 
-func findPreceding(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes) {
+func findPreceding(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	if x == x.GetParent() {
 		return
 	}
@@ -168,7 +168,7 @@ func findPreceding(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes) {
 	findPreceding(par, p, ret)
 }
 
-func findPrecedingSibling(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes) {
+func findPrecedingSibling(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	if x == x.GetParent() {
 		return
 	}
@@ -185,7 +185,7 @@ func findPrecedingSibling(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes)
 	}
 }
 
-func findSelf(x tree.XPRes, p *pathexpr.PathExpr, ret *[]tree.XPRes) {
+func findSelf(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	if x.EvalPath(p) {
 		*ret = append(*ret, x)
 	}

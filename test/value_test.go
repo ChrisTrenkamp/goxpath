@@ -6,15 +6,21 @@ import (
 
 	"github.com/ChrisTrenkamp/goxpath/goxpath"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
+	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/xmlres"
 )
 
 func execVal(xp, x string, exp []string, ns map[string]string, t *testing.T) {
-	res := xmltree.Exec(goxpath.MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns)
+	res, err := goxpath.Exec(goxpath.MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns)
+
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
 
 	if len(res) != len(exp) {
 		t.Error("Result length not valid.  Recieved:")
 		for i := range res {
-			t.Error(xmltree.MarshalStr(res[i]))
+			t.Error(xmltree.MarshalStr(res[i].(xmlres.XMLNode)))
 		}
 		return
 	}

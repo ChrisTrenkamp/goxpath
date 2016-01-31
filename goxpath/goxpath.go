@@ -10,7 +10,7 @@ type XPathExec []parser.XPExec
 
 //Exec executes the XPath expression, xp, against the tree, t, with the
 //namespace mappings, ns.
-func Exec(xp XPathExec, t tree.XPRes, ns map[string]string) []tree.XPRes {
+func Exec(xp XPathExec, t tree.Node, ns map[string]string) ([]tree.Res, error) {
 	return parser.Exec(xp, t, ns)
 }
 

@@ -27,13 +27,9 @@ func abbrRelLocPathState(l *Lexer) stateFn {
 }
 
 func stepState(l *Lexer) stateFn {
+	l.skipWS(true)
 	r := l.next()
 	state := XItemQName
-
-	if r == eof {
-		l.emit(XItemEndPath)
-		return nil
-	}
 
 	for string(r) != ":" && string(r) != "/" &&
 		(unicode.Is(first, r) || unicode.Is(second, r) || string(r) == "*") &&
@@ -43,6 +39,8 @@ func stepState(l *Lexer) stateFn {
 
 	l.backup()
 	tok := l.input[l.start:l.pos]
+	l.skipWS(false)
+	r = l.peek()
 
 	if string(r) == ":" && string(l.peekAt(2)) == ":" {
 		for i := range xconst.AxisNames {
@@ -53,79 +51,107 @@ func stepState(l *Lexer) stateFn {
 		if state != XItemAxis {
 			return l.errorf("Invalid Axis specifier, %s", tok)
 		}
+		l.emitVal(XItemType(state), tok)
+		l.skip(2)
+		l.skipWS(true)
 	} else if string(r) == ":" {
 		state = XItemNCName
+		l.emitVal(XItemType(state), tok)
+		l.skip(1)
+		l.skipWS(true)
 	} else if string(r) == "@" {
 		state = XItemAbbrAxis
+		l.emitVal(XItemType(state), tok)
+		l.skip(1)
+		l.skipWS(true)
 	} else if string(r) == "(" {
-		if string(l.peekAt(2)) == ")" {
+		isNT := false
+		for _, i := range xconst.NodeTypes {
+			if tok == i {
+				isNT = true
+				break
+			}
+		}
+
+		if isNT {
 			state = XItemNodeType
-		} else if tok == xconst.NodeTypeProcInst && (string(l.peekAt(2)) == `"` || string(l.peekAt(2)) == `'`) {
-			l.emit(XItemNodeType)
-			l.next()
-			return procLitState
+			l.emitVal(XItemType(state), tok)
+			l.skip(1)
+			l.skipWS(true)
+			n := l.peek()
+			if tok == xconst.NodeTypeProcInst && (string(n) == `"` || string(n) == `'`) {
+				if err := getStrLit(l, XItemProcLit); err != nil {
+					return l.errorf(err.Error())
+				}
+				l.skipWS(true)
+				n = l.next()
+			}
+
+			if string(n) != ")" {
+				return l.errorf("Missing ) at end of NodeType declaration.")
+			}
+
+			l.skip(1)
 		} else {
-			return l.errorf("Missing ) at end of NodeType declaration.")
+			state = XItemFunction
+			l.emitVal(XItemType(state), tok)
+			l.skip(1)
+			l.skipWS(true)
+			if string(l.peek()) != ")" {
+				l.emit(XItemArgument)
+				for true {
+					for state := startState; state != nil; {
+						state = state(l)
+					}
+					l.skipWS(true)
+
+					if string(l.peek()) == "," {
+						l.emit(XItemArgument)
+						l.skip(1)
+					} else if string(l.peek()) == ")" {
+						l.emit(XItemEndFunction)
+						l.skip(1)
+						break
+					} else if l.peek() == eof {
+						return l.errorf("Missing ) at end of function declaration.")
+					}
+				}
+			} else {
+				l.emit(XItemEndFunction)
+				l.skip(1)
+			}
 		}
-	} else if string(r) == "[" {
-		state = XItemPredicate
-		return l.errorf("Predicates are not supported yet.")
+		//} else if string(r) == "[" {
+		//state = XItemPredicate
+	} else {
+		l.emitVal(XItemType(state), tok)
 	}
 
-	if state == XItemQName && tok == "" {
-		return l.errorf("Missing step at end of expression")
-	}
+	isMultiPart := state == XItemAxis || state == XItemAbbrAxis || state == XItemNCName
 
-	l.emit(state)
-
-	if state != XItemQName {
-		if state == XItemAxis || state == XItemNodeType {
-			l.next()
+	l.skipWS(true)
+	if string(l.peek()) == "/" {
+		if isMultiPart {
+			return l.errorf("Step is not complete")
 		}
-		l.next()
-		l.ignore()
-	}
-
-	if r == eof || l.peek() == eof {
 		l.emit(XItemEndPath)
-		return nil
-	} else if string(r) == "/" || string(l.peek()) == "/" {
-		if string(r) != "/" && string(l.peek()) == "/" {
-			l.ignore()
-		}
-		l.emit(XItemEndPath)
-		l.next()
-		l.ignore()
+		l.skip(1)
 		if string(l.peek()) == "/" {
-			l.next()
-			l.ignore()
+			l.skip(1)
 			return abbrRelLocPathState
 		}
+		l.skipWS(true)
 		return relLocPathState
+	} else if isMultiPart {
+		return stepState
 	}
 
-	return stepState
-}
-
-func procLitState(l *Lexer) stateFn {
-	q := l.next()
-	l.ignore()
-	var r rune
-
-	for r != q {
-		r = l.next()
-		if r == eof {
-			return l.errorf("Unexpected end of input.")
-		}
+	if isMultiPart {
+		return l.errorf("Step is not complete")
 	}
-	l.backup()
-	l.emit(XItemProcLit)
-	l.next()
-	if string(l.next()) != ")" {
-		return l.errorf("Expecting ) at end of processing instruction literal")
-	}
-	l.ignore()
-	return stepState
+
+	l.emit(XItemEndPath)
+	return nil
 }
 
 //first and second was copied from src/encoding/xml/xml.go

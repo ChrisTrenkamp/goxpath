@@ -9,6 +9,7 @@ import (
 
 	"github.com/ChrisTrenkamp/goxpath/goxpath"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
+	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/xmlres"
 )
 
 type namespace map[string]string
@@ -83,13 +84,17 @@ func runXPath(x goxpath.XPathExec, r io.Reader, ns namespace, value bool) error 
 		return err
 	}
 
-	res := xmltree.Exec(x, t, ns)
+	res, err := goxpath.Exec(x, t, ns)
+
+	if err != nil {
+		return err
+	}
 
 	for i := range res {
-		if value {
-			fmt.Print(res[i])
+		if _, ok := res[i].(xmlres.XMLPrinter); !ok || value {
+			fmt.Println(res[i])
 		} else {
-			err = xmltree.Marshal(res[i], os.Stdout)
+			err = xmltree.Marshal(res[i].(xmlres.XMLPrinter), os.Stdout)
 
 			if err != nil {
 				return err

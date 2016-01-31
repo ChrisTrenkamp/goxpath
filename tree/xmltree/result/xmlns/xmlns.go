@@ -11,11 +11,16 @@ import (
 //XMLNS is an implementation of XPRes for XML attributes
 type XMLNS struct {
 	xml.Attr
-	Parent tree.XPResEle
+	Parent tree.Elem
+}
+
+//GetToken returns the xml.Token representation of the node
+func (a *XMLNS) GetToken() xml.Token {
+	return a.Attr
 }
 
 //GetParent returns the parent node
-func (a *XMLNS) GetParent() tree.XPResEle {
+func (a *XMLNS) GetParent() tree.Elem {
 	return a.Parent
 }
 

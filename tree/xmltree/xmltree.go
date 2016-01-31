@@ -6,29 +6,16 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ChrisTrenkamp/goxpath/goxpath"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlattr"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlchd"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlcomm"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlele"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlpi"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/xmlxpres"
+	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/xmlres"
 )
 
-//Exec is like parser.Exec, but returns XMLXPRes for xml-printing on the XMLXPRes interface.
-func Exec(xp goxpath.XPathExec, t xmlxpres.XMLXPRes, ns map[string]string) []xmlxpres.XMLXPRes {
-	res := goxpath.Exec(xp, t, ns)
-
-	ret := make([]xmlxpres.XMLXPRes, len(res))
-	for i := range res {
-		ret[i] = res[i].(xmlxpres.XMLXPRes)
-	}
-
-	return ret
-}
-
 //MustParseXML is like ParseXML, but panics instead of returning an error.
-func MustParseXML(r io.Reader) xmlxpres.XMLXPRes {
+func MustParseXML(r io.Reader) xmlres.XMLNode {
 	ret, err := ParseXML(r)
 
 	if err != nil {
@@ -39,13 +26,13 @@ func MustParseXML(r io.Reader) xmlxpres.XMLXPRes {
 }
 
 //ParseXML creates an XMLTree structure from an io.Reader.
-func ParseXML(r io.Reader) (xmlxpres.XMLXPRes, error) {
+func ParseXML(r io.Reader) (xmlres.XMLNode, error) {
 	dec := xml.NewDecoder(r)
 	done := false
 	tree := &xmlele.XMLEle{
 		StartElement: xml.StartElement{},
 		NS:           make(map[xml.Name]string),
-		Children:     []xmlxpres.XMLXPRes{},
+		Children:     []xmlres.XMLNode{},
 		Parent:       nil,
 	}
 	pos := tree
@@ -77,7 +64,7 @@ func ParseXML(r io.Reader) (xmlxpres.XMLXPRes, error) {
 			ch := &xmlele.XMLEle{
 				StartElement: xml.CopyToken(ele).(xml.StartElement),
 				NS:           ns,
-				Children:     []xmlxpres.XMLXPRes{},
+				Children:     []xmlres.XMLNode{},
 				Parent:       pos,
 			}
 
@@ -130,19 +117,19 @@ func ParseXML(r io.Reader) (xmlxpres.XMLXPRes, error) {
 }
 
 //Marshal prints the result tree, r, in XML form to w.
-func Marshal(r xmlxpres.XMLXPRes, w io.Writer) error {
+func Marshal(r xmlres.XMLPrinter, w io.Writer) error {
 	return marshal(r, w)
 }
 
 //MarshalStr is like Marhal, but returns a string.
-func MarshalStr(r xmlxpres.XMLXPRes) (string, error) {
+func MarshalStr(r xmlres.XMLPrinter) (string, error) {
 	ret := bytes.NewBufferString("")
 	err := marshal(r, ret)
 
 	return ret.String(), err
 }
 
-func marshal(r xmlxpres.XMLXPRes, w io.Writer) error {
+func marshal(r xmlres.XMLPrinter, w io.Writer) error {
 	e := xml.NewEncoder(w)
 	err := r.XMLPrint(e)
 	if err != nil {
