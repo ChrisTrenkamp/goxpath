@@ -5,7 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/ChrisTrenkamp/goxpath/goxpath"
@@ -27,6 +29,9 @@ func (n *namespace) Set(value string) error {
 	(*n)[nsMap[0]] = nsMap[1]
 	return nil
 }
+
+var rec = flag.Bool("r", false, "Recursive")
+var retCode = 0
 
 func main() {
 	ns := make(namespace)
@@ -57,34 +62,64 @@ func main() {
 		}
 	}
 
-	hasErr := err == nil
-
 	for i := 1; i < flag.NArg(); i++ {
-		f, err := os.Open(flag.Arg(i))
-
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Could not open file: %s\n", flag.Arg(i))
-			hasErr = true
-			continue
-		}
-
-		ret, err := runXPath(xp, f, ns, *value)
-
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			hasErr = true
-		}
-
-		for _, j := range ret {
-			if len(flag.Args()) > 2 {
-				fmt.Printf("%s: ", flag.Arg(i))
-			}
-			fmt.Println(j)
-		}
+		procFile(flag.Arg(i), xp, ns, *value)
 	}
 
-	if hasErr {
-		os.Exit(1)
+	os.Exit(retCode)
+}
+
+func procFile(path string, x goxpath.XPathExec, ns namespace, value bool) {
+	f, err := os.Open(path)
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not open file: %s\n", path)
+		retCode = 1
+		return
+	}
+
+	fi, err := f.Stat()
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not open file: %s\n", path)
+		retCode = 1
+		return
+	}
+
+	if fi.IsDir() {
+		if !*rec {
+			fmt.Fprintf(os.Stderr, "%s: Is a directory\n", path)
+			return
+		}
+
+		list, err := ioutil.ReadDir(path)
+
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Could not read directory: %s\n", path)
+			retCode = 1
+			return
+		}
+
+		for _, i := range list {
+			procFile(filepath.Join(path, i.Name()), x, ns, value)
+		}
+
+		return
+	}
+
+	ret, err := runXPath(x, f, ns, value)
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s: %s\n", path, err.Error())
+		retCode = 1
+	}
+
+	for _, j := range ret {
+		if len(flag.Args()) > 2 || *rec {
+			fmt.Printf("%s: ", path)
+		}
+
+		fmt.Println(j)
 	}
 }
 
