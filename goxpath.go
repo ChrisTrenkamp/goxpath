@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -47,9 +48,12 @@ func main() {
 	}
 
 	if flag.NArg() == 1 {
-		err = runXPath(xp, os.Stdin, ns, *value)
+		ret, err := runXPath(xp, os.Stdin, ns, *value)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
+		}
+		for _, i := range ret {
+			fmt.Println(i)
 		}
 	}
 
@@ -64,11 +68,18 @@ func main() {
 			continue
 		}
 
-		err = runXPath(xp, f, ns, *value)
+		ret, err := runXPath(xp, f, ns, *value)
 
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			hasErr = true
+		}
+
+		for _, j := range ret {
+			if len(flag.Args()) > 2 {
+				fmt.Printf("%s: ", flag.Arg(i))
+			}
+			fmt.Println(j)
 		}
 	}
 
@@ -77,30 +88,35 @@ func main() {
 	}
 }
 
-func runXPath(x goxpath.XPathExec, r io.Reader, ns namespace, value bool) error {
+func runXPath(x goxpath.XPathExec, r io.Reader, ns namespace, value bool) ([]string, error) {
 	t, err := xmltree.ParseXML(r)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	res, err := goxpath.Exec(x, t, ns)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
+
+	ret := make([]string, len(res))
 
 	for i := range res {
 		if _, ok := res[i].(xmlres.XMLPrinter); !ok || value {
-			fmt.Println(res[i])
+			ret[i] = res[i].String()
 		} else {
-			err = xmltree.Marshal(res[i].(xmlres.XMLPrinter), os.Stdout)
+			buf := bytes.Buffer{}
+			err = xmltree.Marshal(res[i].(xmlres.XMLPrinter), &buf)
 
 			if err != nil {
-				return err
+				return nil, err
 			}
+
+			ret[i] = buf.String()
 		}
 	}
 
-	return nil
+	return ret, nil
 }
