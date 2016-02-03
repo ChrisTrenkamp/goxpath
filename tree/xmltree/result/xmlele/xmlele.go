@@ -8,16 +8,18 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlattr"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlchd"
+	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlns"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/xmlres"
 )
 
 //XMLEle is an implementation of XPRes for XML elements
 type XMLEle struct {
 	xml.StartElement
-	NS       map[xml.Name]string
+	NS       []*xmlns.XMLNS
 	Attrs    []*xmlattr.XMLAttr
 	Children []xmlres.XMLNode
 	Parent   xmlres.XMLElem
+	tree.NodePos
 }
 
 //GetToken returns the xml.Token representation of the node
@@ -38,6 +40,18 @@ func (x *XMLEle) GetChildren() []tree.Node {
 		ret[i] = x.Children[i]
 	}
 
+	return ret
+}
+
+//GetNSAttrs returns all namespaces and attributes of the element
+func (x *XMLEle) GetNSAttrs() []tree.Node {
+	ret := make([]tree.Node, 0, len(x.NS)+len(x.Attrs))
+	for i := range x.NS {
+		ret = append(ret, x.NS[i])
+	}
+	for i := range x.Attrs {
+		ret = append(ret, x.Attrs[i])
+	}
 	return ret
 }
 

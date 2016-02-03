@@ -12,34 +12,35 @@ import (
 type XMLNS struct {
 	xml.Attr
 	Parent tree.Elem
+	tree.NodePos
 }
 
 //GetToken returns the xml.Token representation of the node
-func (a *XMLNS) GetToken() xml.Token {
-	return a.Attr
+func (ns *XMLNS) GetToken() xml.Token {
+	return ns.Attr
 }
 
 //GetParent returns the parent node
-func (a *XMLNS) GetParent() tree.Elem {
-	return a.Parent
+func (ns *XMLNS) GetParent() tree.Elem {
+	return ns.Parent
 }
 
 //String returns the string value of the namespace
-func (a *XMLNS) String() string {
-	return a.Attr.Value
+func (ns *XMLNS) String() string {
+	return ns.Attr.Value
 }
 
 //XMLPrint prints the namespace as a processing-instruction.
-func (a *XMLNS) XMLPrint(e *xml.Encoder) error {
+func (ns *XMLNS) XMLPrint(e *xml.Encoder) error {
 	pi := xml.ProcInst{
 		Target: "namespace",
-		Inst:   ([]byte)(a.Attr.Value),
+		Inst:   ([]byte)(ns.Attr.Value),
 	}
 	return e.EncodeToken(pi)
 }
 
 //EvalPath evaluates the XPath path instruction on the element
-func (a *XMLNS) EvalPath(p *pathexpr.PathExpr) bool {
+func (ns *XMLNS) EvalPath(p *pathexpr.PathExpr) bool {
 	if p.NodeType == "" {
 		if p.Name.Space != "" && p.Name.Space != "*" {
 			return false
@@ -49,7 +50,7 @@ func (a *XMLNS) EvalPath(p *pathexpr.PathExpr) bool {
 			return true
 		}
 
-		if p.Name.Local == a.Attr.Name.Local {
+		if p.Name.Local == ns.Attr.Name.Local {
 			return true
 		}
 	} else {

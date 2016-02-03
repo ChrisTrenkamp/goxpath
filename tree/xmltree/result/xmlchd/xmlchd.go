@@ -12,6 +12,7 @@ import (
 type XMLChd struct {
 	xml.CharData
 	Parent tree.Elem
+	tree.NodePos
 }
 
 //GetToken returns the xml.Token representation of the node

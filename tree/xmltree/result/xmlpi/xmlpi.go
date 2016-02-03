@@ -12,6 +12,7 @@ import (
 type XMLPI struct {
 	xml.ProcInst
 	Parent tree.Elem
+	tree.NodePos
 }
 
 //GetToken returns the xml.Token representation of the node
@@ -36,8 +37,8 @@ func (pi *XMLPI) XMLPrint(e *xml.Encoder) error {
 
 //EvalPath evaluates the XPath path instruction on the processing-instruction
 func (pi *XMLPI) EvalPath(p *pathexpr.PathExpr) bool {
-	if p.ProcInstLit != "" && p.NodeType == xconst.NodeTypeProcInst {
-		return p.ProcInstLit == pi.ProcInst.Target
+	if p.NodeType == xconst.NodeTypeProcInst {
+		return true
 	}
 
 	if p.NodeType == xconst.NodeTypeProcInst || p.NodeType == xconst.NodeTypeNode {

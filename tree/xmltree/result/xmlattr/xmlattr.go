@@ -12,6 +12,7 @@ import (
 type XMLAttr struct {
 	xml.Attr
 	Parent tree.Elem
+	tree.NodePos
 }
 
 //GetToken returns the xml.Token representation of the node

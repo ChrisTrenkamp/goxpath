@@ -1,13 +1,11 @@
 package findutil
 
 import (
-	"encoding/xml"
+	"sort"
 
 	"github.com/ChrisTrenkamp/goxpath/goxpath/pathexpr"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/xconst"
 	"github.com/ChrisTrenkamp/goxpath/tree"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlele"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlns"
 )
 
 type findFunc func(tree.Node, *pathexpr.PathExpr, *[]tree.Node)
@@ -28,6 +26,12 @@ var findMap = map[string]findFunc{
 	xconst.AxisSelf:             findSelf,
 }
 
+type nodeSort []tree.Node
+
+func (ns nodeSort) Len() int           { return len(ns) }
+func (ns nodeSort) Swap(i, j int)      { ns[i], ns[j] = ns[j], ns[i] }
+func (ns nodeSort) Less(i, j int) bool { return ns[i].Pos() < ns[j].Pos() }
+
 //Find finds nodes based on the pathexpr.PathExpr
 func Find(x tree.Node, p pathexpr.PathExpr) []tree.Node {
 	ret := []tree.Node{}
@@ -39,6 +43,8 @@ func Find(x tree.Node, p pathexpr.PathExpr) []tree.Node {
 
 	f := findMap[p.Axis]
 	f(x, &p, &ret)
+
+	sort.Sort(nodeSort(ret))
 
 	return ret
 }
@@ -58,10 +64,10 @@ func findAncestorOrSelf(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 }
 
 func findAttribute(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if ele, ok := x.(*xmlele.XMLEle); ok {
-		for i := range ele.Attrs {
-			if ele.Attrs[i].EvalPath(p) {
-				*ret = append(*ret, ele.Attrs[i])
+	if ele, ok := x.(tree.Elem); ok {
+		for _, i := range ele.GetNSAttrs() {
+			if i.EvalPath(p) {
+				*ret = append(*ret, i)
 			}
 		}
 	}
@@ -131,17 +137,7 @@ func findFollowingSibling(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 }
 
 func findNamespace(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if ele, ok := x.(*xmlele.XMLEle); ok {
-		for k, v := range ele.NS {
-			ns := &xmlns.XMLNS{
-				Attr:   xml.Attr{Name: k, Value: v},
-				Parent: ele,
-			}
-			if ns.EvalPath(p) {
-				*ret = append(*ret, ns)
-			}
-		}
-	}
+	findAttribute(x, p, ret)
 }
 
 func findParent(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {

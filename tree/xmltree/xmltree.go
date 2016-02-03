@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlattr"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlchd"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlcomm"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlele"
+	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlns"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlpi"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/xmlres"
 )
@@ -29,15 +31,17 @@ func MustParseXML(r io.Reader) xmlres.XMLNode {
 func ParseXML(r io.Reader) (xmlres.XMLNode, error) {
 	dec := xml.NewDecoder(r)
 	done := false
-	tree := &xmlele.XMLEle{
+	xmlTree := &xmlele.XMLEle{
 		StartElement: xml.StartElement{},
-		NS:           make(map[xml.Name]string),
+		NS:           []*xmlns.XMLNS{},
+		Attrs:        []*xmlattr.XMLAttr{},
 		Children:     []xmlres.XMLNode{},
 		Parent:       nil,
 	}
-	pos := tree
+	pos := xmlTree
+	ordrPos := 1
 
-	tree.Parent = tree
+	xmlTree.Parent = xmlTree
 
 	for !done {
 		t, err := dec.Token()
@@ -55,18 +59,19 @@ func ParseXML(r io.Reader) (xmlres.XMLNode, error) {
 			ele := t.(xml.StartElement)
 			ns := make(map[xml.Name]string)
 
-			for k, v := range pos.NS {
-				ns[k] = v
+			for _, i := range pos.NS {
+				ns[i.Attr.Name] = i.Attr.Value
 			}
 
 			ns[xml.Name{Space: "", Local: "xml"}] = "http://www.w3.org/XML/1998/namespace"
 
 			ch := &xmlele.XMLEle{
 				StartElement: xml.CopyToken(ele).(xml.StartElement),
-				NS:           ns,
 				Children:     []xmlres.XMLNode{},
 				Parent:       pos,
+				NodePos:      tree.NodePos(ordrPos),
 			}
+			ordrPos++
 
 			attrs := make([]*xmlattr.XMLAttr, 0, len(ele.Attr))
 
@@ -85,20 +90,36 @@ func ParseXML(r io.Reader) (xmlres.XMLNode, error) {
 				}
 			}
 
+			ch.NS = make([]*xmlns.XMLNS, 0, len(ns))
+
+			for k, v := range ns {
+				ch.NS = append(ch.NS, &xmlns.XMLNS{Attr: xml.Attr{Name: k, Value: v}, Parent: ch, NodePos: tree.NodePos(ordrPos)})
+				ordrPos++
+			}
+
 			ch.Attrs = attrs
+
+			for _, i := range ch.Attrs {
+				i.NodePos = tree.NodePos(ordrPos)
+				ordrPos++
+			}
+
 			pos.Children = append(pos.Children, ch)
 			pos = ch
 
 		case xml.CharData:
-			ch := &xmlchd.XMLChd{CharData: xml.CopyToken(t).(xml.CharData), Parent: pos}
+			ch := &xmlchd.XMLChd{CharData: xml.CopyToken(t).(xml.CharData), Parent: pos, NodePos: tree.NodePos(ordrPos)}
 			pos.Children = append(pos.Children, ch)
+			ordrPos++
 		case xml.Comment:
-			ch := &xmlcomm.XMLComm{Comment: xml.CopyToken(t).(xml.Comment), Parent: pos}
+			ch := &xmlcomm.XMLComm{Comment: xml.CopyToken(t).(xml.Comment), Parent: pos, NodePos: tree.NodePos(ordrPos)}
 			pos.Children = append(pos.Children, ch)
+			ordrPos++
 		case xml.ProcInst:
 			if pos.Parent != pos {
-				ch := &xmlpi.XMLPI{ProcInst: xml.CopyToken(t).(xml.ProcInst), Parent: pos}
+				ch := &xmlpi.XMLPI{ProcInst: xml.CopyToken(t).(xml.ProcInst), Parent: pos, NodePos: tree.NodePos(ordrPos)}
 				pos.Children = append(pos.Children, ch)
+				ordrPos++
 			}
 		case xml.EndElement:
 			if pos.Parent == pos {
@@ -113,7 +134,7 @@ func ParseXML(r io.Reader) (xmlres.XMLNode, error) {
 		}
 	}
 
-	return tree, nil
+	return xmlTree, nil
 }
 
 //Marshal prints the result tree, r, in XML form to w.

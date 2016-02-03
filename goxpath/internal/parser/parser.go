@@ -7,7 +7,7 @@ import (
 
 	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/lexer"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/parser/findutil"
-	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/parser/fns"
+	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/parser/intfns"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/pathexpr"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/xconst"
 	"github.com/ChrisTrenkamp/goxpath/tree"
@@ -335,11 +335,15 @@ func argument(val string) (expTkns, XPExec) {
 
 func endFunction(val string) (expTkns, XPExec) {
 	ret := func(p *Parser) error {
-		if fn, ok := fns.BuiltIn[p.fnName]; ok {
-			filt, err := fn(p.filter, p.fnArgs...)
+		if fn, ok := intfns.BuiltIn[p.fnName]; ok {
+			filt, err := fn.Call(p.filter, p.fnArgs...)
 
 			if err != nil {
 				return err
+			}
+
+			if filt == nil {
+				filt = []tree.Res{}
 			}
 
 			p.filter = filt
