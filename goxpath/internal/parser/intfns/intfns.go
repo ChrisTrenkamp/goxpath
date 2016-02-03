@@ -20,7 +20,11 @@ var BuiltIn = map[string]xpfn.XPFn{
 }
 
 func last(arg []tree.Res) ([]tree.Res, error) {
-	return []tree.Res{numlit.NumLit(len(arg))}, nil
+	if len(arg) == 0 {
+		return nil, nil
+	}
+
+	return []tree.Res{arg[len(arg)-1]}, nil
 }
 
 func count(arg []tree.Res) ([]tree.Res, error) {
