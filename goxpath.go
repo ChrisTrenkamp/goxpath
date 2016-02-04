@@ -63,13 +63,13 @@ func main() {
 	}
 
 	for i := 1; i < flag.NArg(); i++ {
-		procFile(flag.Arg(i), xp, ns, *value)
+		procPath(flag.Arg(i), xp, ns, *value)
 	}
 
 	os.Exit(retCode)
 }
 
-func procFile(path string, x goxpath.XPathExec, ns namespace, value bool) {
+func procPath(path string, x goxpath.XPathExec, ns namespace, value bool) {
 	f, err := os.Open(path)
 
 	if err != nil {
@@ -87,23 +87,7 @@ func procFile(path string, x goxpath.XPathExec, ns namespace, value bool) {
 	}
 
 	if fi.IsDir() {
-		if !*rec {
-			fmt.Fprintf(os.Stderr, "%s: Is a directory\n", path)
-			return
-		}
-
-		list, err := ioutil.ReadDir(path)
-
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Could not read directory: %s\n", path)
-			retCode = 1
-			return
-		}
-
-		for _, i := range list {
-			procFile(filepath.Join(path, i.Name()), x, ns, value)
-		}
-
+		procDir(path, x, ns, value)
 		return
 	}
 
@@ -120,6 +104,25 @@ func procFile(path string, x goxpath.XPathExec, ns namespace, value bool) {
 		}
 
 		fmt.Println(j)
+	}
+}
+
+func procDir(path string, x goxpath.XPathExec, ns namespace, value bool) {
+	if !*rec {
+		fmt.Fprintf(os.Stderr, "%s: Is a directory\n", path)
+		return
+	}
+
+	list, err := ioutil.ReadDir(path)
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not read directory: %s\n", path)
+		retCode = 1
+		return
+	}
+
+	for _, i := range list {
+		procPath(filepath.Join(path, i.Name()), x, ns, value)
 	}
 }
 

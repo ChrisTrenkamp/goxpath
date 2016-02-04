@@ -98,27 +98,31 @@ func (x *XMLEle) XMLPrint(e *xml.Encoder) error {
 //EvalPath evaluates the XPath path instruction on the element
 func (x *XMLEle) EvalPath(p *pathexpr.PathExpr) bool {
 	if p.NodeType == "" {
-		if p.Name.Local == "*" && p.Name.Space == "" {
-			return true
-		}
+		return x.checkNameAndSpace(p)
+	}
 
-		if p.Name.Space != "*" {
-			if x.StartElement.Name.Space != p.NS[p.Name.Space] {
-				return false
-			}
-		}
+	if p.NodeType == xconst.NodeTypeNode {
+		return true
+	}
 
-		if p.Name.Local == "*" && p.Axis != xconst.AxisAttribute && p.Axis != xconst.AxisNamespace {
-			return true
-		}
+	return false
+}
 
-		if p.Name.Local == x.StartElement.Name.Local {
-			return true
-		}
-	} else {
-		if p.NodeType == xconst.NodeTypeNode {
-			return true
-		}
+func (x *XMLEle) checkNameAndSpace(p *pathexpr.PathExpr) bool {
+	if p.Name.Local == "*" && p.Name.Space == "" {
+		return true
+	}
+
+	if p.Name.Space != "*" && x.StartElement.Name.Space != p.NS[p.Name.Space] {
+		return false
+	}
+
+	if p.Name.Local == "*" && p.Axis != xconst.AxisAttribute && p.Axis != xconst.AxisNamespace {
+		return true
+	}
+
+	if p.Name.Local == x.StartElement.Name.Local {
+		return true
 	}
 
 	return false
