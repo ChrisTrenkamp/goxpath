@@ -25,17 +25,17 @@ func TestNumLit(t *testing.T) {
 func TestLast(t *testing.T) {
 	p := `/p1/*/last()`
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2/><p3/><p4/></p1>`
-	exp := []string{"<p4></p4>"}
-	execPath(p, x, exp, nil, t)
+	exp := []string{"3"}
+	execVal(p, x, exp, nil, t)
 	p = `/p1/p5/last()`
-	exp = []string{}
-	execPath(p, x, exp, nil, t)
+	exp = []string{"0"}
+	execVal(p, x, exp, nil, t)
 }
 
 func TestCount(t *testing.T) {
-	p := `/p1/*/count()`
-	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2/><p3/><p4/></p1>`
-	exp := []string{"3"}
+	p := `count(/p1)`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2><?test?></p2><p3/><p4/></p1>`
+	exp := []string{"5"}
 	execVal(p, x, exp, nil, t)
 }
 

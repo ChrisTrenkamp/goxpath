@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/ChrisTrenkamp/goxpath/goxpath/ctxpos"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/lexer"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/parser/findutil"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/parser/intfns"
@@ -24,11 +25,11 @@ type Parser struct {
 	ns     map[string]string
 	ctx    tree.Node
 	pExpr  pathexpr.PathExpr
-	filter []tree.Res
+	filter []ctxpos.CtxPos
 	stack  *Parser
 	parent *Parser
 	fnName string
-	fnArgs [][]tree.Res
+	fnArgs [][]ctxpos.CtxPos
 }
 
 //XPExec is an instruction that operates on XPath trees
@@ -62,7 +63,7 @@ func (ns nodeSort) Len() int           { return len(ns) }
 func (ns nodeSort) Swap(i, j int)      { ns[i], ns[j] = ns[j], ns[i] }
 func (ns nodeSort) Less(i, j int) bool { return ns[i].(tree.Node).Pos() < ns[j].(tree.Node).Pos() }
 
-func (p *Parser) exec() ([]tree.Res, error) {
+func (p *Parser) exec() ([]ctxpos.CtxPos, error) {
 	for p.exNum < len(*p.xpath) {
 		err := (*p.xpath)[p.exNum](p)
 		if err != nil {
@@ -99,7 +100,7 @@ func (p *Parser) pop() {
 
 //Exec executes the XPath expression, xp, against the tree, t, with the
 //namespace mappings, ns.
-func Exec(xp []XPExec, t tree.Node, ns map[string]string) ([]tree.Res, error) {
+func Exec(xp []XPExec, t tree.Node, ns map[string]string) ([]ctxpos.CtxPos, error) {
 	if ns == nil {
 		ns = make(map[string]string)
 	}
@@ -119,17 +120,6 @@ func Exec(xp []XPExec, t tree.Node, ns map[string]string) ([]tree.Res, error) {
 	}
 
 	return p.exec()
-}
-
-//MustParse is like Parse, but panics instead of returning an error.
-func MustParse(xp string) []XPExec {
-	ret, err := Parse(xp)
-
-	if err != nil {
-		panic(err)
-	}
-
-	return ret
 }
 
 //Parse parses the XPath expression, xp, returning an XPath executor.
@@ -292,16 +282,16 @@ func procInstLit(val string) (expTkns, XPExec) {
 	ret := func(p *Parser) error {
 		filt := []tree.Res{}
 		for i := range p.filter {
-			if tok, tOk := p.filter[i].(tree.Node); tOk {
+			if tok, tOk := p.filter[i].Res.(tree.Node); tOk {
 				if proc, pOk := tok.GetToken().(xml.ProcInst); pOk {
 					if proc.Target == val {
-						filt = append(filt, p.filter[i])
+						filt = append(filt, p.filter[i].Res)
 					}
 				}
 			}
 		}
 
-		p.filter = filt
+		p.filter = ctxpos.CreateCtxPos(filt)
 		return nil
 	}
 
@@ -320,7 +310,7 @@ func endPath(val string) (expTkns, XPExec) {
 func function(val string) (expTkns, XPExec) {
 	ret := func(p *Parser) error {
 		p.fnName = val
-		p.fnArgs = make([][]tree.Res, 0)
+		p.fnArgs = make([][]ctxpos.CtxPos, 0)
 		return nil
 	}
 
@@ -357,7 +347,7 @@ func endFunction(val string) (expTkns, XPExec) {
 				filt = []tree.Res{}
 			}
 
-			p.filter = filt
+			p.filter = ctxpos.CreateCtxPos(filt)
 			return nil
 		}
 
@@ -368,7 +358,7 @@ func endFunction(val string) (expTkns, XPExec) {
 
 func strLit(val string) (expTkns, XPExec) {
 	ret := func(p *Parser) error {
-		p.filter = []tree.Res{strlit.StrLit(val)}
+		p.filter = ctxpos.CreateCtxPos([]tree.Res{strlit.StrLit(val)})
 		p.pop()
 		return nil
 	}
@@ -381,7 +371,7 @@ func numLit(val string) (expTkns, XPExec) {
 		if err != nil {
 			return err
 		}
-		p.filter = []tree.Res{numlit.NumLit(f)}
+		p.filter = ctxpos.CreateCtxPos([]tree.Res{numlit.NumLit(f)})
 		p.pop()
 		return nil
 	}
@@ -410,13 +400,13 @@ func (p *Parser) find() error {
 	}
 
 	if p.filter == nil {
-		p.filter = []tree.Res{p.ctx}
+		p.filter = ctxpos.CreateCtxPos([]tree.Res{p.ctx})
 	}
 
 	p.pExpr.NS = p.ns
 
 	for _, i := range p.filter {
-		if node, ok := i.(tree.Node); ok {
+		if node, ok := i.Res.(tree.Node); ok {
 			for _, j := range findutil.Find(node, p.pExpr) {
 				vals = append(vals, j)
 			}
@@ -425,7 +415,7 @@ func (p *Parser) find() error {
 		}
 	}
 
-	p.filter = remDupsAndSort(vals)
+	p.filter = ctxpos.CreateCtxPos(remDupsAndSort(vals))
 	p.pExpr = pathexpr.PathExpr{}
 
 	return nil

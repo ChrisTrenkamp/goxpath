@@ -1,8 +1,11 @@
 #!/bin/bash
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 go get github.com/ChrisTrenkamp/goxpath
-go test >/dev/null
-if [ $? = 1 ]; then
+if [ $? != 0 ]; then
+	exit 1
+fi
+go test >/dev/null 2>&1
+if [ $? != 0 ]; then
 	go test
 	exit 1
 fi

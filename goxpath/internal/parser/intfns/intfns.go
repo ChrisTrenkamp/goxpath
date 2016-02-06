@@ -11,7 +11,7 @@ import (
 var BuiltIn = map[string]xpfn.XPFn{
 	//Node set functions
 	"last":          noarg.Wrap{Fn: last},
-	"count":         noarg.Wrap{Fn: count},
+	"count":         arg.Wrap{Fn: count, NArgs: 1},
 	"local-name":    optarg.Wrap{Fn: localName},
 	"namespace-uri": optarg.Wrap{Fn: namespaceURI},
 	"name":          optarg.Wrap{Fn: name},

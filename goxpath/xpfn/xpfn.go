@@ -1,8 +1,11 @@
 package xpfn
 
-import "github.com/ChrisTrenkamp/goxpath/tree"
+import (
+	"github.com/ChrisTrenkamp/goxpath/goxpath/ctxpos"
+	"github.com/ChrisTrenkamp/goxpath/tree"
+)
 
 //XPFn interfaces XPath function calls with Go
 type XPFn interface {
-	Call(ctx []tree.Res, args ...[]tree.Res) ([]tree.Res, error)
+	Call(ctx []ctxpos.CtxPos, args ...[]ctxpos.CtxPos) ([]tree.Res, error)
 }
