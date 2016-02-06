@@ -14,6 +14,15 @@ func Exec(xp XPathExec, t tree.Node, ns map[string]string) ([]tree.Res, error) {
 	return parser.Exec(xp, t, ns)
 }
 
+//MustExec is like Exec, but panics instead of returning an error.
+func MustExec(xp XPathExec, t tree.Node, ns map[string]string) []tree.Res {
+	res, err := parser.Exec(xp, t, ns)
+	if err != nil {
+		panic(err)
+	}
+	return res
+}
+
 //MustParse is like Parse, but panics instead of returning an error.
 func MustParse(xp string) XPathExec {
 	return parser.MustParse(xp)
