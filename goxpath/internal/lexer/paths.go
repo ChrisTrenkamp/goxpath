@@ -171,7 +171,6 @@ func getNextPathState(l *Lexer, state XItemType) stateFn {
 
 	l.skipWS(true)
 	if string(l.peek()) == "/" && !isMultiPart {
-		l.emit(XItemEndPath)
 		l.skip(1)
 		if string(l.peek()) == "/" {
 			l.skip(1)

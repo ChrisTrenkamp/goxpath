@@ -48,14 +48,15 @@ func main() {
 	xp, err := goxpath.Parse(flag.Arg(0))
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
+		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
 		os.Exit(1)
 	}
 
 	if flag.NArg() == 1 {
 		ret, err := runXPath(xp, os.Stdin, ns, *value)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
+			fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+			os.Exit(1)
 		}
 		for _, i := range ret {
 			fmt.Println(i)
@@ -110,6 +111,7 @@ func procPath(path string, x goxpath.XPathExec, ns namespace, value bool) {
 func procDir(path string, x goxpath.XPathExec, ns namespace, value bool) {
 	if !*rec {
 		fmt.Fprintf(os.Stderr, "%s: Is a directory\n", path)
+		retCode = 1
 		return
 	}
 

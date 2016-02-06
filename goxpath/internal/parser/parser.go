@@ -3,6 +3,7 @@ package parser
 import (
 	"encoding/xml"
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/lexer"
@@ -54,6 +55,12 @@ var parseMap = map[lexer.XItemType]lexFn{
 	lexer.XItemStrLit:         strLit,
 	lexer.XItemNumLit:         numLit,
 }
+
+type nodeSort []tree.Res
+
+func (ns nodeSort) Len() int           { return len(ns) }
+func (ns nodeSort) Swap(i, j int)      { ns[i], ns[j] = ns[j], ns[i] }
+func (ns nodeSort) Less(i, j int) bool { return ns[i].(tree.Node).Pos() < ns[j].(tree.Node).Pos() }
 
 func (p *Parser) exec() ([]tree.Res, error) {
 	for p.exNum < len(*p.xpath) {
@@ -174,6 +181,10 @@ func eval(typ lexer.XItemType, val string, tkns expTkns) (expTkns, XPExec, error
 	return expTkns{}, nil, fmt.Errorf("Unsupported token emitted: %s", string(typ))
 }
 
+func nextPathToks() expTkns {
+	return expTkns{lexer.XItemAbsLocPath, lexer.XItemAbbrAbsLocPath, lexer.XItemAbbrRelLocPath, lexer.XItemRelLocPath, lexer.XItemPredicate, lexer.XItemEndPath}
+}
+
 func beginExprToks() expTkns {
 	return expTkns{lexer.XItemAbsLocPath, lexer.XItemAbbrAbsLocPath, lexer.XItemAbbrRelLocPath, lexer.XItemRelLocPath, lexer.XItemStrLit, lexer.XItemNumLit}
 }
@@ -259,7 +270,7 @@ func qName(val string) (expTkns, XPExec) {
 		return p.find()
 	}
 
-	return expTkns{lexer.XItemPredicate, lexer.XItemEndPath}, ret
+	return nextPathToks(), ret
 }
 
 func nodeType(val string) (expTkns, XPExec) {
@@ -268,7 +279,7 @@ func nodeType(val string) (expTkns, XPExec) {
 		return p.find()
 	}
 
-	ret := expTkns{lexer.XItemPredicate, lexer.XItemEndPath}
+	ret := nextPathToks()
 
 	if val == xconst.NodeTypeProcInst {
 		ret = append(ret, lexer.XItemProcLit)
@@ -294,7 +305,7 @@ func procInstLit(val string) (expTkns, XPExec) {
 		return nil
 	}
 
-	return expTkns{lexer.XItemPredicate, lexer.XItemEndPath}, ret
+	return nextPathToks(), ret
 }
 
 func endPath(val string) (expTkns, XPExec) {
@@ -350,7 +361,7 @@ func endFunction(val string) (expTkns, XPExec) {
 			return nil
 		}
 
-		return fmt.Errorf("Unknown function: '%s'\n", p.fnName)
+		return fmt.Errorf("Unknown function: '%s'", p.fnName)
 	}
 	return nil, ret
 }
@@ -358,6 +369,7 @@ func endFunction(val string) (expTkns, XPExec) {
 func strLit(val string) (expTkns, XPExec) {
 	ret := func(p *Parser) error {
 		p.filter = []tree.Res{strlit.StrLit(val)}
+		p.pop()
 		return nil
 	}
 	return nil, ret
@@ -370,6 +382,7 @@ func numLit(val string) (expTkns, XPExec) {
 			return err
 		}
 		p.filter = []tree.Res{numlit.NumLit(f)}
+		p.pop()
 		return nil
 	}
 	return nil, ret
@@ -412,8 +425,24 @@ func (p *Parser) find() error {
 		}
 	}
 
-	p.filter = vals
+	p.filter = remDupsAndSort(vals)
 	p.pExpr = pathexpr.PathExpr{}
 
 	return nil
+}
+
+func remDupsAndSort(filt []tree.Res) []tree.Res {
+	dupFilt := make(map[tree.Res]int)
+
+	for _, i := range filt {
+		dupFilt[i] = 0
+	}
+
+	filt = make([]tree.Res, 0, len(dupFilt))
+	for i := range dupFilt {
+		filt = append(filt, i)
+	}
+
+	sort.Sort(nodeSort(filt))
+	return filt
 }

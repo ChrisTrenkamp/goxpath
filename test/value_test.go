@@ -34,7 +34,7 @@ func execVal(xp, x string, exp []string, ns map[string]string, t *testing.T) {
 			}
 		}
 		if !valid {
-			t.Error("Incorrect result:" + r)
+			t.Error("Incorrect result:'" + r + "' from XPath expr: '" + xp + "'")
 			return
 		}
 	}

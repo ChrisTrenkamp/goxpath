@@ -1,8 +1,6 @@
 package findutil
 
 import (
-	"sort"
-
 	"github.com/ChrisTrenkamp/goxpath/goxpath/pathexpr"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/xconst"
 	"github.com/ChrisTrenkamp/goxpath/tree"
@@ -26,12 +24,6 @@ var findMap = map[string]findFunc{
 	xconst.AxisSelf:             findSelf,
 }
 
-type nodeSort []tree.Node
-
-func (ns nodeSort) Len() int           { return len(ns) }
-func (ns nodeSort) Swap(i, j int)      { ns[i], ns[j] = ns[j], ns[i] }
-func (ns nodeSort) Less(i, j int) bool { return ns[i].Pos() < ns[j].Pos() }
-
 //Find finds nodes based on the pathexpr.PathExpr
 func Find(x tree.Node, p pathexpr.PathExpr) []tree.Node {
 	ret := []tree.Node{}
@@ -43,8 +35,6 @@ func Find(x tree.Node, p pathexpr.PathExpr) []tree.Node {
 
 	f := findMap[p.Axis]
 	f(x, &p, &ret)
-
-	sort.Sort(nodeSort(ret))
 
 	return ret
 }
