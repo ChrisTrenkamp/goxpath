@@ -216,6 +216,7 @@ func getPred(l *Lexer) error {
 	}
 	l.skip(1)
 	l.emit(XItemEndPredicate)
+	l.skipWS(true)
 
 	return nil
 }
