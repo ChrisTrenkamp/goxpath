@@ -22,7 +22,7 @@ func count(c xpfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
 	arg := args[0]
 
 	if len(arg) == 0 {
-		return nil, nil
+		return []tree.Res{numlit.NumLit(0)}, nil
 	}
 
 	if _, ok := arg[0].(tree.Node); !ok {
