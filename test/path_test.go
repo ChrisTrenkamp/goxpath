@@ -424,3 +424,24 @@ func TestWildcardLocalAttr(t *testing.T) {
 	exp := []string{`<?attribute attr="test" xmlns="http://foo.bar"?>`, `<?attribute bar="foobar" xmlns="http://foo.bar"?>`}
 	execPath(p, x, exp, map[string]string{"test": "http://test", "foo": "http://foo.bar"}, t)
 }
+
+func TestPredicate1(t *testing.T) {
+	p := `/p1/p2[p3]`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2/><p2><p3/></p2></p1>`
+	exp := []string{`<p2><p3></p3></p2>`}
+	execPath(p, x, exp, nil, t)
+}
+
+func TestPredicate2(t *testing.T) {
+	p := `/p1/p2[2]`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2/><p2><p3/></p2><p2><p4/></p2></p1>`
+	exp := []string{`<p2><p3></p3></p2>`}
+	execPath(p, x, exp, nil, t)
+}
+
+func TestPredicate3(t *testing.T) {
+	p := `/p1/p2[last()]/p3`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2/><p2/><p2><p3 foo="bar"/></p2></p1>`
+	exp := []string{`<p3 foo="bar"></p3>`}
+	execPath(p, x, exp, nil, t)
+}

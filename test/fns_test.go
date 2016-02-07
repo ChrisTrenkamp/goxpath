@@ -30,6 +30,9 @@ func TestLast(t *testing.T) {
 	p = `/p1/p5/last()`
 	exp = []string{"0"}
 	execVal(p, x, exp, nil, t)
+	p = `/p1/last()`
+	exp = []string{"1"}
+	execVal(p, x, exp, nil, t)
 }
 
 func TestCount(t *testing.T) {

@@ -170,6 +170,13 @@ func getNextPathState(l *Lexer, state XItemType) stateFn {
 	isMultiPart := state == XItemAxis || state == XItemAbbrAxis || state == XItemNCName
 
 	l.skipWS(true)
+
+	if string(l.peek()) == "[" {
+		if err := getPred(l); err != nil {
+			return l.errorf(err.Error())
+		}
+	}
+
 	if string(l.peek()) == "/" && !isMultiPart {
 		l.skip(1)
 		if string(l.peek()) == "/" {
@@ -187,5 +194,28 @@ func getNextPathState(l *Lexer, state XItemType) stateFn {
 	}
 
 	l.emit(XItemEndPath)
+	return nil
+}
+
+func getPred(l *Lexer) error {
+	l.emit(XItemPredicate)
+	l.skip(1)
+	l.skipWS(true)
+
+	if string(l.peek()) == "]" {
+		return fmt.Errorf("Missing content in predicate.")
+	}
+
+	for state := startState; state != nil; {
+		state = state(l)
+	}
+
+	l.skipWS(true)
+	if string(l.peek()) != "]" {
+		return fmt.Errorf("Missing ] at end of predicate.")
+	}
+	l.skip(1)
+	l.emit(XItemEndPredicate)
+
 	return nil
 }

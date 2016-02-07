@@ -34,14 +34,16 @@ const (
 	XItemNodeType = "Node type"
 	//XItemProcLit marks a processing-instruction literal
 	XItemProcLit = "processing-instruction"
-	//XItemPredicate marks a predicate in an axis
-	XItemPredicate = "predicate"
 	//XItemFunction marks a function call
 	XItemFunction = "function"
 	//XItemArgument marks a function argument
 	XItemArgument = "function argument"
 	//XItemEndFunction marks the end of a function
-	XItemEndFunction = "end of function argument"
+	XItemEndFunction = "end of function"
+	//XItemPredicate marks a predicate in an axis
+	XItemPredicate = "predicate"
+	//XItemEndPredicate marks a predicate in an axis
+	XItemEndPredicate = "end of predicate"
 	//XItemStrLit marks a string literal
 	XItemStrLit = "string literal"
 	//XItemNumLit marks a numeric literal

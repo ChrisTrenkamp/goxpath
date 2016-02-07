@@ -6,30 +6,34 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/ChrisTrenkamp/goxpath/goxpath/ctxpos"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/lexer"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/parser/findutil"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/parser/intfns"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/pathexpr"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/xconst"
+	"github.com/ChrisTrenkamp/goxpath/goxpath/xpfn"
 	"github.com/ChrisTrenkamp/goxpath/tree"
+	"github.com/ChrisTrenkamp/goxpath/tree/literals/boollit"
 	"github.com/ChrisTrenkamp/goxpath/tree/literals/numlit"
 	"github.com/ChrisTrenkamp/goxpath/tree/literals/strlit"
 )
 
 //Parser parses an XML document and generates output from the Lexer
 type Parser struct {
-	xpath  *[]XPExec
-	tree   tree.Node
-	exNum  int
-	ns     map[string]string
-	ctx    tree.Node
-	pExpr  pathexpr.PathExpr
-	filter []ctxpos.CtxPos
-	stack  *Parser
-	parent *Parser
-	fnName string
-	fnArgs [][]ctxpos.CtxPos
+	xpath   *[]XPExec
+	tree    tree.Node
+	exNum   int
+	ns      map[string]string
+	ctx     tree.Node
+	ctxPos  int
+	ctxSize int
+	pExpr   pathexpr.PathExpr
+	filter  []tree.Res
+	stack   *Parser
+	parent  *Parser
+	fnName  string
+	fnArgs  [][]tree.Res
+	predEnd int
 }
 
 //XPExec is an instruction that operates on XPath trees
@@ -53,6 +57,8 @@ var parseMap = map[lexer.XItemType]lexFn{
 	lexer.XItemFunction:       function,
 	lexer.XItemArgument:       argument,
 	lexer.XItemEndFunction:    endFunction,
+	lexer.XItemPredicate:      predicate,
+	lexer.XItemEndPredicate:   endPredicate,
 	lexer.XItemStrLit:         strLit,
 	lexer.XItemNumLit:         numLit,
 }
@@ -63,7 +69,7 @@ func (ns nodeSort) Len() int           { return len(ns) }
 func (ns nodeSort) Swap(i, j int)      { ns[i], ns[j] = ns[j], ns[i] }
 func (ns nodeSort) Less(i, j int) bool { return ns[i].(tree.Node).Pos() < ns[j].(tree.Node).Pos() }
 
-func (p *Parser) exec() ([]ctxpos.CtxPos, error) {
+func (p *Parser) exec() ([]tree.Res, error) {
 	for p.exNum < len(*p.xpath) {
 		err := (*p.xpath)[p.exNum](p)
 		if err != nil {
@@ -77,22 +83,24 @@ func (p *Parser) exec() ([]ctxpos.CtxPos, error) {
 
 func (p *Parser) push() {
 	p.stack = &Parser{
-		xpath:  p.xpath,
-		tree:   p.tree,
-		exNum:  p.exNum + 1,
-		ns:     p.ns,
-		ctx:    p.ctx,
-		pExpr:  pathexpr.PathExpr{},
-		filter: nil,
-		stack:  nil,
-		parent: p,
-		fnName: "",
-		fnArgs: nil,
+		xpath:   p.xpath,
+		tree:    p.tree,
+		exNum:   p.exNum + 1,
+		ns:      p.ns,
+		ctx:     p.ctx,
+		ctxSize: p.ctxSize,
+		pExpr:   pathexpr.PathExpr{},
+		filter:  nil,
+		stack:   nil,
+		parent:  p,
+		fnName:  "",
+		fnArgs:  nil,
 	}
 }
 
 func (p *Parser) pop() {
 	if p.parent != nil {
+		p.predEnd = p.exNum + 1
 		p.parent.exNum = p.exNum
 		p.exNum = len(*p.xpath)
 	}
@@ -100,7 +108,7 @@ func (p *Parser) pop() {
 
 //Exec executes the XPath expression, xp, against the tree, t, with the
 //namespace mappings, ns.
-func Exec(xp []XPExec, t tree.Node, ns map[string]string) ([]ctxpos.CtxPos, error) {
+func Exec(xp []XPExec, t tree.Node, ns map[string]string) ([]tree.Res, error) {
 	if ns == nil {
 		ns = make(map[string]string)
 	}
@@ -172,7 +180,7 @@ func eval(typ lexer.XItemType, val string, tkns expTkns) (expTkns, XPExec, error
 }
 
 func nextPathToks() expTkns {
-	return expTkns{lexer.XItemAbsLocPath, lexer.XItemAbbrAbsLocPath, lexer.XItemAbbrRelLocPath, lexer.XItemRelLocPath, lexer.XItemPredicate, lexer.XItemEndPath}
+	return expTkns{lexer.XItemAbsLocPath, lexer.XItemAbbrAbsLocPath, lexer.XItemAbbrRelLocPath, lexer.XItemRelLocPath, lexer.XItemPredicate, lexer.XItemEndPredicate, lexer.XItemEndPath}
 }
 
 func beginExprToks() expTkns {
@@ -180,7 +188,7 @@ func beginExprToks() expTkns {
 }
 
 func pathStartToks() expTkns {
-	return expTkns{lexer.XItemAxis, lexer.XItemAbbrAxis, lexer.XItemNCName, lexer.XItemQName, lexer.XItemNodeType, lexer.XItemFunction}
+	return expTkns{lexer.XItemAxis, lexer.XItemAbbrAxis, lexer.XItemNCName, lexer.XItemQName, lexer.XItemNodeType, lexer.XItemFunction, lexer.XItemPredicate, lexer.XItemEndPredicate}
 }
 
 func abbrPathExpr() pathexpr.PathExpr {
@@ -282,16 +290,16 @@ func procInstLit(val string) (expTkns, XPExec) {
 	ret := func(p *Parser) error {
 		filt := []tree.Res{}
 		for i := range p.filter {
-			if tok, tOk := p.filter[i].Res.(tree.Node); tOk {
+			if tok, tOk := p.filter[i].(tree.Node); tOk {
 				if proc, pOk := tok.GetToken().(xml.ProcInst); pOk {
 					if proc.Target == val {
-						filt = append(filt, p.filter[i].Res)
+						filt = append(filt, p.filter[i])
 					}
 				}
 			}
 		}
 
-		p.filter = ctxpos.CreateCtxPos(filt)
+		p.filter = filt
 		return nil
 	}
 
@@ -310,7 +318,7 @@ func endPath(val string) (expTkns, XPExec) {
 func function(val string) (expTkns, XPExec) {
 	ret := func(p *Parser) error {
 		p.fnName = val
-		p.fnArgs = make([][]ctxpos.CtxPos, 0)
+		p.fnArgs = make([][]tree.Res, 0)
 		return nil
 	}
 
@@ -337,7 +345,7 @@ func argument(val string) (expTkns, XPExec) {
 func endFunction(val string) (expTkns, XPExec) {
 	ret := func(p *Parser) error {
 		if fn, ok := intfns.BuiltIn[p.fnName]; ok {
-			filt, err := fn.Call(p.filter, p.fnArgs...)
+			filt, err := fn.Call(xpfn.Ctx{Node: p.ctx, Filter: p.filter, Size: p.ctxSize, Pos: p.ctxPos}, p.fnArgs...)
 
 			if err != nil {
 				return err
@@ -347,7 +355,7 @@ func endFunction(val string) (expTkns, XPExec) {
 				filt = []tree.Res{}
 			}
 
-			p.filter = ctxpos.CreateCtxPos(filt)
+			p.filter = filt
 			return nil
 		}
 
@@ -356,9 +364,66 @@ func endFunction(val string) (expTkns, XPExec) {
 	return nil, ret
 }
 
+func predicate(val string) (expTkns, XPExec) {
+	ret := func(p *Parser) error {
+		exNum := p.exNum
+		filt := make([]tree.Res, 0, len(p.filter))
+
+		for i := range p.filter {
+			p.exNum = exNum
+			p.push()
+			p.stack.filter = []tree.Res{p.filter[i]}
+			p.ctxPos = i
+
+			ret, err := p.stack.exec()
+			if err != nil {
+				return err
+			}
+
+			if len(ret) == 1 {
+				if num, ok := ret[0].(numlit.NumLit); ok {
+					if int(num)-1 == i {
+						filt = append(filt, p.filter[i])
+					}
+					p.pop()
+					continue
+				}
+			}
+
+			boolFn := intfns.BuiltIn["boolean"]
+			res, err := boolFn.Fn(xpfn.Ctx{}, ret)
+
+			if err != nil {
+				return err
+			}
+
+			if res[0].(boollit.BoolLit) {
+				filt = append(filt, p.filter[i])
+			}
+
+			p.pop()
+		}
+
+		p.filter = filt
+		p.exNum = p.stack.predEnd
+
+		return nil
+	}
+
+	return beginExprToks(), ret
+}
+
+func endPredicate(val string) (expTkns, XPExec) {
+	ret := func(p *Parser) error {
+		return nil
+	}
+
+	return nextPathToks(), ret
+}
+
 func strLit(val string) (expTkns, XPExec) {
 	ret := func(p *Parser) error {
-		p.filter = ctxpos.CreateCtxPos([]tree.Res{strlit.StrLit(val)})
+		p.filter = []tree.Res{strlit.StrLit(val)}
 		p.pop()
 		return nil
 	}
@@ -371,7 +436,7 @@ func numLit(val string) (expTkns, XPExec) {
 		if err != nil {
 			return err
 		}
-		p.filter = ctxpos.CreateCtxPos([]tree.Res{numlit.NumLit(f)})
+		p.filter = []tree.Res{numlit.NumLit(f)}
 		p.pop()
 		return nil
 	}
@@ -400,13 +465,13 @@ func (p *Parser) find() error {
 	}
 
 	if p.filter == nil {
-		p.filter = ctxpos.CreateCtxPos([]tree.Res{p.ctx})
+		p.filter = []tree.Res{p.ctx}
 	}
 
 	p.pExpr.NS = p.ns
 
 	for _, i := range p.filter {
-		if node, ok := i.Res.(tree.Node); ok {
+		if node, ok := i.(tree.Node); ok {
 			for _, j := range findutil.Find(node, p.pExpr) {
 				vals = append(vals, j)
 			}
@@ -415,8 +480,9 @@ func (p *Parser) find() error {
 		}
 	}
 
-	p.filter = ctxpos.CreateCtxPos(remDupsAndSort(vals))
+	p.filter = remDupsAndSort(vals)
 	p.pExpr = pathexpr.PathExpr{}
+	p.ctxSize = len(p.filter)
 
 	return nil
 }

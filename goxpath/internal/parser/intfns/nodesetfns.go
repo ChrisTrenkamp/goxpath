@@ -4,32 +4,37 @@ import (
 	"encoding/xml"
 	"fmt"
 
-	"github.com/ChrisTrenkamp/goxpath/goxpath/ctxpos"
+	"github.com/ChrisTrenkamp/goxpath/goxpath/xpfn"
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/tree/literals/numlit"
 	"github.com/ChrisTrenkamp/goxpath/tree/literals/strlit"
 )
 
-func last(arg []ctxpos.CtxPos) ([]tree.Res, error) {
-	return []tree.Res{numlit.NumLit(len(arg))}, nil
+func last(c xpfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
+	return []tree.Res{numlit.NumLit(c.Size)}, nil
 }
 
-func count(args ...[]ctxpos.CtxPos) ([]tree.Res, error) {
+func position(c xpfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
+	return []tree.Res{numlit.NumLit(c.Pos)}, nil
+}
+
+func count(c xpfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
 	arg := args[0]
 
 	if len(arg) == 0 {
 		return nil, nil
 	}
 
-	if _, ok := arg[0].Res.(tree.Node); !ok {
+	if _, ok := arg[0].(tree.Node); !ok {
 		return nil, fmt.Errorf("Argument is not a node-set")
 	}
 
 	ret := 0
 
 	for i := range arg {
-		countArg(arg[i].Res, &ret)
+		countArg(arg[i], &ret)
 	}
+
 	return []tree.Res{numlit.NumLit(ret)}, nil
 }
 
@@ -45,12 +50,20 @@ func countArg(r tree.Res, c *int) {
 	}
 }
 
-func localName(arg []ctxpos.CtxPos) ([]tree.Res, error) {
+func localName(c xpfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
+	var arg []tree.Res
+
+	if len(args) == 0 {
+		arg = c.Filter
+	} else {
+		arg = args[0]
+	}
+
 	if len(arg) == 0 {
 		return []tree.Res{strlit.StrLit("")}, nil
 	}
 
-	node, ok := arg[0].Res.(tree.Node)
+	node, ok := arg[0].(tree.Node)
 
 	if !ok {
 		return nil, fmt.Errorf("Argument is not a node")
@@ -76,12 +89,20 @@ func localName(arg []ctxpos.CtxPos) ([]tree.Res, error) {
 	return []tree.Res{strlit.StrLit("")}, nil
 }
 
-func namespaceURI(arg []ctxpos.CtxPos) ([]tree.Res, error) {
+func namespaceURI(c xpfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
+	var arg []tree.Res
+
+	if len(args) == 0 {
+		arg = c.Filter
+	} else {
+		arg = args[0]
+	}
+
 	if len(arg) == 0 {
 		return []tree.Res{strlit.StrLit("")}, nil
 	}
 
-	node, ok := arg[0].Res.(tree.Node)
+	node, ok := arg[0].(tree.Node)
 
 	if !ok {
 		return nil, fmt.Errorf("Argument is not a node")
@@ -104,12 +125,20 @@ func namespaceURI(arg []ctxpos.CtxPos) ([]tree.Res, error) {
 	return []tree.Res{strlit.StrLit("")}, nil
 }
 
-func name(arg []ctxpos.CtxPos) ([]tree.Res, error) {
+func name(c xpfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
+	var arg []tree.Res
+
+	if len(args) == 0 {
+		arg = c.Filter
+	} else {
+		arg = args[0]
+	}
+
 	if len(arg) == 0 {
 		return []tree.Res{strlit.StrLit("")}, nil
 	}
 
-	node, ok := arg[0].Res.(tree.Node)
+	node, ok := arg[0].(tree.Node)
 
 	if !ok {
 		return nil, fmt.Errorf("Argument is not a node")

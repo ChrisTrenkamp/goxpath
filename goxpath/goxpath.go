@@ -11,12 +11,7 @@ type XPathExec []parser.XPExec
 //Exec executes the XPath expression, xp, against the tree, t, with the
 //namespace mappings, ns.
 func Exec(xp XPathExec, t tree.Node, ns map[string]string) ([]tree.Res, error) {
-	res, err := parser.Exec(xp, t, ns)
-	ret := make([]tree.Res, len(res))
-	for i := range res {
-		ret[i] = res[i].Res
-	}
-	return ret, err
+	return parser.Exec(xp, t, ns)
 }
 
 //MustExec is like Exec, but panics instead of returning an error.
