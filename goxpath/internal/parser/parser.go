@@ -369,6 +369,17 @@ func predicate(val string) (expTkns, XPExec) {
 		exNum := p.exNum
 		filt := make([]tree.Res, 0, len(p.filter))
 
+		if len(p.filter) == 0 {
+			p.push()
+			_, err := p.stack.exec()
+			if err != nil {
+				return err
+			}
+			p.exNum = p.stack.predEnd
+			p.pop()
+			return nil
+		}
+
 		for i := range p.filter {
 			p.exNum = exNum
 			p.push()
