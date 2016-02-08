@@ -383,6 +383,9 @@ func predicate(val string) (expTkns, XPExec) {
 		for i := range p.filter {
 			p.exNum = exNum
 			p.push()
+			if n, ok := p.filter[i].(tree.Node); ok {
+				p.stack.ctx = n
+			}
 			p.stack.filter = []tree.Res{p.filter[i]}
 			p.ctxPos = i
 
