@@ -452,3 +452,12 @@ func TestPredicate4(t *testing.T) {
 	exp := []string{`<p2></p2>`, `<p2></p2>`}
 	execPath(p, x, exp, nil, t)
 }
+
+func TestPredicate5(t *testing.T) {
+	p := `/p1/p2[.//p1]`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2/><p2 test="t"/><p2><p1>lkj</p1></p2></p1>`
+	exp := []string{`<p2><p1>lkj</p1></p2>`}
+	p = `/p1/p2[//p1]`
+	exp = []string{`<p2></p2>`, `<p2 test="t"></p2>`, `<p2><p1>lkj</p1></p2>`}
+	execPath(p, x, exp, nil, t)
+}
