@@ -49,6 +49,6 @@ An XPath implementation in Go.
 ####Usage
     xp := goxpath.MustParse(`/path`)
     t := xmltree.MustParseXML(bytes.NewBufferString(xml.Header + `<path>Hello world</path>`))
-    res := xmltree.Exec(xp, t, nil)
+    res := goxpath.MustExec(xp, t, nil)
     fmt.Println(res[0]) //Hello world
     err := xmltree.Marshal(res[0], os.Stdout) //<path>Hello world</path>
