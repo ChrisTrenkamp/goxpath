@@ -29,6 +29,10 @@ type Wrap struct {
 //Call checks the arguments and calls Fn if they are valid
 func (w Wrap) Call(c Ctx, args ...[]tree.Res) ([]tree.Res, error) {
 	if w.NArgs == -1 {
+		if len(args) != 0 && len(args) != 1 {
+			return nil, fmt.Errorf("Too many arguments.")
+		}
+
 		return w.Fn(c, args...)
 	}
 

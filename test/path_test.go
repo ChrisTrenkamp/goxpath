@@ -69,6 +69,13 @@ func TestRelPath(t *testing.T) {
 	execPath(p, x, exp, nil, t)
 }
 
+func TestRelPath2(t *testing.T) {
+	p := ` // path `
+	x := `<?xml version="1.0" encoding="UTF-8"?><path><test><path>test</path></test></path>`
+	exp := []string{"<path><test><path>test</path></test></path>", `<path>test</path>`}
+	execPath(p, x, exp, nil, t)
+}
+
 func TestRelNonRootPath(t *testing.T) {
 	p := ` / test // path `
 	x := `<?xml version="1.0" encoding="UTF-8"?><test><p1><p2><path/></p2></p1></test>`
@@ -457,7 +464,12 @@ func TestPredicate5(t *testing.T) {
 	p := `/p1/p2[.//p1]`
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2/><p2 test="t"/><p2><p1>lkj</p1></p2></p1>`
 	exp := []string{`<p2><p1>lkj</p1></p2>`}
-	p = `/p1/p2[//p1]`
-	exp = []string{`<p2></p2>`, `<p2 test="t"></p2>`, `<p2><p1>lkj</p1></p2>`}
+	execPath(p, x, exp, nil, t)
+}
+
+func TestPredicate6(t *testing.T) {
+	p := `/p1/p2[//p1]`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2/><p2 test="t"/><p2><p1>lkj</p1></p2></p1>`
+	exp := []string{`<p2></p2>`, `<p2 test="t"></p2>`, `<p2><p1>lkj</p1></p2>`}
 	execPath(p, x, exp, nil, t)
 }
