@@ -143,16 +143,16 @@ func Parse(xp string) ([]XPExec, error) {
 			return nil, fmt.Errorf(item.Val)
 		}
 
-		tok, next, err = eval(item.Typ, item.Val, tok)
-
 		if err != nil {
-			return nil, err
+			continue
 		}
+
+		tok, next, err = eval(item.Typ, item.Val, tok)
 
 		ret = append(ret, next)
 	}
 
-	return ret, nil
+	return ret, err
 }
 
 func eval(typ lexer.XItemType, val string, tkns expTkns) (expTkns, XPExec, error) {
