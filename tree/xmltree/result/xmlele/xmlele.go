@@ -73,23 +73,29 @@ func (x *XMLEle) String() string {
 func (x *XMLEle) XMLPrint(e *xml.Encoder) error {
 	val := x.StartElement
 
-	for i := 0; i < len(val.Attr); i++ {
-		if val.Attr[i].Name.Local == "xmlns" || val.Attr[i].Name.Space == "xmlns" {
-			val.Attr = append(val.Attr[:i], val.Attr[i+1:]...)
-			i--
+	if x.Parent != x {
+		for i := 0; i < len(val.Attr); i++ {
+			if val.Attr[i].Name.Local == "xmlns" || val.Attr[i].Name.Space == "xmlns" {
+				val.Attr = append(val.Attr[:i], val.Attr[i+1:]...)
+				i--
+			}
 		}
-	}
 
-	err := e.EncodeToken(val)
-	if err != nil {
-		return err
-	}
-
-	for i := range x.Children {
-		err = x.Children[i].XMLPrint(e)
+		err := e.EncodeToken(val)
 		if err != nil {
 			return err
 		}
+	}
+
+	for i := range x.Children {
+		err := x.Children[i].XMLPrint(e)
+		if err != nil {
+			return err
+		}
+	}
+
+	if x.Parent == x {
+		return nil
 	}
 
 	return e.EncodeToken(xml.EndElement{Name: val.Name})

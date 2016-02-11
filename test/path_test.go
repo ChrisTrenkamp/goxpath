@@ -48,6 +48,13 @@ func execPath(xp, x string, exp []string, ns map[string]string, t *testing.T) {
 	}
 }
 
+func TestRoot(t *testing.T) {
+	p := `/`
+	x := `<?xml version="1.0" encoding="UTF-8"?><test><path/></test>`
+	exp := []string{"<test><path></path></test>"}
+	execPath(p, x, exp, nil, t)
+}
+
 func TestAbsPath(t *testing.T) {
 	p := ` / test / path`
 	x := `<?xml version="1.0" encoding="UTF-8"?><test><path/></test>`

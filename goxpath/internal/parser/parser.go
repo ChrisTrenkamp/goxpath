@@ -201,17 +201,17 @@ func abbrPathExpr() pathexpr.PathExpr {
 
 func absLocPath(val string) (expTkns, XPExec) {
 	ret := func(p *Parser) error {
-		p.filter = nil
+		p.filter = []tree.Res{p.tree}
 		p.ctx = p.tree
 		return nil
 	}
 
-	return pathStartToks(), ret
+	return append(pathStartToks(), lexer.XItemEndPath), ret
 }
 
 func abbrAbsLocPath(val string) (expTkns, XPExec) {
 	ret := func(p *Parser) error {
-		p.filter = nil
+		p.filter = []tree.Res{p.tree}
 		p.ctx = p.tree
 		p.pExpr = abbrPathExpr()
 		return p.find()

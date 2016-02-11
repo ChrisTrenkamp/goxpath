@@ -73,7 +73,7 @@ func parseSeparators(l *Lexer, tok string) (XItemType, error) {
 		if state, err = getNTOrFunc(l, tok); err != nil {
 			return state, fmt.Errorf(err.Error())
 		}
-	} else {
+	} else if len(tok) > 0 {
 		l.emitVal(state, tok)
 	}
 
