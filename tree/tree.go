@@ -1,10 +1,6 @@
 package tree
 
-import (
-	"encoding/xml"
-
-	"github.com/ChrisTrenkamp/goxpath/goxpath/pathexpr"
-)
+import "encoding/xml"
 
 //NodePos is a helper for representing the node's document order
 type NodePos int
@@ -29,9 +25,6 @@ type Node interface {
 	GetToken() xml.Token
 	//GetParent returns the parent node, which will always be an XML element
 	GetParent() Elem
-	//EvalPath evaluates this node against the XPath step, p, and returns true
-	//if it passes, and false otherwise.
-	EvalPath(p *pathexpr.PathExpr) bool
 }
 
 //Elem is a XPath result that is an element node
@@ -39,6 +32,10 @@ type Elem interface {
 	Node
 	//GetChildren returns the elements children.
 	GetChildren() []Node
-	//GetNSAttrs returns the namespaces and attributes of the element
-	GetNSAttrs() []Node
+	//GetAttrs returns the attributes of the element
+	GetAttrs() []Node
+}
+
+type NSElem interface {
+	GetNS() []Node
 }

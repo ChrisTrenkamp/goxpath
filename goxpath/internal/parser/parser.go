@@ -9,13 +9,13 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/lexer"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/parser/findutil"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/parser/intfns"
+	"github.com/ChrisTrenkamp/goxpath/goxpath/literals/boollit"
+	"github.com/ChrisTrenkamp/goxpath/goxpath/literals/numlit"
+	"github.com/ChrisTrenkamp/goxpath/goxpath/literals/strlit"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/pathexpr"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/xconst"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/xpfn"
 	"github.com/ChrisTrenkamp/goxpath/tree"
-	"github.com/ChrisTrenkamp/goxpath/tree/literals/boollit"
-	"github.com/ChrisTrenkamp/goxpath/tree/literals/numlit"
-	"github.com/ChrisTrenkamp/goxpath/tree/literals/strlit"
 )
 
 //Parser parses an XML document and generates output from the Lexer

@@ -3,8 +3,6 @@ package xmlpi
 import (
 	"encoding/xml"
 
-	"github.com/ChrisTrenkamp/goxpath/goxpath/pathexpr"
-	"github.com/ChrisTrenkamp/goxpath/goxpath/xconst"
 	"github.com/ChrisTrenkamp/goxpath/tree"
 )
 
@@ -28,22 +26,4 @@ func (pi *XMLPI) GetParent() tree.Elem {
 //String returns the value of the processing-instruction
 func (pi *XMLPI) String() string {
 	return string(pi.ProcInst.Inst)
-}
-
-//XMLPrint prints the XML processing-instruction
-func (pi *XMLPI) XMLPrint(e *xml.Encoder) error {
-	return e.EncodeToken(pi.ProcInst)
-}
-
-//EvalPath evaluates the XPath path instruction on the processing-instruction
-func (pi *XMLPI) EvalPath(p *pathexpr.PathExpr) bool {
-	if p.NodeType == xconst.NodeTypeProcInst {
-		return true
-	}
-
-	if p.NodeType == xconst.NodeTypeProcInst || p.NodeType == xconst.NodeTypeNode {
-		return true
-	}
-
-	return false
 }

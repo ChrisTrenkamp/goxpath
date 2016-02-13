@@ -12,11 +12,10 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlele"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlns"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlpi"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/xmlres"
 )
 
 //MustParseXML is like ParseXML, but panics instead of returning an error.
-func MustParseXML(r io.Reader) xmlres.XMLNode {
+func MustParseXML(r io.Reader) tree.Node {
 	ret, err := ParseXML(r)
 
 	if err != nil {
@@ -27,13 +26,13 @@ func MustParseXML(r io.Reader) xmlres.XMLNode {
 }
 
 //ParseXML creates an XMLTree structure from an io.Reader.
-func ParseXML(r io.Reader) (xmlres.XMLNode, error) {
+func ParseXML(r io.Reader) (tree.Node, error) {
 	dec := xml.NewDecoder(r)
 	xmlTree := &xmlele.XMLEle{
 		StartElement: xml.StartElement{},
 		NS:           []*xmlns.XMLNS{},
 		Attrs:        []*xmlattr.XMLAttr{},
-		Children:     []xmlres.XMLNode{},
+		Children:     []tree.Node{},
 		Parent:       nil,
 	}
 	pos := xmlTree
@@ -85,7 +84,7 @@ func ParseXML(r io.Reader) (xmlres.XMLNode, error) {
 func createEle(pos *xmlele.XMLEle, ele xml.StartElement, ordrPos *int) *xmlele.XMLEle {
 	ch := &xmlele.XMLEle{
 		StartElement: xml.CopyToken(ele).(xml.StartElement),
-		Children:     []xmlres.XMLNode{},
+		Children:     []tree.Node{},
 		Parent:       pos,
 		NodePos:      tree.NodePos(*ordrPos),
 	}

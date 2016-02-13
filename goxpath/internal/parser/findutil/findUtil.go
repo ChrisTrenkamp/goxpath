@@ -1,6 +1,8 @@
 package findutil
 
 import (
+	"encoding/xml"
+
 	"github.com/ChrisTrenkamp/goxpath/goxpath/pathexpr"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/xconst"
 	"github.com/ChrisTrenkamp/goxpath/tree"
@@ -40,7 +42,7 @@ func Find(x tree.Node, p pathexpr.PathExpr) []tree.Node {
 }
 
 func findAncestor(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if x.GetParent().EvalPath(p) {
+	if checkNode(x.GetParent(), p) {
 		*ret = append(*ret, x.GetParent())
 	}
 	if x.GetParent() != x {
@@ -55,8 +57,8 @@ func findAncestorOrSelf(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 
 func findAttribute(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	if ele, ok := x.(tree.Elem); ok {
-		for _, i := range ele.GetNSAttrs() {
-			if i.EvalPath(p) {
+		for _, i := range ele.GetAttrs() {
+			if checkNode(i, p) {
 				*ret = append(*ret, i)
 			}
 		}
@@ -67,7 +69,7 @@ func findChild(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	if ele, ok := x.(tree.Elem); ok {
 		ch := ele.GetChildren()
 		for i := range ch {
-			if ch[i].EvalPath(p) {
+			if checkNode(ch[i], p) {
 				*ret = append(*ret, ch[i])
 			}
 		}
@@ -78,7 +80,7 @@ func findDescendent(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	if ele, ok := x.(tree.Elem); ok {
 		ch := ele.GetChildren()
 		for i := range ch {
-			if ch[i].EvalPath(p) {
+			if checkNode(ch[i], p) {
 				*ret = append(*ret, ch[i])
 			}
 			findDescendent(ch[i], p, ret)
@@ -127,11 +129,18 @@ func findFollowingSibling(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 }
 
 func findNamespace(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	findAttribute(x, p, ret)
+	if ele, ok := x.(tree.NSElem); ok {
+		for _, i := range ele.GetNS() {
+			attr := i.GetToken().(xml.Attr)
+			if evalNS(p, attr) {
+				*ret = append(*ret, i)
+			}
+		}
+	}
 }
 
 func findParent(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if x.GetParent() != x && x.GetParent().EvalPath(p) {
+	if x.GetParent() != x && checkNode(x.GetParent(), p) {
 		*ret = append(*ret, x.GetParent())
 	}
 }
@@ -172,7 +181,130 @@ func findPrecedingSibling(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 }
 
 func findSelf(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if x.EvalPath(p) {
+	if checkNode(x, p) {
 		*ret = append(*ret, x)
 	}
+}
+
+func checkNode(x tree.Node, p *pathexpr.PathExpr) bool {
+	tok := x.GetToken()
+	switch t := tok.(type) {
+	case xml.Attr:
+		return evalAttr(p, t)
+	case xml.CharData:
+		return evalChd(p)
+	case xml.Comment:
+		return evalComm(p)
+	case xml.StartElement:
+		return evalEle(p, t)
+	case xml.ProcInst:
+		return evalPI(p)
+	}
+	return false
+}
+
+func evalAttr(p *pathexpr.PathExpr, a xml.Attr) bool {
+	if p.NodeType == "" {
+		if p.Name.Space != "*" {
+			if a.Name.Space != p.NS[p.Name.Space] {
+				return false
+			}
+		}
+
+		if p.Name.Local == "*" && p.Axis == xconst.AxisAttribute {
+			return true
+		}
+
+		if p.Name.Local == a.Name.Local {
+			return true
+		}
+	} else {
+		if p.NodeType == xconst.NodeTypeNode {
+			return true
+		}
+	}
+
+	return false
+}
+
+func evalChd(p *pathexpr.PathExpr) bool {
+	if p.NodeType == xconst.NodeTypeText || p.NodeType == xconst.NodeTypeNode {
+		return true
+	}
+
+	return false
+}
+
+func evalComm(p *pathexpr.PathExpr) bool {
+	if p.NodeType == xconst.NodeTypeComment || p.NodeType == xconst.NodeTypeNode {
+		return true
+	}
+
+	return false
+}
+
+func evalEle(p *pathexpr.PathExpr, ele xml.StartElement) bool {
+	if p.NodeType == "" {
+		return checkNameAndSpace(p, ele)
+	}
+
+	if p.NodeType == xconst.NodeTypeNode {
+		return true
+	}
+
+	return false
+}
+
+func checkNameAndSpace(p *pathexpr.PathExpr, ele xml.StartElement) bool {
+	if p.Name.Local == "*" && p.Name.Space == "" {
+		return true
+	}
+
+	if p.Name.Space != "*" && ele.Name.Space != p.NS[p.Name.Space] {
+		return false
+	}
+
+	if p.Name.Local == "*" && p.Axis != xconst.AxisAttribute && p.Axis != xconst.AxisNamespace {
+		return true
+	}
+
+	if p.Name.Local == ele.Name.Local {
+		return true
+	}
+
+	return false
+}
+
+func evalNS(p *pathexpr.PathExpr, ns xml.Attr) bool {
+	if p.NodeType == "" {
+		if p.Name.Space != "" && p.Name.Space != "*" {
+			return false
+		}
+
+		if p.Name.Local == "*" && p.Axis == xconst.AxisNamespace {
+			return true
+		}
+
+		if p.Name.Local == ns.Name.Local {
+			return true
+		}
+	} else {
+		if p.NodeType == xconst.NodeTypeNode {
+			return true
+		}
+	}
+
+	return false
+}
+
+func evalPI(p *pathexpr.PathExpr) bool {
+	if p.NodeType == xconst.NodeTypeProcInst {
+		return true
+	}
+
+	if p.NodeType == xconst.NodeTypeProcInst || p.NodeType == xconst.NodeTypeNode {
+		return true
+	}
+
+	return false
 }

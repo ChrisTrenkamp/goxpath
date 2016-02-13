@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/ChrisTrenkamp/goxpath/goxpath"
+	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/xmlres"
 )
 
 func execVal(xp, x string, exp []string, ns map[string]string, t *testing.T) {
@@ -20,7 +20,7 @@ func execVal(xp, x string, exp []string, ns map[string]string, t *testing.T) {
 	if len(res) != len(exp) {
 		t.Error("Result length not valid.  Recieved:")
 		for i := range res {
-			t.Error(xmltree.MarshalStr(res[i].(xmlres.XMLNode)))
+			t.Error(goxpath.MarshalStr(res[i].(tree.Node)))
 		}
 		return
 	}

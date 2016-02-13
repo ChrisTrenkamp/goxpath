@@ -3,13 +3,10 @@ package xmlele
 import (
 	"encoding/xml"
 
-	"github.com/ChrisTrenkamp/goxpath/goxpath/pathexpr"
-	"github.com/ChrisTrenkamp/goxpath/goxpath/xconst"
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlattr"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlchd"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlns"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/xmlres"
 )
 
 //XMLEle is an implementation of XPRes for XML elements
@@ -17,8 +14,8 @@ type XMLEle struct {
 	xml.StartElement
 	NS       []*xmlns.XMLNS
 	Attrs    []*xmlattr.XMLAttr
-	Children []xmlres.XMLNode
-	Parent   xmlres.XMLElem
+	Children []tree.Node
+	Parent   tree.Elem
 	tree.NodePos
 }
 
@@ -43,14 +40,20 @@ func (x *XMLEle) GetChildren() []tree.Node {
 	return ret
 }
 
-//GetNSAttrs returns all namespaces and attributes of the element
-func (x *XMLEle) GetNSAttrs() []tree.Node {
-	ret := make([]tree.Node, 0, len(x.NS)+len(x.Attrs))
-	for i := range x.NS {
-		ret = append(ret, x.NS[i])
-	}
+//GetAttrs returns all attributes of the element
+func (x *XMLEle) GetAttrs() []tree.Node {
+	ret := make([]tree.Node, len(x.Attrs))
 	for i := range x.Attrs {
-		ret = append(ret, x.Attrs[i])
+		ret[i] = x.Attrs[i]
+	}
+	return ret
+}
+
+//GetNS returns all namespaces of the element
+func (x *XMLEle) GetNS() []tree.Node {
+	ret := make([]tree.Node, len(x.NS))
+	for i := range x.NS {
+		ret[i] = x.NS[i]
 	}
 	return ret
 }
@@ -67,63 +70,4 @@ func (x *XMLEle) String() string {
 		}
 	}
 	return ret
-}
-
-//XMLPrint prints the XML element and children
-func (x *XMLEle) XMLPrint(e *xml.Encoder) error {
-	val := x.StartElement
-
-	for i := 0; i < len(val.Attr); i++ {
-		if val.Attr[i].Name.Local == "xmlns" || val.Attr[i].Name.Space == "xmlns" {
-			val.Attr = append(val.Attr[:i], val.Attr[i+1:]...)
-			i--
-		}
-	}
-
-	err := e.EncodeToken(val)
-	if err != nil {
-		return err
-	}
-
-	for i := range x.Children {
-		err = x.Children[i].XMLPrint(e)
-		if err != nil {
-			return err
-		}
-	}
-
-	return e.EncodeToken(xml.EndElement{Name: val.Name})
-}
-
-//EvalPath evaluates the XPath path instruction on the element
-func (x *XMLEle) EvalPath(p *pathexpr.PathExpr) bool {
-	if p.NodeType == "" {
-		return x.checkNameAndSpace(p)
-	}
-
-	if p.NodeType == xconst.NodeTypeNode {
-		return true
-	}
-
-	return false
-}
-
-func (x *XMLEle) checkNameAndSpace(p *pathexpr.PathExpr) bool {
-	if p.Name.Local == "*" && p.Name.Space == "" {
-		return true
-	}
-
-	if p.Name.Space != "*" && x.StartElement.Name.Space != p.NS[p.Name.Space] {
-		return false
-	}
-
-	if p.Name.Local == "*" && p.Axis != xconst.AxisAttribute && p.Axis != xconst.AxisNamespace {
-		return true
-	}
-
-	if p.Name.Local == x.StartElement.Name.Local {
-		return true
-	}
-
-	return false
 }
