@@ -2,7 +2,7 @@
 An XPath implementation in Go.
 
 ###Installation
-    go get github.com/ChrisTrenkamp/goxpath
+    go get github.com/ChrisTrenkamp/goxpath/cmd/goxpath
 
 ###Example
 

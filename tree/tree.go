@@ -36,6 +36,7 @@ type Elem interface {
 	GetAttrs() []Node
 }
 
+//NSElem is a node that keeps track of namespaces.
 type NSElem interface {
 	GetNS() []Node
 }

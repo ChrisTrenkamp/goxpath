@@ -9,24 +9,28 @@ import (
 )
 
 func boolean(c xpfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
-	arg := args[0]
+	return []tree.Res{boollit.BoolLit(BooleanFunc(args[0]))}, nil
+}
 
+//BooleanFunc returns the XPath boolean value of the argument.  This is used
+//for the function itself as well as predicates (as defined by the spec).
+func BooleanFunc(arg []tree.Res) bool {
 	if len(arg) == 0 {
-		return []tree.Res{boollit.BoolLit(false)}, nil
+		return false
 	}
 
 	switch t := arg[0].(type) {
 	case tree.Node:
-		return []tree.Res{boollit.BoolLit(true)}, nil
+		return true
 	case boollit.BoolLit:
-		return []tree.Res{boollit.BoolLit(t)}, nil
+		return bool(t)
 	case numlit.NumLit:
-		return []tree.Res{boollit.BoolLit(float64(t) > 0)}, nil
+		return float64(t) > 0
 	case strlit.StrLit:
-		return []tree.Res{boollit.BoolLit(len(string(t)) > 0)}, nil
+		return len(string(t)) > 0
 	}
 
-	return []tree.Res{boollit.BoolLit(false)}, nil
+	return false
 }
 
 func not(c xpfn.Ctx, arg ...[]tree.Res) ([]tree.Res, error) {

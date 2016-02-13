@@ -1,6 +1,6 @@
 #!/bin/bash
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-go get github.com/ChrisTrenkamp/goxpath/...
+go get github.com/ChrisTrenkamp/goxpath/cmd/goxpath
 if [ $? != 0 ]; then
 	exit 1
 fi

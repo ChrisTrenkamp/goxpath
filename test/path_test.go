@@ -10,12 +10,7 @@ import (
 )
 
 func execPath(xp, x string, exp []string, ns map[string]string, t *testing.T) {
-	res, err := goxpath.Exec(goxpath.MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns)
-
-	if err != nil {
-		t.Error(err.Error())
-		return
-	}
+	res := goxpath.MustExec(goxpath.MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns)
 
 	if len(res) != len(exp) {
 		t.Error("Result length not valid.  Recieved:")
@@ -450,5 +445,12 @@ func TestPredicate6(t *testing.T) {
 	p := `/p1/p2[//p1]`
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2/><p2 test="t"/><p2><p1>lkj</p1></p2></p1>`
 	exp := []string{`<p2></p2>`, `<p2 test="t"></p2>`, `<p2><p1>lkj</p1></p2>`}
+	execPath(p, x, exp, nil, t)
+}
+
+func TestPredicate7(t *testing.T) {
+	p := `/p3[//p1]`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2/><p2 test="t"/><p2><p1>lkj</p1></p2></p1>`
+	exp := []string{}
 	execPath(p, x, exp, nil, t)
 }

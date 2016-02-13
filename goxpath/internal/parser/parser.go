@@ -9,7 +9,6 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/lexer"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/parser/findutil"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/parser/intfns"
-	"github.com/ChrisTrenkamp/goxpath/goxpath/literals/boollit"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/literals/numlit"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/literals/strlit"
 	"github.com/ChrisTrenkamp/goxpath/goxpath/pathexpr"
@@ -368,65 +367,65 @@ func endFunction(val string) (expTkns, XPExec) {
 
 func predicate(val string) (expTkns, XPExec) {
 	ret := func(p *Parser) error {
-		exNum := p.exNum
-		filt := make([]tree.Res, 0, len(p.filter))
-
-		if len(p.filter) == 0 {
-			p.push()
-			_, err := p.stack.exec()
-			if err != nil {
-				return err
-			}
-			p.exNum = p.stack.predEnd
-			p.pop()
-			return nil
+		var err error
+		p.filter, err = runPredicate(p)
+		if err != nil {
+			return err
 		}
-
-		for i := range p.filter {
-			p.exNum = exNum
-			p.push()
-			if n, ok := p.filter[i].(tree.Node); ok {
-				p.stack.ctx = n
-			}
-			p.stack.filter = []tree.Res{p.filter[i]}
-			p.ctxPos = i
-
-			ret, err := p.stack.exec()
-			if err != nil {
-				return err
-			}
-
-			if len(ret) == 1 {
-				if num, ok := ret[0].(numlit.NumLit); ok {
-					if int(num)-1 == i {
-						filt = append(filt, p.filter[i])
-					}
-					p.pop()
-					continue
-				}
-			}
-
-			boolFn := intfns.BuiltIn["boolean"]
-			res, err := boolFn.Fn(xpfn.Ctx{}, ret)
-
-			if err != nil {
-				return err
-			}
-
-			if res[0].(boollit.BoolLit) {
-				filt = append(filt, p.filter[i])
-			}
-
-			p.pop()
-		}
-
-		p.filter = filt
 		p.exNum = p.stack.predEnd
 
 		return nil
 	}
 
 	return beginExprToks(), ret
+}
+
+func runPredicate(p *Parser) ([]tree.Res, error) {
+	filt := make([]tree.Res, 0, len(p.filter))
+
+	if len(p.filter) == 0 {
+		p.push()
+		_, err := p.stack.exec()
+		if err != nil {
+			return nil, err
+		}
+		p.exNum = p.stack.predEnd
+		p.pop()
+		return nil, nil
+	}
+
+	exNum := p.exNum
+	for i := range p.filter {
+		p.exNum = exNum
+		p.push()
+		if n, ok := p.filter[i].(tree.Node); ok {
+			p.stack.ctx = n
+		}
+		p.stack.filter = []tree.Res{p.filter[i]}
+		p.ctxPos = i
+
+		ret, err := p.stack.exec()
+		if err != nil {
+			return nil, err
+		}
+
+		if checkPredRes(ret, i) {
+			filt = append(filt, p.filter[i])
+		}
+		p.pop()
+	}
+
+	return filt, nil
+}
+
+func checkPredRes(ret []tree.Res, i int) bool {
+	if len(ret) == 1 {
+		if num, ok := ret[0].(numlit.NumLit); ok {
+			return int(num)-1 == i
+		}
+	}
+
+	return intfns.BooleanFunc(ret)
 }
 
 func endPredicate(val string) (expTkns, XPExec) {

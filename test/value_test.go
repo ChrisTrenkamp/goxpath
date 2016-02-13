@@ -10,12 +10,7 @@ import (
 )
 
 func execVal(xp, x string, exp []string, ns map[string]string, t *testing.T) {
-	res, err := goxpath.Exec(goxpath.MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns)
-
-	if err != nil {
-		t.Error(err.Error())
-		return
-	}
+	res := goxpath.MustExec(goxpath.MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns)
 
 	if len(res) != len(exp) {
 		t.Error("Result length not valid.  Recieved:")
