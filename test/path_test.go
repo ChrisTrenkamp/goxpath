@@ -48,6 +48,13 @@ func execPath(xp, x string, exp []string, ns map[string]string, t *testing.T) {
 	}
 }
 
+func TestRoot(t *testing.T) {
+	p := `/`
+	x := `<?xml version="1.0" encoding="UTF-8"?><test><path/></test>`
+	exp := []string{"<test><path></path></test>"}
+	execPath(p, x, exp, nil, t)
+}
+
 func TestAbsPath(t *testing.T) {
 	p := ` / test / path`
 	x := `<?xml version="1.0" encoding="UTF-8"?><test><path/></test>`
@@ -92,43 +99,15 @@ func TestParent(t *testing.T) {
 
 func TestAncestor(t *testing.T) {
 	p := `/p1/p2/p3/p1/ancestor::p1`
-	x := `
-<?xml version="1.0" encoding="UTF-8"?>
-<p1>
-	<p2>
-		<p3>
-			<p1></p1>
-		</p3>
-	</p2>
-</p1>`
-	exp := []string{`<p1>
-&#x9;<p2>
-&#x9;&#x9;<p3>
-&#x9;&#x9;&#x9;<p1></p1>
-&#x9;&#x9;</p3>
-&#x9;</p2>
-</p1>`}
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2><p3><p1></p1></p3></p2></p1>`
+	exp := []string{`<p1><p2><p3><p1></p1></p3></p2></p1>`}
 	execPath(p, x, exp, nil, t)
 }
 
 func TestAncestorOrSelf(t *testing.T) {
 	p := `/p1/p2/p3/p1/ancestor-or-self::p1`
-	x := `
-<?xml version="1.0" encoding="UTF-8"?>
-<p1>
-	<p2>
-		<p3>
-			<p1></p1>
-		</p3>
-	</p2>
-</p1>`
-	exp := []string{`<p1></p1>`, `<p1>
-&#x9;<p2>
-&#x9;&#x9;<p3>
-&#x9;&#x9;&#x9;<p1></p1>
-&#x9;&#x9;</p3>
-&#x9;</p2>
-</p1>`}
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2><p3><p1></p1></p3></p2></p1>`
+	exp := []string{`<p1></p1>`, `<p1><p2><p3><p1></p1></p3></p2></p1>`}
 	execPath(p, x, exp, nil, t)
 }
 
