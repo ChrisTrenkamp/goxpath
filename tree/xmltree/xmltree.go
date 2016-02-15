@@ -42,6 +42,24 @@ func ParseXML(r io.Reader) (tree.Node, error) {
 
 	t, err := dec.Token()
 
+	if err != nil {
+		if err == io.EOF {
+			return nil, fmt.Errorf("Premature end of XML file")
+		}
+		return nil, err
+	}
+
+	switch t := t.(type) {
+	case xml.ProcInst:
+		if t.Target != "xml" {
+			return nil, fmt.Errorf("Malformed XML file")
+		}
+	default:
+		return nil, fmt.Errorf("Malformed XML file")
+	}
+
+	t, err = dec.Token()
+
 	for err == nil {
 		switch xt := t.(type) {
 		case xml.StartElement:
@@ -58,11 +76,9 @@ func ParseXML(r io.Reader) (tree.Node, error) {
 			pos.Children = append(pos.Children, ch)
 			ordrPos++
 		case xml.ProcInst:
-			if pos.Parent != pos {
-				ch := &xmlpi.XMLPI{ProcInst: xml.CopyToken(t).(xml.ProcInst), Parent: pos, NodePos: tree.NodePos(ordrPos)}
-				pos.Children = append(pos.Children, ch)
-				ordrPos++
-			}
+			ch := &xmlpi.XMLPI{ProcInst: xml.CopyToken(t).(xml.ProcInst), Parent: pos, NodePos: tree.NodePos(ordrPos)}
+			pos.Children = append(pos.Children, ch)
+			ordrPos++
 		case xml.EndElement:
 			if pos.Parent == pos {
 				return nil, fmt.Errorf("Malformed XML found.")
