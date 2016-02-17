@@ -1,15 +1,13 @@
 language: go
 
 go:
-  - 1.2
+  - 1.5
 
 before_install:
-  - go get github.com/onsi/gomega
-  - go get github.com/onsi/ginkgo
-  - go get code.google.com/p/go.tools/cmd/cover
+  - github.com/ChrisTrenkamp/goxpath
 
 script:
-  - go test -coverprofile=coverage.txt -covermode=atomic
+  - go test -coverprofile=coverage.txt -coverpkg=github.com/ChrisTrenkamp/goxpath/...
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
