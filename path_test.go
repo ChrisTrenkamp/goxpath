@@ -1,27 +1,26 @@
-package test
+package goxpath
 
 import (
 	"bytes"
 	"testing"
 
-	"github.com/ChrisTrenkamp/goxpath/goxpath"
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
 )
 
 func execPath(xp, x string, exp []string, ns map[string]string, t *testing.T) {
-	res := goxpath.MustExec(goxpath.MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns)
+	res := MustExec(MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns)
 
 	if len(res) != len(exp) {
 		t.Error("Result length not valid.  Recieved:")
 		for i := range res {
-			t.Error(goxpath.MarshalStr(res[i].(tree.Node)))
+			t.Error(MarshalStr(res[i].(tree.Node)))
 		}
 		return
 	}
 
 	for i := range res {
-		r, err := goxpath.MarshalStr(res[i].(tree.Node))
+		r, err := MarshalStr(res[i].(tree.Node))
 		if err != nil {
 			t.Error(err.Error())
 			return
@@ -281,6 +280,13 @@ func TestNamespace(t *testing.T) {
 	execPath(p, x, exp, nil, t)
 }
 
+func TestRootNamespace(t *testing.T) {
+	p := `/namespace::*`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns="http://foo.bar"><p2 xmlns:foo="http://test"></p2></p1>`
+	exp := []string{}
+	execPath(p, x, exp, nil, t)
+}
+
 func TestNamespaceXml(t *testing.T) {
 	p := `/*:p1/ * : p2 /namespace::xml`
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns="http://foo.bar"><p2 xmlns:foo="http://test"></p2></p1>`
@@ -334,10 +340,10 @@ func TestNamespace3(t *testing.T) {
 }
 
 func TestNamespace4(t *testing.T) {
-	p := `/p1/p2/p3/namespace::*`
+	p := `/test:p1/p2/p3/namespace::*`
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns="http://test"><p2 xmlns=""><p3/></p2></p1>`
-	exp := []string{}
-	execPath(p, x, exp, nil, t)
+	exp := []string{`<?namespace http://www.w3.org/XML/1998/namespace?>`}
+	execPath(p, x, exp, map[string]string{"test": "http://test"}, t)
 }
 
 func TestNodeNamespace(t *testing.T) {

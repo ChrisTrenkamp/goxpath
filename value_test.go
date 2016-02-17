@@ -1,21 +1,20 @@
-package test
+package goxpath
 
 import (
 	"bytes"
 	"testing"
 
-	"github.com/ChrisTrenkamp/goxpath/goxpath"
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
 )
 
 func execVal(xp, x string, exp []string, ns map[string]string, t *testing.T) {
-	res := goxpath.MustExec(goxpath.MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns)
+	res := MustExec(MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns)
 
 	if len(res) != len(exp) {
 		t.Error("Result length not valid.  Recieved:")
 		for i := range res {
-			t.Error(goxpath.MarshalStr(res[i].(tree.Node)))
+			t.Error(MarshalStr(res[i].(tree.Node)))
 		}
 		return
 	}

@@ -38,5 +38,5 @@ type Elem interface {
 
 //NSElem is a node that keeps track of namespaces.
 type NSElem interface {
-	GetNS() []Node
+	GetNS() map[xml.Name]Node
 }

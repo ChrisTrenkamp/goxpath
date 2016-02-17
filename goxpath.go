@@ -1,7 +1,7 @@
 package goxpath
 
 import (
-	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/parser"
+	"github.com/ChrisTrenkamp/goxpath/internal/parser"
 	"github.com/ChrisTrenkamp/goxpath/tree"
 )
 

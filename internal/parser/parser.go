@@ -6,15 +6,15 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/lexer"
-	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/parser/findutil"
-	"github.com/ChrisTrenkamp/goxpath/goxpath/internal/parser/intfns"
-	"github.com/ChrisTrenkamp/goxpath/goxpath/literals/numlit"
-	"github.com/ChrisTrenkamp/goxpath/goxpath/literals/strlit"
-	"github.com/ChrisTrenkamp/goxpath/goxpath/pathexpr"
-	"github.com/ChrisTrenkamp/goxpath/goxpath/xconst"
-	"github.com/ChrisTrenkamp/goxpath/goxpath/xpfn"
+	"github.com/ChrisTrenkamp/goxpath/internal/lexer"
+	"github.com/ChrisTrenkamp/goxpath/internal/parser/findutil"
+	"github.com/ChrisTrenkamp/goxpath/internal/parser/intfns"
+	"github.com/ChrisTrenkamp/goxpath/literals/numlit"
+	"github.com/ChrisTrenkamp/goxpath/literals/strlit"
+	"github.com/ChrisTrenkamp/goxpath/pathexpr"
 	"github.com/ChrisTrenkamp/goxpath/tree"
+	"github.com/ChrisTrenkamp/goxpath/xconst"
+	"github.com/ChrisTrenkamp/goxpath/xpfn"
 )
 
 //Parser parses an XML document and generates output from the Lexer

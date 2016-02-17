@@ -1,6 +1,6 @@
 package intfns
 
-import "github.com/ChrisTrenkamp/goxpath/goxpath/xpfn"
+import "github.com/ChrisTrenkamp/goxpath/xpfn"
 
 //BuiltIn contains the list of built-in XPath functions
 var BuiltIn = map[string]xpfn.Wrap{

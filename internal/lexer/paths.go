@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"unicode"
 
-	"github.com/ChrisTrenkamp/goxpath/goxpath/xconst"
+	"github.com/ChrisTrenkamp/goxpath/xconst"
 )
 
 func absLocPathState(l *Lexer) stateFn {

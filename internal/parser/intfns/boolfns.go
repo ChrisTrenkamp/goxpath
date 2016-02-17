@@ -1,11 +1,11 @@
 package intfns
 
 import (
-	"github.com/ChrisTrenkamp/goxpath/goxpath/literals/boollit"
-	"github.com/ChrisTrenkamp/goxpath/goxpath/literals/numlit"
-	"github.com/ChrisTrenkamp/goxpath/goxpath/literals/strlit"
-	"github.com/ChrisTrenkamp/goxpath/goxpath/xpfn"
+	"github.com/ChrisTrenkamp/goxpath/literals/boollit"
+	"github.com/ChrisTrenkamp/goxpath/literals/numlit"
+	"github.com/ChrisTrenkamp/goxpath/literals/strlit"
 	"github.com/ChrisTrenkamp/goxpath/tree"
+	"github.com/ChrisTrenkamp/goxpath/xpfn"
 )
 
 func boolean(c xpfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {

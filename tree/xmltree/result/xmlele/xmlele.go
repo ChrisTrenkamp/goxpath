@@ -50,10 +50,10 @@ func (x *XMLEle) GetAttrs() []tree.Node {
 }
 
 //GetNS returns all namespaces of the element
-func (x *XMLEle) GetNS() []tree.Node {
-	ret := make([]tree.Node, len(x.NS))
-	for i := range x.NS {
-		ret[i] = x.NS[i]
+func (x *XMLEle) GetNS() map[xml.Name]tree.Node {
+	ret := make(map[xml.Name]tree.Node)
+	for _, i := range x.NS {
+		ret[i.Attr.Name] = i
 	}
 	return ret
 }
