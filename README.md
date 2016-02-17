@@ -2,9 +2,15 @@
 An XPath implementation in Go.
 
 ###Installation
-    go get github.com/ChrisTrenkamp/goxpath/cmd/goxpath
+To retrieve the API:
 
-###Example
+    go get -u github.com/ChrisTrenkamp/goxpath
+
+To install the command-line client:
+
+    go get -u github.com/ChrisTrenkamp/goxpath/cmd/goxpath
+
+###Command-line examples
 
 #####montypython.xml
     <?xml version="1.0" encoding="UTF-8"?>
@@ -43,7 +49,7 @@ An XPath implementation in Go.
 ###API
 
 ####import
-    "github.com/ChrisTrenkamp/goxpath/goxpath"
+    "github.com/ChrisTrenkamp/goxpath"
     "github.com/ChrisTrenkamp/goxpath/tree/xmltree"
 
 ####Usage
