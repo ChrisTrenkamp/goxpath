@@ -30,51 +30,63 @@ func (n *namespace) Set(value string) error {
 	return nil
 }
 
-var rec = flag.Bool("r", false, "Recursive")
+var rec bool
+var value bool
+var ns = make(namespace)
+var args = []string{}
+var stdin io.Reader = os.Stdin
+var stdout io.ReadWriter = os.Stdout
+var stderr io.ReadWriter = os.Stderr
+
 var retCode = 0
 
-func main() {
-	ns := make(namespace)
-	value := flag.Bool("v", false, "Output the string value of the XPath result")
-
+func init() {
+	flag.BoolVar(&rec, "r", false, "Recursive")
+	flag.BoolVar(&value, "v", false, "Output the string value of the XPath result")
 	flag.Var(&ns, "ns", "Namespace mappings. e.g. -ns myns=http://example.com")
-	flag.Parse()
+}
 
-	if flag.NArg() < 1 {
-		fmt.Println("Specify an XPath expression with one or more files, or pipe the XML from stdin.")
+func main() {
+	flag.Parse()
+	args = flag.Args()
+	exec()
+	os.Exit(retCode)
+}
+
+func exec() {
+	if len(args) < 1 {
+		fmt.Fprintf(stdout, "Specify an XPath expression with one or more files, or pipe the XML from stdin.\n")
 		os.Exit(1)
 	}
 
-	xp, err := goxpath.Parse(flag.Arg(0))
+	xp, err := goxpath.Parse(args[0])
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		fmt.Fprintf(stderr, "%s\n", err.Error())
 		os.Exit(1)
 	}
 
-	if flag.NArg() == 1 {
-		ret, err := runXPath(xp, os.Stdin, ns, *value)
+	if len(args) == 1 {
+		ret, err := runXPath(xp, stdin, ns, value)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+			fmt.Fprintf(stderr, "%s\n", err.Error())
 			os.Exit(1)
 		}
 		for _, i := range ret {
-			fmt.Println(i)
+			fmt.Fprintf(stdout, "%s\n", i)
 		}
 	}
 
-	for i := 1; i < flag.NArg(); i++ {
-		procPath(flag.Arg(i), xp, ns, *value)
+	for i := 1; i < len(args); i++ {
+		procPath(args[i], xp, ns, value)
 	}
-
-	os.Exit(retCode)
 }
 
 func procPath(path string, x goxpath.XPathExec, ns namespace, value bool) {
 	f, err := os.Open(path)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not open file: %s\n", path)
+		fmt.Fprintf(stderr, "Could not open file: %s\n", path)
 		retCode = 1
 		return
 	}
@@ -82,7 +94,7 @@ func procPath(path string, x goxpath.XPathExec, ns namespace, value bool) {
 	fi, err := f.Stat()
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not open file: %s\n", path)
+		fmt.Fprintf(stderr, "Could not open file: %s\n", path)
 		retCode = 1
 		return
 	}
@@ -95,22 +107,22 @@ func procPath(path string, x goxpath.XPathExec, ns namespace, value bool) {
 	ret, err := runXPath(x, f, ns, value)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s: %s\n", path, err.Error())
+		fmt.Fprintf(stderr, "%s: %s\n", path, err.Error())
 		retCode = 1
 	}
 
 	for _, j := range ret {
-		if len(flag.Args()) > 2 || *rec {
-			fmt.Printf("%s: ", path)
+		if len(flag.Args()) > 2 || rec {
+			fmt.Fprintf(stdout, "%s: ", path)
 		}
 
-		fmt.Println(j)
+		fmt.Fprintf(stdout, "%s\n", j)
 	}
 }
 
 func procDir(path string, x goxpath.XPathExec, ns namespace, value bool) {
-	if !*rec {
-		fmt.Fprintf(os.Stderr, "%s: Is a directory\n", path)
+	if !rec {
+		fmt.Fprintf(stderr, "%s: Is a directory\n", path)
 		retCode = 1
 		return
 	}
@@ -118,7 +130,7 @@ func procDir(path string, x goxpath.XPathExec, ns namespace, value bool) {
 	list, err := ioutil.ReadDir(path)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not read directory: %s\n", path)
+		fmt.Fprintf(stderr, "Could not read directory: %s\n", path)
 		retCode = 1
 		return
 	}
