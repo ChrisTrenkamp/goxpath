@@ -1,4 +1,4 @@
-# goxpath
+# goxpath [![GoDoc](https://godoc.org/gopkg.in/src-d/go-git.v2?status.svg)](https://godoc.org/github.com/ChrisTrenkamp/goxpath) [![codecov.io](https://codecov.io/github/ChrisTrenkamp/goxpath/coverage.svg?branch=master)](https://codecov.io/github/ChrisTrenkamp/goxpath?branch=master)
 An XPath implementation in Go.
 
 ###Installation
