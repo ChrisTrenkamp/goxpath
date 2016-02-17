@@ -19,14 +19,10 @@ func position(c xpfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
 }
 
 func count(c xpfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
-	arg := args[0]
+	arg, err := xpfn.GetNode(xpfn.GetOptArg(c, args...), nil)
 
-	if len(arg) == 0 {
-		return []tree.Res{numlit.NumLit(0)}, nil
-	}
-
-	if _, ok := arg[0].(tree.Node); !ok {
-		return nil, fmt.Errorf("Argument is not a node-set")
+	if err != nil {
+		return nil, err
 	}
 
 	ret := 0
@@ -51,22 +47,10 @@ func countArg(r tree.Res, c *int) {
 }
 
 func localName(c xpfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
-	var arg []tree.Res
+	node, err := xpfn.GetFirstNode(xpfn.GetNode(xpfn.GetOptArg(c, args...), nil))
 
-	if len(args) == 0 {
-		arg = c.Filter
-	} else {
-		arg = args[0]
-	}
-
-	if len(arg) == 0 {
-		return []tree.Res{strlit.StrLit("")}, nil
-	}
-
-	node, ok := arg[0].(tree.Node)
-
-	if !ok {
-		return nil, fmt.Errorf("Argument is not a node")
+	if err != nil {
+		return nil, err
 	}
 
 	tok := node.GetToken()
@@ -90,22 +74,10 @@ func localName(c xpfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
 }
 
 func namespaceURI(c xpfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
-	var arg []tree.Res
+	node, err := xpfn.GetFirstNode(xpfn.GetNode(xpfn.GetOptArg(c, args...), nil))
 
-	if len(args) == 0 {
-		arg = c.Filter
-	} else {
-		arg = args[0]
-	}
-
-	if len(arg) == 0 {
-		return []tree.Res{strlit.StrLit("")}, nil
-	}
-
-	node, ok := arg[0].(tree.Node)
-
-	if !ok {
-		return nil, fmt.Errorf("Argument is not a node")
+	if err != nil {
+		return nil, err
 	}
 
 	tok := node.GetToken()
@@ -126,22 +98,10 @@ func namespaceURI(c xpfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
 }
 
 func name(c xpfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
-	var arg []tree.Res
+	node, err := xpfn.GetFirstNode(xpfn.GetNode(xpfn.GetOptArg(c, args...), nil))
 
-	if len(args) == 0 {
-		arg = c.Filter
-	} else {
-		arg = args[0]
-	}
-
-	if len(arg) == 0 {
-		return []tree.Res{strlit.StrLit("")}, nil
-	}
-
-	node, ok := arg[0].(tree.Node)
-
-	if !ok {
-		return nil, fmt.Errorf("Argument is not a node")
+	if err != nil {
+		return nil, err
 	}
 
 	tok := node.GetToken()
