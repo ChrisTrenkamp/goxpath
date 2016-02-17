@@ -4,7 +4,7 @@ go:
   - 1.5
 
 before_install:
-  - github.com/ChrisTrenkamp/goxpath
+  - go get github.com/ChrisTrenkamp/goxpath
 
 script:
   - go test -coverprofile=coverage.txt -coverpkg=github.com/ChrisTrenkamp/goxpath/...
