@@ -6,7 +6,7 @@ go:
 before_install:
   - go get -u github.com/ChrisTrenkamp/goxpath
   - go get -u github.com/ChrisTrenkamp/goxpath/cmd/goxpath
-  - go get -u go get github.com/wadey/gocovmerge
+  - go get -u github.com/wadey/gocovmerge
 
 script:
   - go list -f '{{if gt (len .TestGoFiles) 0}}"go test -covermode count -coverprofile {{.Name}}.coverprofile -coverpkg ./... {{.ImportPath}}"{{end}}' ./... | xargs -I {} bash -c {}
