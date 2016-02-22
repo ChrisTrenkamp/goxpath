@@ -38,5 +38,43 @@ type Elem interface {
 
 //NSElem is a node that keeps track of namespaces.
 type NSElem interface {
-	GetNS() map[xml.Name]Node
+	GetNS() map[xml.Name]NS
+}
+
+//NSStruct is a helper implementation of NSElem.
+type NSStruct struct {
+	NS map[xml.Name]NS
+}
+
+//GetNS returns all namespaces of the element
+func (x NSStruct) GetNS() map[xml.Name]NS {
+	ret := make(map[xml.Name]NS)
+
+	for k, v := range x.NS {
+		ret[k] = v
+	}
+
+	return ret
+}
+
+//NS is a namespace node.
+type NS struct {
+	xml.Attr
+	Parent Elem
+	NodePos
+}
+
+//GetToken returns the xml.Token representation of the namespace.
+func (ns NS) GetToken() xml.Token {
+	return ns.Attr
+}
+
+//GetParent returns the parent node of the namespace.
+func (ns NS) GetParent() Elem {
+	return ns.Parent
+}
+
+//String returns the string value of the namespace
+func (ns NS) String() string {
+	return ns.Attr.Value
 }

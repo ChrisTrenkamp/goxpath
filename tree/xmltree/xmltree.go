@@ -10,7 +10,6 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlchd"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlcomm"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlele"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlns"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlpi"
 )
 
@@ -30,7 +29,7 @@ func ParseXML(r io.Reader) (tree.Node, error) {
 	dec := xml.NewDecoder(r)
 	xmlTree := &xmlele.XMLEle{
 		StartElement: xml.StartElement{},
-		NS:           []*xmlns.XMLNS{},
+		NSStruct:     tree.NSStruct{NS: make(map[xml.Name]tree.NS)},
 		Attrs:        []*xmlattr.XMLAttr{},
 		Children:     []tree.Node{},
 		Parent:       nil,
@@ -95,6 +94,7 @@ func ParseXML(r io.Reader) (tree.Node, error) {
 func createEle(pos *xmlele.XMLEle, ele xml.StartElement, ordrPos *int) *xmlele.XMLEle {
 	ch := &xmlele.XMLEle{
 		StartElement: xml.CopyToken(ele).(xml.StartElement),
+		NSStruct:     tree.NSStruct{NS: make(map[xml.Name]tree.NS)},
 		Children:     []tree.Node{},
 		Parent:       pos,
 		NodePos:      tree.NodePos(*ordrPos),
@@ -113,17 +113,15 @@ func createEle(pos *xmlele.XMLEle, ele xml.StartElement, ordrPos *int) *xmlele.X
 			if attr.Local == "xmlns" && attr.Space == "" && val == "" {
 				delete(ns, attr)
 			} else {
-				ns[attr] = val
+				ns[attr] = tree.NS{Attr: xml.Attr{Name: attr, Value: val}}
 			}
 		} else {
 			attrs = append(attrs, &xmlattr.XMLAttr{Attr: &ele.Attr[i], Parent: ch})
 		}
 	}
 
-	ch.NS = make([]*xmlns.XMLNS, 0, len(ns))
-
 	for k, v := range ns {
-		ch.NS = append(ch.NS, &xmlns.XMLNS{Attr: xml.Attr{Name: k, Value: v}, Parent: ch, NodePos: tree.NodePos(*ordrPos)})
+		ch.NSStruct.NS[k] = tree.NS{Attr: v.Attr, Parent: ch, NodePos: tree.NodePos(*ordrPos)}
 		*ordrPos++
 	}
 
@@ -137,13 +135,10 @@ func createEle(pos *xmlele.XMLEle, ele xml.StartElement, ordrPos *int) *xmlele.X
 	return ch
 }
 
-func createNS(pos *xmlele.XMLEle) map[xml.Name]string {
-	ns := make(map[xml.Name]string)
+func createNS(pos tree.NSElem) map[xml.Name]tree.NS {
+	ns := pos.GetNS()
 
-	for _, i := range pos.NS {
-		ns[i.Attr.Name] = i.Attr.Value
-	}
-
-	ns[xml.Name{Space: "", Local: "xml"}] = "http://www.w3.org/XML/1998/namespace"
+	xns := xml.Name{Space: "", Local: "xml"}
+	ns[xns] = tree.NS{Attr: xml.Attr{Name: xns, Value: "http://www.w3.org/XML/1998/namespace"}}
 	return ns
 }
