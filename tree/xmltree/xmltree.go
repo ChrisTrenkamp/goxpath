@@ -66,7 +66,6 @@ func ParseXML(r io.Reader) (tree.Node, error) {
 			ch := createEle(pos, xt, &ordrPos)
 			pos.Children = append(pos.Children, ch)
 			pos = ch
-
 		case xml.CharData:
 			ch := &xmlchd.XMLChd{CharData: xml.CopyToken(t).(xml.CharData), Parent: pos, NodePos: tree.NodePos(ordrPos)}
 			pos.Children = append(pos.Children, ch)
@@ -80,10 +79,6 @@ func ParseXML(r io.Reader) (tree.Node, error) {
 			pos.Children = append(pos.Children, ch)
 			ordrPos++
 		case xml.EndElement:
-			if pos.Parent == pos {
-				return nil, fmt.Errorf("Malformed XML found.")
-			}
-
 			pos = pos.Parent.(*xmlele.XMLEle)
 		}
 
@@ -121,7 +116,7 @@ func createEle(pos *xmlele.XMLEle, ele xml.StartElement, ordrPos *int) *xmlele.X
 				ns[attr] = val
 			}
 		} else {
-			attrs = append(attrs, &xmlattr.XMLAttr{Attr: ele.Attr[i], Parent: ch})
+			attrs = append(attrs, &xmlattr.XMLAttr{Attr: &ele.Attr[i], Parent: ch})
 		}
 	}
 

@@ -8,14 +8,14 @@ import (
 
 //XMLAttr is an implementation of XPRes for XML attributes
 type XMLAttr struct {
-	xml.Attr
+	Attr   *xml.Attr
 	Parent tree.Elem
 	tree.NodePos
 }
 
 //GetToken returns the xml.Token representation of the node
 func (a *XMLAttr) GetToken() xml.Token {
-	return a.Attr
+	return *a.Attr
 }
 
 //GetParent returns the parent node

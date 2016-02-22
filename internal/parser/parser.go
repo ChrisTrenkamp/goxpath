@@ -3,7 +3,6 @@ package parser
 import (
 	"encoding/xml"
 	"fmt"
-	"sort"
 	"strconv"
 
 	"github.com/ChrisTrenkamp/goxpath/internal/lexer"
@@ -15,6 +14,7 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/xconst"
 	"github.com/ChrisTrenkamp/goxpath/xpfn"
+	"github.com/ChrisTrenkamp/goxpath/xpsort"
 )
 
 //Parser parses an XML document and generates output from the Lexer
@@ -61,12 +61,6 @@ var parseMap = map[lexer.XItemType]lexFn{
 	lexer.XItemStrLit:         strLit,
 	lexer.XItemNumLit:         numLit,
 }
-
-type nodeSort []tree.Res
-
-func (ns nodeSort) Len() int           { return len(ns) }
-func (ns nodeSort) Swap(i, j int)      { ns[i], ns[j] = ns[j], ns[i] }
-func (ns nodeSort) Less(i, j int) bool { return ns[i].(tree.Node).Pos() < ns[j].(tree.Node).Pos() }
 
 func (p *Parser) exec() ([]tree.Res, error) {
 	for p.exNum < len(*p.xpath) {
@@ -459,7 +453,7 @@ func numLit(val string) (expTkns, XPExec) {
 }
 
 func (p *Parser) find() error {
-	vals := []tree.Res{}
+	dupFilt := make(map[tree.Res]int)
 
 	if p.pExpr.Axis == "" && p.pExpr.NodeType == "" && p.pExpr.Name.Space == "" {
 		if p.pExpr.Name.Local == "." {
@@ -488,32 +482,22 @@ func (p *Parser) find() error {
 	for _, i := range p.filter {
 		if node, ok := i.(tree.Node); ok {
 			for _, j := range findutil.Find(node, p.pExpr) {
-				vals = append(vals, j)
+				dupFilt[j] = 0
 			}
 		} else {
 			return fmt.Errorf("Cannot run path expression on primitive data type.")
 		}
 	}
 
-	p.filter = remDupsAndSort(vals)
+	p.filter = make([]tree.Res, 0, len(dupFilt))
+	for i := range dupFilt {
+		p.filter = append(p.filter, i)
+	}
+
+	xpsort.SortRes(p.filter)
+
 	p.pExpr = pathexpr.PathExpr{}
 	p.ctxSize = len(p.filter)
 
 	return nil
-}
-
-func remDupsAndSort(filt []tree.Res) []tree.Res {
-	dupFilt := make(map[tree.Res]int)
-
-	for _, i := range filt {
-		dupFilt[i] = 0
-	}
-
-	filt = make([]tree.Res, 0, len(dupFilt))
-	for i := range dupFilt {
-		filt = append(filt, i)
-	}
-
-	sort.Sort(nodeSort(filt))
-	return filt
 }
