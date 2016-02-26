@@ -33,6 +33,7 @@ func (n *namespace) Set(value string) error {
 var rec bool
 var value bool
 var ns = make(namespace)
+var unstrict bool
 var args = []string{}
 var stdin io.Reader = os.Stdin
 var stdout io.ReadWriter = os.Stdout
@@ -44,6 +45,7 @@ func init() {
 	flag.BoolVar(&rec, "r", false, "Recursive")
 	flag.BoolVar(&value, "v", false, "Output the string value of the XPath result")
 	flag.Var(&ns, "ns", "Namespace mappings. e.g. -ns myns=http://example.com")
+	flag.BoolVar(&unstrict, "u", false, "Turns off strict XML validation")
 }
 
 func main() {
@@ -141,7 +143,9 @@ func procDir(path string, x goxpath.XPathExec, ns namespace, value bool) {
 }
 
 func runXPath(x goxpath.XPathExec, r io.Reader, ns namespace, value bool) ([]string, error) {
-	t, err := xmltree.ParseXML(r)
+	t, err := xmltree.ParseXML(r, func(o *xmltree.ParseOptions) {
+		o.Strict = !unstrict
+	})
 
 	if err != nil {
 		return nil, err

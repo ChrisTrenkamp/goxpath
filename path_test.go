@@ -9,7 +9,7 @@ import (
 )
 
 func execPath(xp, x string, exp []string, ns map[string]string, t *testing.T) {
-	res := MustExec(MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x), nil), ns)
+	res := MustExec(MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns)
 
 	if len(res) != len(exp) {
 		t.Error("Result length not valid.  Recieved:")

@@ -8,12 +8,8 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlele"
 )
 
-//DefOverride is the default TreeOverride implementation.  It just builds out
-//the data types under github.com/ChrisTrenkamp/goxpath/tree/xmltree/result
-type DefOverride struct{}
-
-//Root creates the root document node.  Return your own custom data type here.
-func (o DefOverride) Root() tree.Elem {
+//RootNode creates the root document node.  Return your own custom data type here.
+func RootNode() tree.Elem {
 	root := &xmlele.XMLEle{
 		//The GetToken() method should return an empty xml.StartElement struct
 		StartElement: xml.StartElement{},
@@ -32,7 +28,7 @@ func (o DefOverride) Root() tree.Elem {
 //StartElem appends ele to pos's children.  The child element will be returned.
 //ele will already have its fields filled out, they just need to be copied over
 //to the new data type.
-func (o DefOverride) StartElem(ele *xmlele.XMLEle, pos tree.Elem, dec *xml.Decoder) tree.Elem {
+func StartElem(ele *xmlele.XMLEle, pos tree.Elem, dec *xml.Decoder) tree.Elem {
 	//When implementing your own StartElem method, pos will be the type of the last call
 	//to StartElem, or Root.
 	curPos := pos.(*xmlele.XMLEle)
@@ -42,15 +38,19 @@ func (o DefOverride) StartElem(ele *xmlele.XMLEle, pos tree.Elem, dec *xml.Decod
 	return ele
 }
 
-//AddNode appends n to pos's children.  n's type will be one of *xmlchd.XMLChd, *xmlcomm.XMLComm, *xmlpi.XMLPI.
+//Node appends n to pos's children.  n's type will be one of *xmlchd.XMLChd, *xmlcomm.XMLComm, *xmlpi.XMLPI.
 //Customize the type as needed.
-func (o DefOverride) AddNode(n tree.Node, pos tree.Elem, dec *xml.Decoder) {
+func Node(n tree.Node, pos tree.Elem, dec *xml.Decoder) {
 	curPos := pos.(*xmlele.XMLEle)
 	curPos.Children = append(curPos.Children, n)
 }
 
 //EndElem marks the end of an element.  The return value is pos's parent.
-func (o DefOverride) EndElem(ele xml.EndElement, pos tree.Elem, dec *xml.Decoder) tree.Elem {
+func EndElem(ele xml.EndElement, pos tree.Elem, dec *xml.Decoder) tree.Elem {
 	curPos := pos.(*xmlele.XMLEle)
 	return curPos.Parent
 }
+
+//Directive handles directives that may occur in an XML document.  The default functionality
+//does nothing.
+func Directive(dir xml.Directive, dec *xml.Decoder) {}

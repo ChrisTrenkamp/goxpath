@@ -14,17 +14,25 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlpi"
 )
 
-//TreeOverride gives the option to override the tree with a customized structure
-type TreeOverride interface {
-	Root() tree.Elem
-	StartElem(ele *xmlele.XMLEle, pos tree.Elem, dec *xml.Decoder) tree.Elem
-	AddNode(n tree.Node, pos tree.Elem, dec *xml.Decoder)
-	EndElem(ele xml.EndElement, pos tree.Elem, dec *xml.Decoder) tree.Elem
+//ParseOptions is a set of methods and function pointers that alter
+//the way the XML decoder works and the Node types that are created.
+//Options that are not set will default to what is set in internal/defoverride.go
+type ParseOptions struct {
+	Strict    bool
+	RootNode  func() tree.Elem
+	StartElem func(ele *xmlele.XMLEle, pos tree.Elem, dec *xml.Decoder) tree.Elem
+	Node      func(n tree.Node, pos tree.Elem, dec *xml.Decoder)
+	EndElem   func(ele xml.EndElement, pos tree.Elem, dec *xml.Decoder) tree.Elem
+	Directive func(dir xml.Directive, dec *xml.Decoder)
 }
 
+//ParseSettings is a function for setting the ParseOptions you want when
+//parsing an XML tree.
+type ParseSettings func(s *ParseOptions)
+
 //MustParseXML is like ParseXML, but panics instead of returning an error.
-func MustParseXML(r io.Reader, ov TreeOverride) tree.Node {
-	ret, err := ParseXML(r, ov)
+func MustParseXML(r io.Reader, op ...ParseSettings) tree.Node {
+	ret, err := ParseXML(r, op...)
 
 	if err != nil {
 		panic(err)
@@ -34,14 +42,24 @@ func MustParseXML(r io.Reader, ov TreeOverride) tree.Node {
 }
 
 //ParseXML creates an XMLTree structure from an io.Reader.
-func ParseXML(r io.Reader, ov TreeOverride) (tree.Node, error) {
-	if ov == nil {
-		ov = defoverride.DefOverride{}
+func ParseXML(r io.Reader, op ...ParseSettings) (tree.Node, error) {
+	ov := ParseOptions{
+		Strict:    true,
+		RootNode:  defoverride.RootNode,
+		StartElem: defoverride.StartElem,
+		Node:      defoverride.Node,
+		EndElem:   defoverride.EndElem,
+		Directive: defoverride.Directive,
+	}
+	for _, i := range op {
+		i(&ov)
 	}
 
 	dec := xml.NewDecoder(r)
+	dec.Strict = ov.Strict
+
 	ordrPos := 1
-	xmlTree := ov.Root()
+	xmlTree := ov.RootNode()
 	pos := xmlTree
 
 	t, err := dec.Token()
@@ -53,16 +71,23 @@ func ParseXML(r io.Reader, ov TreeOverride) (tree.Node, error) {
 		return nil, err
 	}
 
+	brokenHeader := false
 	switch t := t.(type) {
 	case xml.ProcInst:
 		if t.Target != "xml" {
-			return nil, fmt.Errorf("Malformed XML file")
+			brokenHeader = true
 		}
 	default:
-		return nil, fmt.Errorf("Malformed XML file")
+		brokenHeader = true
 	}
 
-	t, err = dec.Token()
+	if brokenHeader {
+		if ov.Strict {
+			return nil, fmt.Errorf("Malformed XML file")
+		}
+	} else {
+		t, err = dec.Token()
+	}
 
 	for err == nil {
 		switch xt := t.(type) {
@@ -71,18 +96,20 @@ func ParseXML(r io.Reader, ov TreeOverride) (tree.Node, error) {
 			pos = ov.StartElem(ch, pos, dec)
 		case xml.CharData:
 			ch := &xmlchd.XMLChd{CharData: xml.CopyToken(t).(xml.CharData), Parent: pos, NodePos: tree.NodePos(ordrPos)}
-			ov.AddNode(ch, pos, dec)
+			ov.Node(ch, pos, dec)
 			ordrPos++
 		case xml.Comment:
 			ch := &xmlcomm.XMLComm{Comment: xml.CopyToken(t).(xml.Comment), Parent: pos, NodePos: tree.NodePos(ordrPos)}
-			ov.AddNode(ch, pos, dec)
+			ov.Node(ch, pos, dec)
 			ordrPos++
 		case xml.ProcInst:
 			ch := &xmlpi.XMLPI{ProcInst: xml.CopyToken(t).(xml.ProcInst), Parent: pos, NodePos: tree.NodePos(ordrPos)}
-			ov.AddNode(ch, pos, dec)
+			ov.Node(ch, pos, dec)
 			ordrPos++
 		case xml.EndElement:
 			pos = ov.EndElem(xt, pos, dec)
+		case xml.Directive:
+			ov.Directive(xt, dec)
 		}
 
 		t, err = dec.Token()
