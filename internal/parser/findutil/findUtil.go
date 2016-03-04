@@ -130,7 +130,7 @@ func findFollowingSibling(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 
 func findNamespace(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	if ele, ok := x.(tree.NSElem); ok {
-		for _, i := range ele.GetNS() {
+		for _, i := range ele.GetNS().BuildNS() {
 			attr := i.GetToken().(xml.Attr)
 			if evalNS(p, attr) {
 				*ret = append(*ret, i)

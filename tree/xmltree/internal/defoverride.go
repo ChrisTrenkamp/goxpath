@@ -13,11 +13,9 @@ func RootNode() tree.Elem {
 	root := &xmlele.XMLEle{
 		//The GetToken() method should return an empty xml.StartElement struct
 		StartElement: xml.StartElement{},
-		//The root node does not have any namespaces
-		NSStruct: tree.NSStruct{NS: make(map[xml.Name]tree.NS)},
-		Attrs:    []*xmlattr.XMLAttr{},
-		Children: []tree.Node{},
-		Parent:   nil,
+		Attrs:        []*xmlattr.XMLAttr{},
+		Children:     []tree.Node{},
+		Parent:       nil,
 	}
 	//The parent of the root node must be set to itself, or bad things will happen.
 	root.Parent = root

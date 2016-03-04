@@ -92,24 +92,24 @@ func ParseXML(r io.Reader, op ...ParseSettings) (tree.Node, error) {
 	for err == nil {
 		switch xt := t.(type) {
 		case xml.StartElement:
-			ch := createEle(pos, xt, &ordrPos)
+			ch := createEle(pos, xt.Copy(), &ordrPos)
 			pos = ov.StartElem(ch, pos, dec)
 		case xml.CharData:
-			ch := &xmlchd.XMLChd{CharData: xml.CopyToken(t).(xml.CharData), Parent: pos, NodePos: tree.NodePos(ordrPos)}
+			ch := &xmlchd.XMLChd{CharData: xt.Copy(), Parent: pos, NodePos: tree.NodePos(ordrPos)}
 			ov.Node(ch, pos, dec)
 			ordrPos++
 		case xml.Comment:
-			ch := &xmlcomm.XMLComm{Comment: xml.CopyToken(t).(xml.Comment), Parent: pos, NodePos: tree.NodePos(ordrPos)}
+			ch := &xmlcomm.XMLComm{Comment: xt.Copy(), Parent: pos, NodePos: tree.NodePos(ordrPos)}
 			ov.Node(ch, pos, dec)
 			ordrPos++
 		case xml.ProcInst:
-			ch := &xmlpi.XMLPI{ProcInst: xml.CopyToken(t).(xml.ProcInst), Parent: pos, NodePos: tree.NodePos(ordrPos)}
+			ch := &xmlpi.XMLPI{ProcInst: xt.Copy(), Parent: pos, NodePos: tree.NodePos(ordrPos)}
 			ov.Node(ch, pos, dec)
 			ordrPos++
 		case xml.EndElement:
 			pos = ov.EndElem(xt, pos, dec)
 		case xml.Directive:
-			ov.Directive(xt, dec)
+			ov.Directive(xt.Copy(), dec)
 		}
 
 		t, err = dec.Token()
@@ -124,18 +124,22 @@ func ParseXML(r io.Reader, op ...ParseSettings) (tree.Node, error) {
 
 func createEle(pos tree.Elem, ele xml.StartElement, ordrPos *int) *xmlele.XMLEle {
 	ch := &xmlele.XMLEle{
-		StartElement: xml.CopyToken(ele).(xml.StartElement),
-		NSStruct:     tree.NSStruct{NS: make(map[xml.Name]tree.NS)},
+		StartElement: ele,
+		NSStruct:     &tree.NSStruct{NS: make(map[xml.Name]tree.NS)},
 		Children:     []tree.Node{},
 		Parent:       pos,
 		NodePos:      tree.NodePos(*ordrPos),
 	}
 	*ordrPos++
 
-	ns := make(map[xml.Name]tree.NS)
-
+	ch.NSStruct.Elem = ch
 	if nselem, ok := pos.(tree.NSElem); ok {
-		ns = createNS(nselem)
+		ch.NSStruct.Parent = nselem.GetNS()
+	}
+
+	if pos.GetParent() == pos {
+		xns := xml.Name{Space: "", Local: "xml"}
+		ch.NSStruct.NS[xns] = tree.NS{Attr: xml.Attr{Name: xns, Value: "http://www.w3.org/XML/1998/namespace"}}
 	}
 
 	attrs := make([]*xmlattr.XMLAttr, 0, len(ele.Attr))
@@ -145,19 +149,10 @@ func createEle(pos tree.Elem, ele xml.StartElement, ordrPos *int) *xmlele.XMLEle
 		val := ele.Attr[i].Value
 
 		if (attr.Local == "xmlns" && attr.Space == "") || attr.Space == "xmlns" {
-			if attr.Local == "xmlns" && attr.Space == "" && val == "" {
-				delete(ns, attr)
-			} else {
-				ns[attr] = tree.NS{Attr: xml.Attr{Name: attr, Value: val}}
-			}
+			ch.NSStruct.NS[attr] = tree.NS{Attr: xml.Attr{Name: attr, Value: val}}
 		} else {
 			attrs = append(attrs, &xmlattr.XMLAttr{Attr: &ele.Attr[i], Parent: ch})
 		}
-	}
-
-	for k, v := range ns {
-		ch.NSStruct.NS[k] = tree.NS{Attr: v.Attr, Parent: ch, NodePos: tree.NodePos(*ordrPos)}
-		*ordrPos++
 	}
 
 	ch.Attrs = attrs
@@ -168,12 +163,4 @@ func createEle(pos tree.Elem, ele xml.StartElement, ordrPos *int) *xmlele.XMLEle
 	}
 
 	return ch
-}
-
-func createNS(pos tree.NSElem) map[xml.Name]tree.NS {
-	ns := pos.GetNS()
-
-	xns := xml.Name{Space: "", Local: "xml"}
-	ns[xns] = tree.NS{Attr: xml.Attr{Name: xns, Value: "http://www.w3.org/XML/1998/namespace"}}
-	return ns
 }

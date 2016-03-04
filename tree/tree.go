@@ -38,23 +38,56 @@ type Elem interface {
 
 //NSElem is a node that keeps track of namespaces.
 type NSElem interface {
-	GetNS() map[xml.Name]NS
+	GetNS() *NSStruct
 }
 
 //NSStruct is a helper implementation of NSElem.
 type NSStruct struct {
 	NS map[xml.Name]NS
+	Elem
+	Parent *NSStruct
 }
 
-//GetNS returns all namespaces of the element
-func (x NSStruct) GetNS() map[xml.Name]NS {
+//GetNS returns an elements NSStruct if it exists
+func (x *NSStruct) GetNS() *NSStruct {
+	return x
+}
+
+//BuildNS resolves all the namespace nodes of the element and returns them
+func (x *NSStruct) BuildNS() map[xml.Name]NS {
 	ret := make(map[xml.Name]NS)
 
-	for k, v := range x.NS {
-		ret[k] = v
+	x.buildNS(ret)
+
+	i := 0
+
+	for k, v := range ret {
+		if v.Attr.Name.Local == "xmlns" && v.Attr.Name.Space == "" && v.Attr.Value == "" {
+			delete(ret, k)
+		} else {
+			ret[k] = NS{
+				Attr:    v.Attr,
+				Parent:  x.Elem,
+				NodePos: NodePos(x.Elem.Pos() + i),
+			}
+		}
 	}
 
 	return ret
+}
+
+func (x *NSStruct) buildNS(ret map[xml.Name]NS) {
+	if x == nil {
+		return
+	}
+
+	x.Parent.buildNS(ret)
+
+	if x.NS != nil {
+		for k, v := range x.NS {
+			ret[k] = v
+		}
+	}
 }
 
 //NS is a namespace node.

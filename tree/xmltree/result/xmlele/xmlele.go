@@ -11,7 +11,7 @@ import (
 //XMLEle is an implementation of XPRes for XML elements
 type XMLEle struct {
 	xml.StartElement
-	tree.NSStruct
+	*tree.NSStruct
 	Attrs    []*xmlattr.XMLAttr
 	Children []tree.Node
 	Parent   tree.Elem
