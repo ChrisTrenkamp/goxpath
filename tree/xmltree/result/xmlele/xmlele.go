@@ -55,7 +55,7 @@ func (x *XMLEle) String() string {
 		switch t := x.Children[i].(type) {
 		case *xmlchd.XMLChd:
 			ret += t.String()
-		case *XMLEle:
+		case tree.Elem:
 			ret += t.String()
 		}
 	}
