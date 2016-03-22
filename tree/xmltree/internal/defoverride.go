@@ -11,15 +11,9 @@ import (
 //RootNode creates the root document node.  Return your own custom data type here.
 func RootNode() tree.Elem {
 	root := &xmlele.XMLEle{
-		//The GetToken() method should return an empty xml.StartElement struct
-		StartElement: xml.StartElement{},
-		Attrs:        []xmlnode.XMLNode{},
-		Children:     []tree.Node{},
-		Parent:       nil,
-		NodeType:     tree.NtRoot,
+		Children: []tree.Node{},
+		NodeType: tree.NtRoot,
 	}
-	//The parent of the root node must be set to itself, or bad things will happen.
-	root.Parent = root
 
 	return root
 }

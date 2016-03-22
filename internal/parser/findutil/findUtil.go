@@ -42,11 +42,12 @@ func Find(x tree.Node, p pathexpr.PathExpr) []tree.Node {
 }
 
 func findAncestor(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	addNode(x.GetParent(), p, ret)
-
-	if x.GetNodeType() != tree.NtRoot {
-		findAncestor(x.GetParent(), p, ret)
+	if x.GetNodeType() == tree.NtRoot {
+		return
 	}
+
+	addNode(x.GetParent(), p, ret)
+	findAncestor(x.GetParent(), p, ret)
 }
 
 func findAncestorOrSelf(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {

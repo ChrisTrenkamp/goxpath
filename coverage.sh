@@ -10,7 +10,8 @@ if [ $? != 0 ]; then
 	exit 1
 fi
 gometalinter --deadline=20s .
-go test -coverprofile=coverage.out -coverpkg=github.com/ChrisTrenkamp/goxpath/... >/dev/null 2>&1
-go tool cover -html=coverage.out -o coverage.html >/dev/null 2>&1
+go list -f '{{if gt (len .TestGoFiles) 0}}"go test -covermode count -coverprofile {{.Name}}.coverprofile -coverpkg ./... {{.ImportPath}}"{{end}} >/dev/null' ./... | xargs -I {} bash -c {} 2>/dev/null
+gocovmerge `ls *.coverprofile` > coverage.txt
+go tool cover -html=coverage.txt -o coverage.html
 firefox coverage.html
-rm coverage.out coverage.html
+rm coverage.html coverage.txt *.coverprofile

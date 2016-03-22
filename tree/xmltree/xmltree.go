@@ -135,7 +135,7 @@ func createEle(pos tree.Elem, ele xml.StartElement, ordrPos *int) *xmlele.XMLEle
 		ch.NSStruct.Parent = nselem.GetNS()
 	}
 
-	if pos.GetParent() == pos {
+	if pos.GetNodeType() == tree.NtRoot {
 		xns := xml.Name{Space: "", Local: "xml"}
 		ch.NSStruct.NS[xns] = tree.NS{Attr: xml.Attr{Name: xns, Value: "http://www.w3.org/XML/1998/namespace"}}
 	}
@@ -149,12 +149,19 @@ func createEle(pos tree.Elem, ele xml.StartElement, ordrPos *int) *xmlele.XMLEle
 		if (attr.Local == "xmlns" && attr.Space == "") || attr.Space == "xmlns" {
 			ch.NSStruct.NS[attr] = tree.NS{Attr: xml.Attr{Name: attr, Value: val}}
 		} else {
-			attrs = append(attrs, xmlnode.XMLNode{Token: &ele.Attr[i], Parent: ch, NodePos: tree.NodePos(*ordrPos), NodeType: tree.NtAttr})
-			*ordrPos++
+			attrs = append(attrs, xmlnode.XMLNode{Token: &ele.Attr[i], Parent: ch, NodeType: tree.NtAttr})
 		}
 	}
 
 	ch.Attrs = attrs
+
+	nsLen := len(ch.BuildNS())
+
+	for i := range ch.Attrs {
+		attr := &ch.Attrs[i]
+		attr.NodePos = tree.NodePos(int(*ordrPos) + nsLen + i + 1)
+		*ordrPos++
+	}
 
 	return ch
 }
