@@ -8,13 +8,13 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/internal/lexer"
 	"github.com/ChrisTrenkamp/goxpath/internal/parser/findutil"
 	"github.com/ChrisTrenkamp/goxpath/internal/parser/intfns"
+	"github.com/ChrisTrenkamp/goxpath/internal/parser/pathexpr"
 	"github.com/ChrisTrenkamp/goxpath/literals/numlit"
 	"github.com/ChrisTrenkamp/goxpath/literals/strlit"
-	"github.com/ChrisTrenkamp/goxpath/pathexpr"
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/xconst"
-	"github.com/ChrisTrenkamp/goxpath/xpfn"
-	"github.com/ChrisTrenkamp/goxpath/xpsort"
+	"github.com/ChrisTrenkamp/goxpath/xfn"
+	"github.com/ChrisTrenkamp/goxpath/xsort"
 )
 
 //Parser parses an XML document and generates output from the Lexer
@@ -340,7 +340,7 @@ func argument(val string) (expTkns, XPExec) {
 func endFunction(val string) (expTkns, XPExec) {
 	ret := func(p *Parser) error {
 		if fn, ok := intfns.BuiltIn[p.fnName]; ok {
-			filt, err := fn.Call(xpfn.Ctx{Node: p.ctx, Filter: p.filter, Size: p.ctxSize, Pos: p.ctxPos}, p.fnArgs...)
+			filt, err := fn.Call(xfn.Ctx{Node: p.ctx, Filter: p.filter, Size: p.ctxSize, Pos: p.ctxPos}, p.fnArgs...)
 
 			if err != nil {
 				return err
@@ -453,7 +453,7 @@ func numLit(val string) (expTkns, XPExec) {
 }
 
 func (p *Parser) find() error {
-	dupFilt := make(map[tree.Res]int)
+	dupFilt := make(map[int]tree.Res)
 
 	if p.pExpr.Axis == "" && p.pExpr.NodeType == "" && p.pExpr.Name.Space == "" {
 		if p.pExpr.Name.Local == "." {
@@ -482,7 +482,7 @@ func (p *Parser) find() error {
 	for _, i := range p.filter {
 		if node, ok := i.(tree.Node); ok {
 			for _, j := range findutil.Find(node, p.pExpr) {
-				dupFilt[j] = 0
+				dupFilt[j.Pos()] = j
 			}
 		} else {
 			return fmt.Errorf("Cannot run path expression on primitive data type.")
@@ -490,11 +490,11 @@ func (p *Parser) find() error {
 	}
 
 	p.filter = make([]tree.Res, 0, len(dupFilt))
-	for i := range dupFilt {
+	for _, i := range dupFilt {
 		p.filter = append(p.filter, i)
 	}
 
-	xpsort.SortRes(p.filter)
+	xsort.SortRes(p.filter)
 
 	p.pExpr = pathexpr.PathExpr{}
 	p.ctxSize = len(p.filter)

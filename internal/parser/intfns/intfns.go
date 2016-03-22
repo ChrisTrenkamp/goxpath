@@ -1,19 +1,19 @@
 package intfns
 
-import "github.com/ChrisTrenkamp/goxpath/xpfn"
+import "github.com/ChrisTrenkamp/goxpath/xfn"
 
 //BuiltIn contains the list of built-in XPath functions
-var BuiltIn = map[string]xpfn.Wrap{
+var BuiltIn = map[string]xfn.Wrap{
 	//Node set functions
-	"last":          xpfn.Wrap{Fn: last},
-	"position":      xpfn.Wrap{Fn: position},
-	"count":         xpfn.Wrap{Fn: count, NArgs: 1},
-	"local-name":    xpfn.Wrap{Fn: localName, NArgs: -1},
-	"namespace-uri": xpfn.Wrap{Fn: namespaceURI, NArgs: -1},
-	"name":          xpfn.Wrap{Fn: name, NArgs: -1},
+	"last":          xfn.Wrap{Fn: last},
+	"position":      xfn.Wrap{Fn: position},
+	"count":         xfn.Wrap{Fn: count, NArgs: 1},
+	"local-name":    xfn.Wrap{Fn: localName, NArgs: -1},
+	"namespace-uri": xfn.Wrap{Fn: namespaceURI, NArgs: -1},
+	"name":          xfn.Wrap{Fn: name, NArgs: -1},
 	//boolean functions
-	"boolean": xpfn.Wrap{Fn: boolean, NArgs: 1},
-	"not":     xpfn.Wrap{Fn: not, NArgs: 1},
-	"true":    xpfn.Wrap{Fn: _true},
-	"false":   xpfn.Wrap{Fn: _false},
+	"boolean": xfn.Wrap{Fn: boolean, NArgs: 1},
+	"not":     xfn.Wrap{Fn: not, NArgs: 1},
+	"true":    xfn.Wrap{Fn: _true},
+	"false":   xfn.Wrap{Fn: _false},
 }

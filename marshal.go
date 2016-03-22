@@ -38,33 +38,26 @@ func marshal(n tree.Node, w io.Writer) error {
 
 func encTok(n tree.Node, e *xml.Encoder) error {
 	tok := n.GetToken()
-	switch t := tok.(type) {
-	case xml.Attr:
-		return checkAttrOrNS(t, n, e)
-	case xml.CharData:
-		return e.EncodeToken(t)
-	case xml.Comment:
-		return e.EncodeToken(t)
-	case xml.StartElement:
-		return encEle(t, n, e)
-	case xml.ProcInst:
-		return e.EncodeToken(t)
-	}
-	return nil
-}
 
-func checkAttrOrNS(a xml.Attr, n tree.Node, e *xml.Encoder) error {
-	if n.GetParent() == nil || n.GetParent() == n {
-		return encAttr(a, e)
-	}
-
-	for _, i := range n.GetParent().GetAttrs() {
-		if i == n {
-			return encAttr(a, e)
+	switch n.GetNodeType() {
+	case tree.NtAttr:
+		return encAttr(tok.(xml.Attr), e)
+	case tree.NtEle:
+		return encEle(n.(tree.Elem), e)
+	case tree.NtNs:
+		return encNS(tok.(xml.Attr), e)
+	case tree.NtRoot:
+		for _, i := range n.(tree.Elem).GetChildren() {
+			err := encTok(i, e)
+			if err != nil {
+				return err
+			}
 		}
+		return nil
 	}
 
-	return encNS(a, e)
+	//case tree.NtChd, tree.NtComm, tree.NtPi:
+	return e.EncodeToken(tok)
 }
 
 func encAttr(a xml.Attr, e *xml.Encoder) error {
@@ -90,19 +83,19 @@ func encNS(ns xml.Attr, e *xml.Encoder) error {
 	return e.EncodeToken(pi)
 }
 
-func encEle(val xml.StartElement, n tree.Node, e *xml.Encoder) error {
-	if n.GetParent() != n {
-		for i := 0; i < len(val.Attr); i++ {
-			if val.Attr[i].Name.Local == "xmlns" || val.Attr[i].Name.Space == "xmlns" {
-				val.Attr = append(val.Attr[:i], val.Attr[i+1:]...)
-				i--
-			}
-		}
+func encEle(n tree.Elem, e *xml.Encoder) error {
+	val := n.GetToken().(xml.StartElement)
 
-		err := e.EncodeToken(val)
-		if err != nil {
-			return err
+	for i := 0; i < len(val.Attr); i++ {
+		if val.Attr[i].Name.Local == "xmlns" || val.Attr[i].Name.Space == "xmlns" {
+			val.Attr = append(val.Attr[:i], val.Attr[i+1:]...)
+			i--
 		}
+	}
+
+	err := e.EncodeToken(val)
+	if err != nil {
+		return err
 	}
 
 	if x, ok := n.(tree.Elem); ok {
@@ -112,10 +105,6 @@ func encEle(val xml.StartElement, n tree.Node, e *xml.Encoder) error {
 				return err
 			}
 		}
-	}
-
-	if n.GetParent() == n {
-		return nil
 	}
 
 	return e.EncodeToken(xml.EndElement{Name: val.Name})

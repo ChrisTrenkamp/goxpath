@@ -7,11 +7,8 @@ import (
 
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/internal"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlattr"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlchd"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlcomm"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlele"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlpi"
+	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlnode"
 )
 
 //ParseOptions is a set of methods and function pointers that alter
@@ -21,7 +18,7 @@ type ParseOptions struct {
 	Strict    bool
 	RootNode  func() tree.Elem
 	StartElem func(ele *xmlele.XMLEle, pos tree.Elem, dec *xml.Decoder) tree.Elem
-	Node      func(n tree.Node, pos tree.Elem, dec *xml.Decoder)
+	Node      func(n xmlnode.XMLNode, pos tree.Elem, dec *xml.Decoder)
 	EndElem   func(ele xml.EndElement, pos tree.Elem, dec *xml.Decoder) tree.Elem
 	Directive func(dir xml.Directive, dec *xml.Decoder)
 }
@@ -95,15 +92,15 @@ func ParseXML(r io.Reader, op ...ParseSettings) (tree.Node, error) {
 			ch := createEle(pos, xt.Copy(), &ordrPos)
 			pos = ov.StartElem(ch, pos, dec)
 		case xml.CharData:
-			ch := &xmlchd.XMLChd{CharData: xt.Copy(), Parent: pos, NodePos: tree.NodePos(ordrPos)}
+			ch := xmlnode.XMLNode{Token: xt.Copy(), Parent: pos, NodePos: tree.NodePos(ordrPos), NodeType: tree.NtChd}
 			ov.Node(ch, pos, dec)
 			ordrPos++
 		case xml.Comment:
-			ch := &xmlcomm.XMLComm{Comment: xt.Copy(), Parent: pos, NodePos: tree.NodePos(ordrPos)}
+			ch := xmlnode.XMLNode{Token: xt.Copy(), Parent: pos, NodePos: tree.NodePos(ordrPos), NodeType: tree.NtComm}
 			ov.Node(ch, pos, dec)
 			ordrPos++
 		case xml.ProcInst:
-			ch := &xmlpi.XMLPI{ProcInst: xt.Copy(), Parent: pos, NodePos: tree.NodePos(ordrPos)}
+			ch := xmlnode.XMLNode{Token: xt.Copy(), Parent: pos, NodePos: tree.NodePos(ordrPos), NodeType: tree.NtPi}
 			ov.Node(ch, pos, dec)
 			ordrPos++
 		case xml.EndElement:
@@ -129,6 +126,7 @@ func createEle(pos tree.Elem, ele xml.StartElement, ordrPos *int) *xmlele.XMLEle
 		Children:     []tree.Node{},
 		Parent:       pos,
 		NodePos:      tree.NodePos(*ordrPos),
+		NodeType:     tree.NtEle,
 	}
 	*ordrPos++
 
@@ -142,7 +140,7 @@ func createEle(pos tree.Elem, ele xml.StartElement, ordrPos *int) *xmlele.XMLEle
 		ch.NSStruct.NS[xns] = tree.NS{Attr: xml.Attr{Name: xns, Value: "http://www.w3.org/XML/1998/namespace"}}
 	}
 
-	attrs := make([]*xmlattr.XMLAttr, 0, len(ele.Attr))
+	attrs := make([]xmlnode.XMLNode, 0, len(ele.Attr))
 
 	for i := range ele.Attr {
 		attr := ele.Attr[i].Name
@@ -151,16 +149,12 @@ func createEle(pos tree.Elem, ele xml.StartElement, ordrPos *int) *xmlele.XMLEle
 		if (attr.Local == "xmlns" && attr.Space == "") || attr.Space == "xmlns" {
 			ch.NSStruct.NS[attr] = tree.NS{Attr: xml.Attr{Name: attr, Value: val}}
 		} else {
-			attrs = append(attrs, &xmlattr.XMLAttr{Attr: &ele.Attr[i], Parent: ch})
+			attrs = append(attrs, xmlnode.XMLNode{Token: &ele.Attr[i], Parent: ch, NodePos: tree.NodePos(*ordrPos), NodeType: tree.NtAttr})
+			*ordrPos++
 		}
 	}
 
 	ch.Attrs = attrs
-
-	for _, i := range ch.Attrs {
-		i.NodePos = tree.NodePos(*ordrPos)
-		*ordrPos++
-	}
 
 	return ch
 }

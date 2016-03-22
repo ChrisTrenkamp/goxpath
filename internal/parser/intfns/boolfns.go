@@ -5,10 +5,10 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/literals/numlit"
 	"github.com/ChrisTrenkamp/goxpath/literals/strlit"
 	"github.com/ChrisTrenkamp/goxpath/tree"
-	"github.com/ChrisTrenkamp/goxpath/xpfn"
+	"github.com/ChrisTrenkamp/goxpath/xfn"
 )
 
-func boolean(c xpfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
+func boolean(c xfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
 	return []tree.Res{boollit.BoolLit(BooleanFunc(args[0]))}, nil
 }
 
@@ -33,15 +33,15 @@ func BooleanFunc(arg []tree.Res) bool {
 	return false
 }
 
-func not(c xpfn.Ctx, arg ...[]tree.Res) ([]tree.Res, error) {
+func not(c xfn.Ctx, arg ...[]tree.Res) ([]tree.Res, error) {
 	ret, err := boolean(c, arg...)
 	return []tree.Res{boollit.BoolLit(!(ret[0].(boollit.BoolLit)))}, err
 }
 
-func _true(c xpfn.Ctx, arg ...[]tree.Res) ([]tree.Res, error) {
+func _true(c xfn.Ctx, arg ...[]tree.Res) ([]tree.Res, error) {
 	return []tree.Res{boollit.BoolLit(true)}, nil
 }
 
-func _false(c xpfn.Ctx, arg ...[]tree.Res) ([]tree.Res, error) {
+func _false(c xfn.Ctx, arg ...[]tree.Res) ([]tree.Res, error) {
 	return []tree.Res{boollit.BoolLit(false)}, nil
 }

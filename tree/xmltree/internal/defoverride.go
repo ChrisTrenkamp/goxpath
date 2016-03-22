@@ -4,8 +4,8 @@ import (
 	"encoding/xml"
 
 	"github.com/ChrisTrenkamp/goxpath/tree"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlattr"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlele"
+	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlnode"
 )
 
 //RootNode creates the root document node.  Return your own custom data type here.
@@ -13,9 +13,10 @@ func RootNode() tree.Elem {
 	root := &xmlele.XMLEle{
 		//The GetToken() method should return an empty xml.StartElement struct
 		StartElement: xml.StartElement{},
-		Attrs:        []*xmlattr.XMLAttr{},
+		Attrs:        []xmlnode.XMLNode{},
 		Children:     []tree.Node{},
 		Parent:       nil,
+		NodeType:     tree.NtRoot,
 	}
 	//The parent of the root node must be set to itself, or bad things will happen.
 	root.Parent = root
@@ -36,9 +37,8 @@ func StartElem(ele *xmlele.XMLEle, pos tree.Elem, dec *xml.Decoder) tree.Elem {
 	return ele
 }
 
-//Node appends n to pos's children.  n's type will be one of *xmlchd.XMLChd, *xmlcomm.XMLComm, *xmlpi.XMLPI.
-//Customize the type as needed.
-func Node(n tree.Node, pos tree.Elem, dec *xml.Decoder) {
+//Node appends n to pos's children.  Customize the type as needed.
+func Node(n xmlnode.XMLNode, pos tree.Elem, dec *xml.Decoder) {
 	curPos := pos.(*xmlele.XMLEle)
 	curPos.Children = append(curPos.Children, n)
 }

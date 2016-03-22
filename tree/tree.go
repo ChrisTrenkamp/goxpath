@@ -10,6 +10,25 @@ func (n NodePos) Pos() int {
 	return int(n)
 }
 
+//NodeType is a safer way to determine a node's type than type assertions.
+type NodeType int
+
+//GetNodeType returns the node's type.
+func (t NodeType) GetNodeType() NodeType {
+	return t
+}
+
+//These are all the possible node types
+const (
+	NtAttr NodeType = iota
+	NtChd
+	NtComm
+	NtEle
+	NtNs
+	NtRoot
+	NtPi
+)
+
 //Res is the result of an XPath expression
 type Res interface {
 	//String prints the node's string value
@@ -25,6 +44,8 @@ type Node interface {
 	GetToken() xml.Token
 	//GetParent returns the parent node, which will always be an XML element
 	GetParent() Elem
+	//GetNodeType returns the node's type
+	GetNodeType() NodeType
 }
 
 //Elem is a XPath result that is an element node
@@ -59,17 +80,19 @@ func (x *NSStruct) BuildNS() map[xml.Name]NS {
 
 	x.buildNS(ret)
 
-	i := 0
+	i := 1
 
 	for k, v := range ret {
 		if v.Attr.Name.Local == "xmlns" && v.Attr.Name.Space == "" && v.Attr.Value == "" {
 			delete(ret, k)
 		} else {
 			ret[k] = NS{
-				Attr:    v.Attr,
-				Parent:  x.Elem,
-				NodePos: NodePos(x.Elem.Pos() + i),
+				Attr:     v.Attr,
+				Parent:   x.Elem,
+				NodePos:  NodePos(x.Elem.Pos() + i),
+				NodeType: NtNs,
 			}
+			i++
 		}
 	}
 
@@ -95,6 +118,7 @@ type NS struct {
 	xml.Attr
 	Parent Elem
 	NodePos
+	NodeType
 }
 
 //GetToken returns the xml.Token representation of the namespace.

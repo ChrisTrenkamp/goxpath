@@ -3,7 +3,7 @@ package findutil
 import (
 	"encoding/xml"
 
-	"github.com/ChrisTrenkamp/goxpath/pathexpr"
+	"github.com/ChrisTrenkamp/goxpath/internal/parser/pathexpr"
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/xconst"
 )
@@ -42,10 +42,9 @@ func Find(x tree.Node, p pathexpr.PathExpr) []tree.Node {
 }
 
 func findAncestor(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if checkNode(x.GetParent(), p) {
-		*ret = append(*ret, x.GetParent())
-	}
-	if x.GetParent() != x {
+	addNode(x.GetParent(), p, ret)
+
+	if x.GetNodeType() != tree.NtRoot {
 		findAncestor(x.GetParent(), p, ret)
 	}
 }
@@ -58,9 +57,7 @@ func findAncestorOrSelf(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 func findAttribute(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	if ele, ok := x.(tree.Elem); ok {
 		for _, i := range ele.GetAttrs() {
-			if checkNode(i, p) {
-				*ret = append(*ret, i)
-			}
+			addNode(i, p, ret)
 		}
 	}
 }
@@ -69,9 +66,7 @@ func findChild(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	if ele, ok := x.(tree.Elem); ok {
 		ch := ele.GetChildren()
 		for i := range ch {
-			if checkNode(ch[i], p) {
-				*ret = append(*ret, ch[i])
-			}
+			addNode(ch[i], p, ret)
 		}
 	}
 }
@@ -80,9 +75,7 @@ func findDescendent(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	if ele, ok := x.(tree.Elem); ok {
 		ch := ele.GetChildren()
 		for i := range ch {
-			if checkNode(ch[i], p) {
-				*ret = append(*ret, ch[i])
-			}
+			addNode(ch[i], p, ret)
 			findDescendent(ch[i], p, ret)
 		}
 	}
@@ -94,7 +87,7 @@ func findDescendentOrSelf(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 }
 
 func findFollowing(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if x == x.GetParent() {
+	if x.GetNodeType() == tree.NtRoot {
 		return
 	}
 	par := x.GetParent()
@@ -112,7 +105,7 @@ func findFollowing(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 }
 
 func findFollowingSibling(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if x == x.GetParent() {
+	if x.GetNodeType() == tree.NtRoot {
 		return
 	}
 	par := x.GetParent()
@@ -131,22 +124,19 @@ func findFollowingSibling(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 func findNamespace(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	if ele, ok := x.(tree.NSElem); ok {
 		for _, i := range ele.GetNS().BuildNS() {
-			attr := i.GetToken().(xml.Attr)
-			if evalNS(p, attr) {
-				*ret = append(*ret, i)
-			}
+			addNode(i, p, ret)
 		}
 	}
 }
 
 func findParent(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if x.GetParent() != x && checkNode(x.GetParent(), p) {
-		*ret = append(*ret, x.GetParent())
+	if x.GetNodeType() != tree.NtRoot {
+		addNode(x.GetParent(), p, ret)
 	}
 }
 
 func findPreceding(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if x == x.GetParent() {
+	if x.GetNodeType() == tree.NtRoot {
 		return
 	}
 	par := x.GetParent()
@@ -164,7 +154,7 @@ func findPreceding(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 }
 
 func findPrecedingSibling(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if x == x.GetParent() {
+	if x.GetNodeType() == tree.NtRoot {
 		return
 	}
 	par := x.GetParent()
@@ -181,26 +171,31 @@ func findPrecedingSibling(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 }
 
 func findSelf(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if checkNode(x, p) {
-		*ret = append(*ret, x)
-	}
+	addNode(x, p, ret)
 }
 
-func checkNode(x tree.Node, p *pathexpr.PathExpr) bool {
+func addNode(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
+	add := false
 	tok := x.GetToken()
-	switch t := tok.(type) {
-	case xml.Attr:
-		return evalAttr(p, t)
-	case xml.CharData:
-		return evalChd(p)
-	case xml.Comment:
-		return evalComm(p)
-	case xml.StartElement:
-		return evalEle(p, t)
-	case xml.ProcInst:
-		return evalPI(p)
+
+	switch x.GetNodeType() {
+	case tree.NtAttr:
+		add = evalAttr(p, tok.(xml.Attr))
+	case tree.NtChd:
+		add = evalChd(p)
+	case tree.NtComm:
+		add = evalComm(p)
+	case tree.NtEle, tree.NtRoot:
+		add = evalEle(p, tok.(xml.StartElement))
+	case tree.NtNs:
+		add = evalNS(p, tok.(xml.Attr))
+	case tree.NtPi:
+		add = evalPI(p)
 	}
-	return false
+
+	if add {
+		*ret = append(*ret, x)
+	}
 }
 
 func evalAttr(p *pathexpr.PathExpr, a xml.Attr) bool {
@@ -298,10 +293,6 @@ func evalNS(p *pathexpr.PathExpr, ns xml.Attr) bool {
 }
 
 func evalPI(p *pathexpr.PathExpr) bool {
-	if p.NodeType == xconst.NodeTypeProcInst {
-		return true
-	}
-
 	if p.NodeType == xconst.NodeTypeProcInst || p.NodeType == xconst.NodeTypeNode {
 		return true
 	}

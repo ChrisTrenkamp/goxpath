@@ -1,4 +1,4 @@
-package xpfn
+package xfn
 
 import (
 	"fmt"

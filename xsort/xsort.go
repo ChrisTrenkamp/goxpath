@@ -1,4 +1,4 @@
-package xpsort
+package xsort
 
 import (
 	"sort"

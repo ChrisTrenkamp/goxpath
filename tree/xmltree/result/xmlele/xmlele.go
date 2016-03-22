@@ -4,18 +4,18 @@ import (
 	"encoding/xml"
 
 	"github.com/ChrisTrenkamp/goxpath/tree"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlattr"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlchd"
+	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlnode"
 )
 
 //XMLEle is an implementation of XPRes for XML elements
 type XMLEle struct {
 	xml.StartElement
 	*tree.NSStruct
-	Attrs    []*xmlattr.XMLAttr
+	Attrs    []xmlnode.XMLNode
 	Children []tree.Node
 	Parent   tree.Elem
 	tree.NodePos
+	tree.NodeType
 }
 
 //GetToken returns the xml.Token representation of the node
@@ -52,11 +52,9 @@ func (x *XMLEle) GetAttrs() []tree.Node {
 func (x *XMLEle) String() string {
 	ret := ""
 	for i := range x.Children {
-		switch t := x.Children[i].(type) {
-		case *xmlchd.XMLChd:
-			ret += t.String()
-		case tree.Elem:
-			ret += t.String()
+		switch x.Children[i].GetNodeType() {
+		case tree.NtChd, tree.NtEle, tree.NtRoot:
+			ret += x.Children[i].String()
 		}
 	}
 	return ret
