@@ -84,16 +84,17 @@ func encNS(ns xml.Attr, e *xml.Encoder) error {
 }
 
 func encEle(n tree.Elem, e *xml.Encoder) error {
-	val := n.GetToken().(xml.StartElement)
-
-	for i := 0; i < len(val.Attr); i++ {
-		if val.Attr[i].Name.Local == "xmlns" || val.Attr[i].Name.Space == "xmlns" {
-			val.Attr = append(val.Attr[:i], val.Attr[i+1:]...)
-			i--
-		}
+	ele := xml.StartElement{
+		Name: n.GetToken().(xml.StartElement).Name,
 	}
 
-	err := e.EncodeToken(val)
+	attrs := n.GetAttrs()
+	ele.Attr = make([]xml.Attr, len(attrs))
+	for i := range attrs {
+		ele.Attr[i] = attrs[i].GetToken().(xml.Attr)
+	}
+
+	err := e.EncodeToken(ele)
 	if err != nil {
 		return err
 	}
@@ -107,5 +108,5 @@ func encEle(n tree.Elem, e *xml.Encoder) error {
 		}
 	}
 
-	return e.EncodeToken(xml.EndElement{Name: val.Name})
+	return e.EncodeToken(ele.End())
 }
