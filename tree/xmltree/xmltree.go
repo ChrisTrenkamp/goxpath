@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 
+	"golang.org/x/net/html/charset"
+
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/internal"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlele"
@@ -53,6 +55,7 @@ func ParseXML(r io.Reader, op ...ParseSettings) (tree.Node, error) {
 	}
 
 	dec := xml.NewDecoder(r)
+	dec.CharsetReader = charset.NewReaderLabel
 	dec.Strict = ov.Strict
 
 	ordrPos := 1
