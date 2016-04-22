@@ -59,57 +59,58 @@ type Elem interface {
 
 //NSElem is a node that keeps track of namespaces.
 type NSElem interface {
-	GetNS() *NSStruct
-}
-
-//NSStruct is a helper implementation of NSElem.
-type NSStruct struct {
-	NS map[xml.Name]NS
 	Elem
-	Parent *NSStruct
+	GetNS() map[xml.Name]string
 }
 
-//GetNS returns an elements NSStruct if it exists
-func (x *NSStruct) GetNS() *NSStruct {
-	return x
+//NSBuilder is a helper-struct for satisfying the NSElem interface
+type NSBuilder struct {
+	NS map[xml.Name]string
+}
+
+//GetNS returns the namespaces found on the current element.  It should not be
+//confused with BuildNS, which actually resolves the namespace nodes.
+func (ns NSBuilder) GetNS() map[xml.Name]string {
+	return ns.NS
 }
 
 //BuildNS resolves all the namespace nodes of the element and returns them
-func (x *NSStruct) BuildNS() map[xml.Name]NS {
-	ret := make(map[xml.Name]NS)
+func BuildNS(t Elem) (ret []NS) {
+	vals := make(map[xml.Name]string)
 
-	x.buildNS(ret)
+	if nselem, ok := t.(NSElem); ok {
+		buildNS(nselem, vals)
 
-	i := 1
+		ret = make([]NS, 0, len(vals))
+		i := 1
 
-	for k, v := range ret {
-		if v.Attr.Name.Local == "xmlns" && v.Attr.Name.Space == "" && v.Attr.Value == "" {
-			delete(ret, k)
-		} else {
-			ret[k] = NS{
-				Attr:     v.Attr,
-				Parent:   x.Elem,
-				NodePos:  NodePos(x.Elem.Pos() + i),
-				NodeType: NtNs,
+		for k, v := range vals {
+			if !(k.Local == "xmlns" && k.Space == "" && v == "") {
+				ret = append(ret, NS{
+					Attr:     xml.Attr{Name: k, Value: v},
+					Parent:   t,
+					NodePos:  NodePos(t.Pos() + i),
+					NodeType: NtNs,
+				})
+				i++
 			}
-			i++
 		}
 	}
 
 	return ret
 }
 
-func (x *NSStruct) buildNS(ret map[xml.Name]NS) {
-	if x == nil {
+func buildNS(x NSElem, ret map[xml.Name]string) {
+	if x.GetNodeType() == NtRoot {
 		return
 	}
 
-	x.Parent.buildNS(ret)
+	if nselem, ok := x.GetParent().(NSElem); ok {
+		buildNS(nselem, ret)
+	}
 
-	if x.NS != nil {
-		for k, v := range x.NS {
-			ret[k] = v
-		}
+	for k, v := range x.GetNS() {
+		ret[k] = v
 	}
 }
 

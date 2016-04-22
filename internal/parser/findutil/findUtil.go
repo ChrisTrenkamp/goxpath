@@ -8,6 +8,10 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/xconst"
 )
 
+const (
+	wildcard = "*"
+)
+
 type findFunc func(tree.Node, *pathexpr.PathExpr, *[]tree.Node)
 
 var findMap = map[string]findFunc{
@@ -124,7 +128,7 @@ func findFollowingSibling(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 
 func findNamespace(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	if ele, ok := x.(tree.NSElem); ok {
-		for _, i := range ele.GetNS().BuildNS() {
+		for _, i := range tree.BuildNS(ele) {
 			addNode(i, p, ret)
 		}
 	}
@@ -201,13 +205,13 @@ func addNode(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 
 func evalAttr(p *pathexpr.PathExpr, a xml.Attr) bool {
 	if p.NodeType == "" {
-		if p.Name.Space != "*" {
+		if p.Name.Space != wildcard {
 			if a.Name.Space != p.NS[p.Name.Space] {
 				return false
 			}
 		}
 
-		if p.Name.Local == "*" && p.Axis == xconst.AxisAttribute {
+		if p.Name.Local == wildcard && p.Axis == xconst.AxisAttribute {
 			return true
 		}
 
@@ -252,15 +256,15 @@ func evalEle(p *pathexpr.PathExpr, ele xml.StartElement) bool {
 }
 
 func checkNameAndSpace(p *pathexpr.PathExpr, ele xml.StartElement) bool {
-	if p.Name.Local == "*" && p.Name.Space == "" {
+	if p.Name.Local == wildcard && p.Name.Space == "" {
 		return true
 	}
 
-	if p.Name.Space != "*" && ele.Name.Space != p.NS[p.Name.Space] {
+	if p.Name.Space != wildcard && ele.Name.Space != p.NS[p.Name.Space] {
 		return false
 	}
 
-	if p.Name.Local == "*" && p.Axis != xconst.AxisAttribute && p.Axis != xconst.AxisNamespace {
+	if p.Name.Local == wildcard && p.Axis != xconst.AxisAttribute && p.Axis != xconst.AxisNamespace {
 		return true
 	}
 
@@ -273,11 +277,11 @@ func checkNameAndSpace(p *pathexpr.PathExpr, ele xml.StartElement) bool {
 
 func evalNS(p *pathexpr.PathExpr, ns xml.Attr) bool {
 	if p.NodeType == "" {
-		if p.Name.Space != "" && p.Name.Space != "*" {
+		if p.Name.Space != "" && p.Name.Space != wildcard {
 			return false
 		}
 
-		if p.Name.Local == "*" && p.Axis == xconst.AxisNamespace {
+		if p.Name.Local == wildcard && p.Axis == xconst.AxisNamespace {
 			return true
 		}
 

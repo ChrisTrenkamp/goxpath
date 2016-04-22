@@ -125,7 +125,7 @@ func ParseXML(r io.Reader, op ...ParseSettings) (tree.Node, error) {
 func createEle(pos tree.Elem, ele xml.StartElement, ordrPos *int) *xmlele.XMLEle {
 	ch := &xmlele.XMLEle{
 		StartElement: ele,
-		NSStruct:     &tree.NSStruct{NS: make(map[xml.Name]tree.NS)},
+		NSBuilder:    tree.NSBuilder{NS: make(map[xml.Name]string)},
 		Children:     []tree.Node{},
 		Parent:       pos,
 		NodePos:      tree.NodePos(*ordrPos),
@@ -133,14 +133,8 @@ func createEle(pos tree.Elem, ele xml.StartElement, ordrPos *int) *xmlele.XMLEle
 	}
 	*ordrPos++
 
-	ch.NSStruct.Elem = ch
-	if nselem, ok := pos.(tree.NSElem); ok {
-		ch.NSStruct.Parent = nselem.GetNS()
-	}
-
 	if pos.GetNodeType() == tree.NtRoot {
-		xns := xml.Name{Space: "", Local: "xml"}
-		ch.NSStruct.NS[xns] = tree.NS{Attr: xml.Attr{Name: xns, Value: "http://www.w3.org/XML/1998/namespace"}}
+		ch.NSBuilder.NS[xml.Name{Space: "", Local: "xml"}] = "http://www.w3.org/XML/1998/namespace"
 	}
 
 	attrs := make([]xmlnode.XMLNode, 0, len(ele.Attr))
@@ -150,7 +144,7 @@ func createEle(pos tree.Elem, ele xml.StartElement, ordrPos *int) *xmlele.XMLEle
 		val := ele.Attr[i].Value
 
 		if (attr.Local == "xmlns" && attr.Space == "") || attr.Space == "xmlns" {
-			ch.NSStruct.NS[attr] = tree.NS{Attr: xml.Attr{Name: attr, Value: val}}
+			ch.NSBuilder.NS[attr] = val
 		} else {
 			attrs = append(attrs, xmlnode.XMLNode{Token: &ele.Attr[i], Parent: ch, NodeType: tree.NtAttr})
 		}
@@ -158,7 +152,7 @@ func createEle(pos tree.Elem, ele xml.StartElement, ordrPos *int) *xmlele.XMLEle
 
 	ch.Attrs = attrs
 
-	nsLen := len(ch.BuildNS())
+	nsLen := len(tree.BuildNS(ch))
 
 	for i := range ch.Attrs {
 		attr := &ch.Attrs[i]
