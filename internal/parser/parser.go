@@ -1,503 +1,204 @@
 package parser
 
 import (
-	"encoding/xml"
 	"fmt"
-	"strconv"
 
 	"github.com/ChrisTrenkamp/goxpath/internal/lexer"
-	"github.com/ChrisTrenkamp/goxpath/internal/parser/findutil"
-	"github.com/ChrisTrenkamp/goxpath/internal/parser/intfns"
-	"github.com/ChrisTrenkamp/goxpath/internal/parser/pathexpr"
-	"github.com/ChrisTrenkamp/goxpath/literals/numlit"
-	"github.com/ChrisTrenkamp/goxpath/literals/strlit"
-	"github.com/ChrisTrenkamp/goxpath/tree"
-	"github.com/ChrisTrenkamp/goxpath/xconst"
-	"github.com/ChrisTrenkamp/goxpath/xfn"
-	"github.com/ChrisTrenkamp/goxpath/xsort"
 )
 
-//Parser parses an XML document and generates output from the Lexer
-type Parser struct {
-	xpath   *[]XPExec
-	tree    tree.Node
-	exNum   int
-	ns      map[string]string
-	ctx     tree.Node
-	ctxPos  int
-	ctxSize int
-	pExpr   pathexpr.PathExpr
-	filter  []tree.Res
-	stack   *Parser
-	parent  *Parser
-	fnName  string
-	fnArgs  [][]tree.Res
-	predEnd int
+type stateType int
+
+const (
+	defState stateType = iota
+	xpathState
+	funcState
+	paramState
+	predState
+)
+
+type nodeStack struct {
+	n    *Node
+	left bool
 }
 
-//XPExec is an instruction that operates on XPath trees
-type XPExec func(*Parser) error
+type parseStack struct {
+	stack      []nodeStack
+	stateTypes []stateType
+	cur        *Node
+}
 
-type expTkns []lexer.XItemType
-type lexFn func(string) (expTkns, XPExec)
+func (p *parseStack) push(t stateType) {
+	st := nodeStack{
+		n: p.cur.Parent,
+	}
+	if p.cur.Parent != nil {
+		if p.cur.Parent.Left == p.cur {
+			st.left = true
+		}
+	}
+	p.stack = append(p.stack, st)
+	p.stateTypes = append(p.stateTypes, t)
+}
+
+func (p *parseStack) pop() error {
+	if len(p.stack) == 0 {
+		return fmt.Errorf("Malformed XPath expression.")
+	}
+
+	stackPos := len(p.stack) - 1
+	st := p.stack[stackPos]
+
+	if st.n == nil {
+		for p.cur.Parent != nil {
+			p.cur = p.cur.Parent
+		}
+	} else {
+		if st.left {
+			p.cur = st.n.Left
+		} else {
+			p.cur = st.n.Right
+		}
+	}
+
+	p.stack = p.stack[:stackPos]
+	p.stateTypes = p.stateTypes[:stackPos]
+	return nil
+}
+
+func (p *parseStack) curState() stateType {
+	if len(p.stateTypes) == 0 {
+		return defState
+	}
+	return p.stateTypes[len(p.stateTypes)-1]
+}
+
+type lexFn func(*parseStack, lexer.XItem) error
 
 var parseMap = map[lexer.XItemType]lexFn{
-	lexer.XItemAbsLocPath:     absLocPath,
-	lexer.XItemAbbrAbsLocPath: abbrAbsLocPath,
-	lexer.XItemRelLocPath:     relLocPath,
-	lexer.XItemAbbrRelLocPath: abbrRelLocPath,
-	lexer.XItemAxis:           axis,
-	lexer.XItemAbbrAxis:       abbrAxis,
-	lexer.XItemNCName:         ncName,
-	lexer.XItemQName:          qName,
-	lexer.XItemNodeType:       nodeType,
-	lexer.XItemProcLit:        procInstLit,
-	lexer.XItemEndPath:        endPath,
-	lexer.XItemFunction:       function,
-	lexer.XItemArgument:       argument,
-	lexer.XItemEndFunction:    endFunction,
-	lexer.XItemPredicate:      predicate,
-	lexer.XItemEndPredicate:   endPredicate,
-	lexer.XItemStrLit:         strLit,
-	lexer.XItemNumLit:         numLit,
+	lexer.XItemError:          xiError,
+	lexer.XItemAbsLocPath:     xiXPath,
+	lexer.XItemAbbrAbsLocPath: xiXPath,
+	lexer.XItemAbbrRelLocPath: xiXPath,
+	lexer.XItemRelLocPath:     xiXPath,
+	lexer.XItemEndPath:        xiEndPath,
+	lexer.XItemAxis:           xiXPath,
+	lexer.XItemAbbrAxis:       xiXPath,
+	lexer.XItemNCName:         xiXPath,
+	lexer.XItemQName:          xiXPath,
+	lexer.XItemNodeType:       xiXPath,
+	lexer.XItemProcLit:        xiXPath,
+	lexer.XItemFunction:       xiFunc,
+	lexer.XItemArgument:       xiFuncArg,
+	lexer.XItemEndFunction:    xiEndFunc,
+	lexer.XItemPredicate:      xiPred,
+	lexer.XItemEndPredicate:   xiEndPred,
+	lexer.XItemStrLit:         xiStrLit,
+	lexer.XItemNumLit:         xiNumLit,
 }
 
-func (p *Parser) exec() ([]tree.Res, error) {
-	for p.exNum < len(*p.xpath) {
-		err := (*p.xpath)[p.exNum](p)
-		if err != nil {
-			return nil, err
-		}
-		p.exNum++
-	}
-
-	return p.filter, nil
-}
-
-func (p *Parser) push() {
-	p.stack = &Parser{
-		xpath:   p.xpath,
-		tree:    p.tree,
-		exNum:   p.exNum + 1,
-		ns:      p.ns,
-		ctx:     p.ctx,
-		ctxSize: p.ctxSize,
-		pExpr:   pathexpr.PathExpr{},
-		filter:  nil,
-		stack:   nil,
-		parent:  p,
-		fnName:  "",
-		fnArgs:  nil,
-	}
-}
-
-func (p *Parser) pop() {
-	if p.parent != nil {
-		p.predEnd = p.exNum + 1
-		p.parent.exNum = p.exNum
-		p.exNum = len(*p.xpath)
-	}
-}
-
-//Exec executes the XPath expression, xp, against the tree, t, with the
-//namespace mappings, ns.
-func Exec(xp []XPExec, t tree.Node, ns map[string]string) ([]tree.Res, error) {
-	if ns == nil {
-		ns = make(map[string]string)
-	}
-
-	p := Parser{
-		xpath:  &xp,
-		tree:   t,
-		exNum:  0,
-		ns:     ns,
-		ctx:    t,
-		pExpr:  pathexpr.PathExpr{},
-		filter: nil,
-		stack:  nil,
-		parent: nil,
-		fnName: "",
-		fnArgs: nil,
-	}
-
-	return p.exec()
-}
-
-//Parse parses the XPath expression, xp, returning an XPath executor.
-func Parse(xp string) ([]XPExec, error) {
+//Parse creates an AST tree for XPath expressions.
+func Parse(xp string) (*Node, error) {
 	var err error
-	var next XPExec
-	tok := beginExprToks()
-	var ret []XPExec
 	c := lexer.Lex(xp)
+	p := &parseStack{cur: &Node{}}
 
-	for item := range c {
-		if item.Typ == lexer.XItemError {
-			return nil, fmt.Errorf(item.Val)
-		}
-
-		if err != nil {
-			continue
-		}
-
-		tok, next, err = eval(item.Typ, item.Val, tok)
-
-		ret = append(ret, next)
-	}
-
-	return ret, err
-}
-
-func eval(typ lexer.XItemType, val string, tkns expTkns) (expTkns, XPExec, error) {
-	ok := len(tkns) == 0
-
-	if !ok {
-		for i := range tkns {
-			if typ == tkns[i] {
-				ok = true
-				break
-			}
+	for next := range c {
+		if err == nil {
+			err = parseMap[next.Typ](p, next)
 		}
 	}
 
-	if !ok {
-		return expTkns{}, nil, fmt.Errorf("Unexpected token: %s", string(typ))
+	n := p.cur
+	for n.Parent != nil {
+		n = n.Parent
 	}
 
-	if f, ok := parseMap[typ]; ok {
-		tkns, next := f(val)
-		return tkns, next, nil
-	}
-
-	return expTkns{}, nil, fmt.Errorf("Unsupported token emitted: %s", string(typ))
+	return n, err
 }
 
-func nextPathToks() expTkns {
-	return expTkns{lexer.XItemAbsLocPath, lexer.XItemAbbrAbsLocPath, lexer.XItemAbbrRelLocPath, lexer.XItemRelLocPath, lexer.XItemPredicate, lexer.XItemEndPredicate, lexer.XItemEndPath}
+func xiError(p *parseStack, i lexer.XItem) error {
+	return fmt.Errorf(i.Val)
 }
 
-func beginExprToks() expTkns {
-	return expTkns{lexer.XItemAbsLocPath, lexer.XItemAbbrAbsLocPath, lexer.XItemAbbrRelLocPath, lexer.XItemRelLocPath, lexer.XItemStrLit, lexer.XItemNumLit}
-}
-
-func pathStartToks() expTkns {
-	return expTkns{lexer.XItemAxis, lexer.XItemAbbrAxis, lexer.XItemNCName, lexer.XItemQName, lexer.XItemNodeType, lexer.XItemFunction, lexer.XItemPredicate, lexer.XItemEndPredicate}
-}
-
-func abbrPathExpr() pathexpr.PathExpr {
-	return pathexpr.PathExpr{
-		Name:     xml.Name{},
-		Axis:     xconst.AxisDescendentOrSelf,
-		NodeType: xconst.NodeTypeNode,
-	}
-}
-
-func absLocPath(val string) (expTkns, XPExec) {
-	ret := func(p *Parser) error {
-		p.filter = []tree.Res{p.tree}
-		p.ctx = p.tree
+func xiXPath(p *parseStack, i lexer.XItem) error {
+	if p.curState() == xpathState {
+		p.cur.Push(newNode(i))
 		return nil
 	}
 
-	return append(pathStartToks(), lexer.XItemEndPath), ret
+	next := newNode(i)
+	p.cur.Add(next)
+	p.push(xpathState)
+	if p.cur.Left != nil {
+		p.cur = p.cur.Left
+	} else if p.cur.Right != nil {
+		p.cur = p.cur.Right
+	}
+	return nil
 }
 
-func abbrAbsLocPath(val string) (expTkns, XPExec) {
-	ret := func(p *Parser) error {
-		p.filter = []tree.Res{p.tree}
-		p.ctx = p.tree
-		p.pExpr = abbrPathExpr()
-		return p.find()
+func xiEndPath(p *parseStack, i lexer.XItem) error {
+	if err := p.pop(); err != nil {
+		return err
 	}
 
-	return pathStartToks(), ret
+	if p.cur.Parent != nil {
+		p.cur = p.cur.Parent
+	}
+
+	return nil
 }
 
-func relLocPath(val string) (expTkns, XPExec) {
-	ret := func(p *Parser) error {
-		return nil
-	}
-
-	return pathStartToks(), ret
+func xiFunc(p *parseStack, i lexer.XItem) error {
+	p.cur.Push(newNode(i))
+	p.push(funcState)
+	return nil
 }
 
-func abbrRelLocPath(val string) (expTkns, XPExec) {
-	ret := func(p *Parser) error {
-		p.pExpr = abbrPathExpr()
-		return p.find()
-	}
-
-	return pathStartToks(), ret
-}
-
-func axis(val string) (expTkns, XPExec) {
-	ret := func(p *Parser) error {
-		p.pExpr.Axis = val
-		return nil
-	}
-
-	return expTkns{lexer.XItemNCName, lexer.XItemQName, lexer.XItemNodeType}, ret
-}
-
-func abbrAxis(val string) (expTkns, XPExec) {
-	ret := func(p *Parser) error {
-		p.pExpr.Axis = xconst.AxisAttribute
-		return nil
-	}
-
-	return expTkns{lexer.XItemNCName, lexer.XItemQName}, ret
-}
-
-func ncName(val string) (expTkns, XPExec) {
-	ret := func(p *Parser) error {
-		p.pExpr.Name.Space = val
-		return nil
-	}
-
-	return expTkns{lexer.XItemQName}, ret
-}
-
-func qName(val string) (expTkns, XPExec) {
-	ret := func(p *Parser) error {
-		p.pExpr.Name.Local = val
-		return p.find()
-	}
-
-	return nextPathToks(), ret
-}
-
-func nodeType(val string) (expTkns, XPExec) {
-	retFunc := func(p *Parser) error {
-		p.pExpr.NodeType = val
-		return p.find()
-	}
-
-	ret := nextPathToks()
-
-	if val == xconst.NodeTypeProcInst {
-		ret = append(ret, lexer.XItemProcLit)
-	}
-
-	return ret, retFunc
-}
-
-func procInstLit(val string) (expTkns, XPExec) {
-	ret := func(p *Parser) error {
-		filt := []tree.Res{}
-		for i := range p.filter {
-			if tok, tOk := p.filter[i].(tree.Node); tOk {
-				if proc, pOk := tok.GetToken().(xml.ProcInst); pOk {
-					if proc.Target == val {
-						filt = append(filt, p.filter[i])
-					}
-				}
-			}
-		}
-
-		p.filter = filt
-		return nil
-	}
-
-	return nextPathToks(), ret
-}
-
-func endPath(val string) (expTkns, XPExec) {
-	ret := func(p *Parser) error {
-		p.pop()
-		return nil
-	}
-
-	return nil, ret
-}
-
-func function(val string) (expTkns, XPExec) {
-	ret := func(p *Parser) error {
-		p.fnName = val
-		p.fnArgs = make([][]tree.Res, 0)
-		return nil
-	}
-
-	return expTkns{lexer.XItemArgument, lexer.XItemEndFunction}, ret
-}
-
-func argument(val string) (expTkns, XPExec) {
-	ret := func(p *Parser) error {
-		p.push()
-		filt, err := p.stack.exec()
-
+func xiFuncArg(p *parseStack, i lexer.XItem) error {
+	if p.curState() != paramState {
+		p.cur.Push(newNode(i))
+		p.push(paramState)
+		p.cur.Push(&Node{})
+	} else {
+		err := p.pop()
 		if err != nil {
 			return err
 		}
-
-		p.fnArgs = append(p.fnArgs, filt)
-
-		return nil
+		p.cur.Add(newNode(i))
+		p.cur = p.cur.Right
+		p.cur.Push(&Node{})
 	}
-
-	return append(beginExprToks(), lexer.XItemEndFunction), ret
+	return nil
 }
 
-func endFunction(val string) (expTkns, XPExec) {
-	ret := func(p *Parser) error {
-		if fn, ok := intfns.BuiltIn[p.fnName]; ok {
-			filt, err := fn.Call(xfn.Ctx{Node: p.ctx, Filter: p.filter, Size: p.ctxSize, Pos: p.ctxPos}, p.fnArgs...)
-
-			if err != nil {
-				return err
-			}
-
-			if filt == nil {
-				filt = []tree.Res{}
-			}
-
-			p.filter = filt
-			return nil
-		}
-
-		return fmt.Errorf("Unknown function: '%s'", p.fnName)
-	}
-	return nil, ret
-}
-
-func predicate(val string) (expTkns, XPExec) {
-	ret := func(p *Parser) error {
-		var err error
-		p.filter, err = runPredicate(p)
+func xiEndFunc(p *parseStack, i lexer.XItem) error {
+	if p.curState() == paramState {
+		err := p.pop()
 		if err != nil {
 			return err
 		}
-		p.exNum = p.stack.predEnd
-
-		return nil
 	}
-
-	return beginExprToks(), ret
+	return p.pop()
 }
 
-func runPredicate(p *Parser) ([]tree.Res, error) {
-	filt := make([]tree.Res, 0, len(p.filter))
-
-	if len(p.filter) == 0 {
-		p.push()
-		_, err := p.stack.exec()
-		if err != nil {
-			return nil, err
-		}
-		p.exNum = p.stack.predEnd
-		p.pop()
-		return nil, nil
-	}
-
-	exNum := p.exNum
-	for i := range p.filter {
-		p.exNum = exNum
-		p.push()
-		if n, ok := p.filter[i].(tree.Node); ok {
-			p.stack.ctx = n
-		}
-		p.stack.filter = []tree.Res{p.filter[i]}
-		p.ctxPos = i
-
-		ret, err := p.stack.exec()
-		if err != nil {
-			return nil, err
-		}
-
-		if checkPredRes(ret, i) {
-			filt = append(filt, p.filter[i])
-		}
-		p.pop()
-	}
-
-	return filt, nil
+func xiPred(p *parseStack, i lexer.XItem) error {
+	p.cur.Push(newNode(i))
+	p.push(predState)
+	p.cur.Push(&Node{})
+	return nil
 }
 
-func checkPredRes(ret []tree.Res, i int) bool {
-	if len(ret) == 1 {
-		if num, ok := ret[0].(numlit.NumLit); ok {
-			return int(num)-1 == i
-		}
-	}
-
-	return intfns.BooleanFunc(ret)
+func xiEndPred(p *parseStack, i lexer.XItem) error {
+	return p.pop()
 }
 
-func endPredicate(val string) (expTkns, XPExec) {
-	ret := func(p *Parser) error {
-		return nil
-	}
-
-	return nextPathToks(), ret
+func xiStrLit(p *parseStack, i lexer.XItem) error {
+	p.cur.Add(newNode(i))
+	return nil
 }
 
-func strLit(val string) (expTkns, XPExec) {
-	ret := func(p *Parser) error {
-		p.filter = []tree.Res{strlit.StrLit(val)}
-		p.pop()
-		return nil
-	}
-	return nil, ret
-}
-
-func numLit(val string) (expTkns, XPExec) {
-	ret := func(p *Parser) error {
-		f, err := strconv.ParseFloat(val, 64)
-		if err != nil {
-			return err
-		}
-		p.filter = []tree.Res{numlit.NumLit(f)}
-		p.pop()
-		return nil
-	}
-	return nil, ret
-}
-
-func (p *Parser) find() error {
-	dupFilt := make(map[int]tree.Res)
-
-	if p.pExpr.Axis == "" && p.pExpr.NodeType == "" && p.pExpr.Name.Space == "" {
-		if p.pExpr.Name.Local == "." {
-			p.pExpr = pathexpr.PathExpr{
-				Name:     xml.Name{},
-				Axis:     xconst.AxisSelf,
-				NodeType: xconst.NodeTypeNode,
-			}
-		}
-
-		if p.pExpr.Name.Local == ".." {
-			p.pExpr = pathexpr.PathExpr{
-				Name:     xml.Name{},
-				Axis:     xconst.AxisParent,
-				NodeType: xconst.NodeTypeNode,
-			}
-		}
-	}
-
-	if p.filter == nil {
-		p.filter = []tree.Res{p.ctx}
-	}
-
-	p.pExpr.NS = p.ns
-
-	for _, i := range p.filter {
-		if node, ok := i.(tree.Node); ok {
-			for _, j := range findutil.Find(node, p.pExpr) {
-				dupFilt[j.Pos()] = j
-			}
-		} else {
-			return fmt.Errorf("Cannot run path expression on primitive data type.")
-		}
-	}
-
-	p.filter = make([]tree.Res, 0, len(dupFilt))
-	for _, i := range dupFilt {
-		p.filter = append(p.filter, i)
-	}
-
-	xsort.SortRes(p.filter)
-
-	p.pExpr = pathexpr.PathExpr{}
-	p.ctxSize = len(p.filter)
-
+func xiNumLit(p *parseStack, i lexer.XItem) error {
+	p.cur.Add(newNode(i))
 	return nil
 }

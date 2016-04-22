@@ -428,7 +428,7 @@ func TestPredicate2(t *testing.T) {
 
 func TestPredicate3(t *testing.T) {
 	p := `/p1/p2 [ last() ] /p3`
-	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2/><p2/><p2><p3 foo="bar"/></p2></p1>`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2><p3/></p2><p2><p3/></p2><p2><p3 foo="bar"/></p2></p1>`
 	exp := []string{`<p3 foo="bar"></p3>`}
 	execPath(p, x, exp, nil, t)
 }

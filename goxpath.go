@@ -1,17 +1,20 @@
 package goxpath
 
 import (
+	"github.com/ChrisTrenkamp/goxpath/internal/execxp"
 	"github.com/ChrisTrenkamp/goxpath/internal/parser"
 	"github.com/ChrisTrenkamp/goxpath/tree"
 )
 
 //XPathExec is the XPath executor, compiled from an XPath string
-type XPathExec []parser.XPExec
+type XPathExec struct {
+	n *parser.Node
+}
 
 //Exec executes the XPath expression, xp, against the tree, t, with the
 //namespace mappings, ns.
 func Exec(xp XPathExec, t tree.Node, ns map[string]string) ([]tree.Res, error) {
-	return parser.Exec(xp, t, ns)
+	return execxp.Exec(xp.n, t, ns)
 }
 
 //MustExec is like Exec, but panics instead of returning an error.
@@ -25,7 +28,8 @@ func MustExec(xp XPathExec, t tree.Node, ns map[string]string) []tree.Res {
 
 //Parse parses the XPath expression, xp, returning an XPath executor.
 func Parse(xp string) (XPathExec, error) {
-	return parser.Parse(xp)
+	n, err := parser.Parse(xp)
+	return XPathExec{n: n}, err
 }
 
 //MustParse is like Parse, but panics instead of returning an error.

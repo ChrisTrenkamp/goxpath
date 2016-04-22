@@ -10,8 +10,6 @@ import (
 const (
 	//XItemError is an error with the parser input
 	XItemError XItemType = "Error"
-	//XItemEOF is the end of the parser input
-	XItemEOF = "EOF"
 	//XItemAbsLocPath is an absolute path
 	XItemAbsLocPath = "Absolute path"
 	//XItemAbbrAbsLocPath represents an abbreviated absolute path
@@ -91,7 +89,6 @@ func (l *Lexer) run() {
 
 	if l.peek() != eof {
 		l.errorf("Malformed XPath expression")
-		fmt.Println(l.input[l.pos:])
 	}
 
 	close(l.items)
