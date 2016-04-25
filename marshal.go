@@ -37,15 +37,13 @@ func marshal(n tree.Node, w io.Writer) error {
 }
 
 func encTok(n tree.Node, e *xml.Encoder) error {
-	tok := n.GetToken()
-
 	switch n.GetNodeType() {
 	case tree.NtAttr:
-		return encAttr(tok.(xml.Attr), e)
+		return encAttr(n.GetToken().(xml.Attr), e)
 	case tree.NtEle:
 		return encEle(n.(tree.Elem), e)
 	case tree.NtNs:
-		return encNS(tok.(xml.Attr), e)
+		return encNS(n.GetToken().(xml.Attr), e)
 	case tree.NtRoot:
 		for _, i := range n.(tree.Elem).GetChildren() {
 			err := encTok(i, e)
@@ -57,7 +55,7 @@ func encTok(n tree.Node, e *xml.Encoder) error {
 	}
 
 	//case tree.NtChd, tree.NtComm, tree.NtPi:
-	return e.EncodeToken(tok)
+	return e.EncodeToken(n.GetToken())
 }
 
 func encAttr(a xml.Attr, e *xml.Encoder) error {

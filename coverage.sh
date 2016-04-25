@@ -9,7 +9,7 @@ if [ $? != 0 ]; then
 	go test
 	exit 1
 fi
-gometalinter --deadline=20s .
+gometalinter --deadline=1m ./...
 go list -f '{{if gt (len .TestGoFiles) 0}}"go test -covermode count -coverprofile {{.Name}}.coverprofile -coverpkg ./... {{.ImportPath}}"{{end}} >/dev/null' ./... | xargs -I {} bash -c {} 2>/dev/null
 gocovmerge `ls *.coverprofile` > coverage.txt
 go tool cover -html=coverage.txt -o coverage.html

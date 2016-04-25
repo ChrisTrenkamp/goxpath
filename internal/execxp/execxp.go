@@ -5,8 +5,6 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/tree"
 )
 
-type nodeExec func(n *parser.Node, t tree.Node, ns map[string]string) ([]tree.Res, error)
-
 //Exec executes the XPath expression, xp, against the tree, t, with the
 //namespace mappings, ns.
 func Exec(n *parser.Node, t tree.Node, ns map[string]string) ([]tree.Res, error) {

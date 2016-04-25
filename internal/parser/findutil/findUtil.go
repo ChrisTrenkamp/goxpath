@@ -6,6 +6,7 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/internal/parser/pathexpr"
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/xconst"
+	"github.com/ChrisTrenkamp/goxpath/xsort"
 )
 
 const (
@@ -128,7 +129,9 @@ func findFollowingSibling(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 
 func findNamespace(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 	if ele, ok := x.(tree.NSElem); ok {
-		for _, i := range tree.BuildNS(ele) {
+		ns := tree.BuildNS(ele)
+		xsort.SortNS(ns)
+		for _, i := range ns {
 			addNode(i, p, ret)
 		}
 	}

@@ -8,21 +8,23 @@ import (
 	"golang.org/x/net/html/charset"
 
 	"github.com/ChrisTrenkamp/goxpath/tree"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/internal"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlele"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/result/xmlnode"
+	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/xmlbuilder"
+	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/xmlele"
 )
 
 //ParseOptions is a set of methods and function pointers that alter
 //the way the XML decoder works and the Node types that are created.
 //Options that are not set will default to what is set in internal/defoverride.go
 type ParseOptions struct {
-	Strict    bool
-	RootNode  func() tree.Elem
-	StartElem func(ele *xmlele.XMLEle, pos tree.Elem, dec *xml.Decoder) tree.Elem
-	Node      func(n xmlnode.XMLNode, pos tree.Elem, dec *xml.Decoder)
-	EndElem   func(ele xml.EndElement, pos tree.Elem, dec *xml.Decoder) tree.Elem
-	Directive func(dir xml.Directive, dec *xml.Decoder)
+	Strict  bool
+	XMLRoot func() xmlbuilder.XMLBuilder
+}
+
+//DirectiveParser is an optional interface extended from XMLBuilder that handles
+//XML directives.
+type DirectiveParser interface {
+	xmlbuilder.XMLBuilder
+	Directive(xml.Directive, *xml.Decoder)
 }
 
 //ParseSettings is a function for setting the ParseOptions you want when
@@ -43,12 +45,8 @@ func MustParseXML(r io.Reader, op ...ParseSettings) tree.Node {
 //ParseXML creates an XMLTree structure from an io.Reader.
 func ParseXML(r io.Reader, op ...ParseSettings) (tree.Node, error) {
 	ov := ParseOptions{
-		Strict:    true,
-		RootNode:  defoverride.RootNode,
-		StartElem: defoverride.StartElem,
-		Node:      defoverride.Node,
-		EndElem:   defoverride.EndElem,
-		Directive: defoverride.Directive,
+		Strict:  true,
+		XMLRoot: xmlele.Root,
 	}
 	for _, i := range op {
 		i(&ov)
@@ -59,8 +57,7 @@ func ParseXML(r io.Reader, op ...ParseSettings) (tree.Node, error) {
 	dec.Strict = ov.Strict
 
 	ordrPos := 1
-	xmlTree := ov.RootNode()
-	pos := xmlTree
+	xmlTree := ov.XMLRoot()
 
 	t, err := dec.Token()
 
@@ -89,27 +86,35 @@ func ParseXML(r io.Reader, op ...ParseSettings) (tree.Node, error) {
 		t, err = dec.Token()
 	}
 
+	opts := xmlbuilder.BuilderOpts{
+		Dec: dec,
+	}
+
 	for err == nil {
 		switch xt := t.(type) {
 		case xml.StartElement:
-			ch := createEle(pos, xt.Copy(), &ordrPos)
-			pos = ov.StartElem(ch, pos, dec)
+			setEle(&opts, xmlTree, xt, &ordrPos)
+			if xmlTree.GetNodeType() == tree.NtRoot {
+				opts.NS[xml.Name{Space: "", Local: "xml"}] = "http://www.w3.org/XML/1998/namespace"
+				opts.AttrStartPos++
+				ordrPos++
+			}
+			xmlTree = xmlTree.CreateNode(&opts)
 		case xml.CharData:
-			ch := xmlnode.XMLNode{Token: xt.Copy(), Parent: pos, NodePos: tree.NodePos(ordrPos), NodeType: tree.NtChd}
-			ov.Node(ch, pos, dec)
-			ordrPos++
+			setNode(&opts, xmlTree, xt, tree.NtChd, &ordrPos)
+			xmlTree = xmlTree.CreateNode(&opts)
 		case xml.Comment:
-			ch := xmlnode.XMLNode{Token: xt.Copy(), Parent: pos, NodePos: tree.NodePos(ordrPos), NodeType: tree.NtComm}
-			ov.Node(ch, pos, dec)
-			ordrPos++
+			setNode(&opts, xmlTree, xt, tree.NtComm, &ordrPos)
+			xmlTree = xmlTree.CreateNode(&opts)
 		case xml.ProcInst:
-			ch := xmlnode.XMLNode{Token: xt.Copy(), Parent: pos, NodePos: tree.NodePos(ordrPos), NodeType: tree.NtPi}
-			ov.Node(ch, pos, dec)
-			ordrPos++
+			setNode(&opts, xmlTree, xt, tree.NtPi, &ordrPos)
+			xmlTree = xmlTree.CreateNode(&opts)
 		case xml.EndElement:
-			pos = ov.EndElem(xt, pos, dec)
+			xmlTree = xmlTree.EndElem()
 		case xml.Directive:
-			ov.Directive(xt.Copy(), dec)
+			if dp, ok := xmlTree.(DirectiveParser); ok {
+				dp.Directive(xt.Copy(), dec)
+			}
 		}
 
 		t, err = dec.Token()
@@ -122,43 +127,52 @@ func ParseXML(r io.Reader, op ...ParseSettings) (tree.Node, error) {
 	return xmlTree, err
 }
 
-func createEle(pos tree.Elem, ele xml.StartElement, ordrPos *int) *xmlele.XMLEle {
-	ch := &xmlele.XMLEle{
-		StartElement: ele,
-		NSBuilder:    tree.NSBuilder{NS: make(map[xml.Name]string)},
-		Children:     []tree.Node{},
-		Parent:       pos,
-		NodePos:      tree.NodePos(*ordrPos),
-		NodeType:     tree.NtEle,
-	}
+func setEle(opts *xmlbuilder.BuilderOpts, xmlTree xmlbuilder.XMLBuilder, ele xml.StartElement, ordrPos *int) {
+	opts.NodePos = *ordrPos
+	opts.Tok = ele
+	opts.Attrs = opts.Attrs[0:0:cap(opts.Attrs)]
+	opts.NS = make(map[xml.Name]string)
+	opts.NodeType = tree.NtEle
+
 	*ordrPos++
-
-	if pos.GetNodeType() == tree.NtRoot {
-		ch.NSBuilder.NS[xml.Name{Space: "", Local: "xml"}] = "http://www.w3.org/XML/1998/namespace"
-	}
-
-	attrs := make([]xmlnode.XMLNode, 0, len(ele.Attr))
 
 	for i := range ele.Attr {
 		attr := ele.Attr[i].Name
 		val := ele.Attr[i].Value
 
 		if (attr.Local == "xmlns" && attr.Space == "") || attr.Space == "xmlns" {
-			ch.NSBuilder.NS[attr] = val
+			opts.NS[attr] = val
 		} else {
-			attrs = append(attrs, xmlnode.XMLNode{Token: &ele.Attr[i], Parent: ch, NodeType: tree.NtAttr})
+			opts.Attrs = append(opts.Attrs, &ele.Attr[i])
 		}
 	}
 
-	ch.Attrs = attrs
+	attrStart := *ordrPos
 
-	nsLen := len(tree.BuildNS(ch))
+	if nstree, ok := xmlTree.(tree.NSElem); ok {
+		ns := tree.BuildNS(nstree)
 
-	for i := range ch.Attrs {
-		attr := &ch.Attrs[i]
-		attr.NodePos = tree.NodePos(int(*ordrPos) + nsLen + i + 1)
-		*ordrPos++
+		for _, i := range ns {
+			if _, ok := opts.NS[i.Attr.Name]; !ok {
+				attrStart++
+			}
+		}
+
+		if _, ok := opts.NS[xml.Name{Space: "", Local: "xmlns"}]; ok {
+			attrStart--
+		}
+
+		attrStart += len(opts.NS)
 	}
 
-	return ch
+	attrStart += len(ele.Attr) - len(opts.NS)
+	opts.AttrStartPos = attrStart
+	*ordrPos = attrStart + 1
+}
+
+func setNode(opts *xmlbuilder.BuilderOpts, xmlTree xmlbuilder.XMLBuilder, tok xml.Token, nt tree.NodeType, ordrPos *int) {
+	opts.Tok = xml.CopyToken(tok)
+	opts.NodeType = nt
+	opts.NodePos = *ordrPos
+	*ordrPos++
 }
