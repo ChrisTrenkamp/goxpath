@@ -77,7 +77,7 @@ func TestDir(t *testing.T) {
 	stderr = err
 	exec()
 	val := strings.Replace(out.String(), "test\\subdir\\", "test/subdir/", -1)
-	if val != `test/subdir/2.xml: <foo>bar</foo>`+"\n"+`test/subdir/3.xml: <foo>bar2</foo>`+"\n" {
+	if val != `test/subdir/2.xml:<foo>bar</foo>`+"\n"+`test/subdir/3.xml:<foo>bar2</foo>`+"\n" {
 		t.Error(`Incorrect result.  Recieved: `, val)
 	}
 	if retCode != 0 {

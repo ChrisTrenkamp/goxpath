@@ -29,7 +29,7 @@ func (a XMLNode) GetParent() tree.Elem {
 }
 
 //String returns the string value of the attribute
-func (a XMLNode) String() string {
+func (a XMLNode) ResValue() string {
 	switch a.NodeType {
 	case tree.NtAttr:
 		return a.Token.(*xml.Attr).Value

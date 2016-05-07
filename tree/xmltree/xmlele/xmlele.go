@@ -94,12 +94,12 @@ func (x *XMLEle) GetAttrs() []tree.Node {
 }
 
 //String returns the string value of the element and children
-func (x *XMLEle) String() string {
+func (x *XMLEle) ResValue() string {
 	ret := ""
 	for i := range x.Children {
 		switch x.Children[i].GetNodeType() {
 		case tree.NtChd, tree.NtEle, tree.NtRoot:
-			ret += x.Children[i].String()
+			ret += x.Children[i].ResValue()
 		}
 	}
 	return ret

@@ -104,7 +104,7 @@ func GetBool(res []tree.Res, e error) (bool, error) {
 	}
 
 	if b, ok := res[0].(boollit.BoolLit); ok {
-		return b.String() == "true", nil
+		return b.ResValue() == "true", nil
 	}
 
 	return false, fmt.Errorf("Result set is not a single boolean")
@@ -122,7 +122,7 @@ func GetString(res []tree.Res, e error) (string, error) {
 	}
 
 	if s, ok := res[0].(strlit.StrLit); ok {
-		return s.String(), nil
+		return s.ResValue(), nil
 	}
 
 	return "", fmt.Errorf("Result set is not a single string")

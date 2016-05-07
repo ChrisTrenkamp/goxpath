@@ -32,7 +32,7 @@ const (
 //Res is the result of an XPath expression
 type Res interface {
 	//String prints the node's string value
-	String() string
+	ResValue() string
 }
 
 //Node is a XPath result that is a node except elements
@@ -133,6 +133,6 @@ func (ns NS) GetParent() Elem {
 }
 
 //String returns the string value of the namespace
-func (ns NS) String() string {
+func (ns NS) ResValue() string {
 	return ns.Attr.Value
 }

@@ -115,7 +115,7 @@ func procPath(path string, x goxpath.XPathExec, ns namespace, value bool) {
 
 	for _, j := range ret {
 		if len(flag.Args()) > 2 || rec {
-			fmt.Fprintf(stdout, "%s: ", path)
+			fmt.Fprintf(stdout, "%s:", path)
 		}
 
 		fmt.Fprintf(stdout, "%s\n", j)
@@ -161,7 +161,7 @@ func runXPath(x goxpath.XPathExec, r io.Reader, ns namespace, value bool) ([]str
 
 	for i := range res {
 		if _, ok := res[i].(tree.Node); !ok || value {
-			ret[i] = res[i].String()
+			ret[i] = res[i].ResValue()
 		} else {
 			buf := bytes.Buffer{}
 			err = goxpath.Marshal(res[i].(tree.Node), &buf)

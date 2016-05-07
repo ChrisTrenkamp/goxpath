@@ -20,7 +20,7 @@ func execVal(xp, x string, exp []string, ns map[string]string, t *testing.T) {
 	}
 
 	for i := range res {
-		r := res[i].String()
+		r := res[i].ResValue()
 		valid := false
 		for j := range exp {
 			if r == exp[j] {
