@@ -2,7 +2,6 @@ package lexer
 
 import (
 	"fmt"
-	"unicode"
 
 	"github.com/ChrisTrenkamp/goxpath/xconst"
 )
@@ -31,9 +30,7 @@ func stepState(l *Lexer) stateFn {
 	l.skipWS(true)
 	r := l.next()
 
-	for string(r) != ":" && string(r) != "/" &&
-		(unicode.Is(first, r) || unicode.Is(second, r) || string(r) == "*") &&
-		r != eof {
+	for isElemChar(r) {
 		r = l.next()
 	}
 
@@ -194,7 +191,7 @@ func getNextPathState(l *Lexer, state XItemType) stateFn {
 	}
 
 	l.emit(XItemEndPath)
-	return nil
+	return findOperatorState
 }
 
 func getPred(l *Lexer) error {

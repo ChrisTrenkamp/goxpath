@@ -14,6 +14,7 @@ const (
 	funcState
 	paramState
 	predState
+	parenState
 )
 
 type nodeStack struct {
@@ -94,6 +95,24 @@ var parseMap = map[lexer.XItemType]lexFn{
 	lexer.XItemEndPredicate:   xiEndPred,
 	lexer.XItemStrLit:         xiStrLit,
 	lexer.XItemNumLit:         xiNumLit,
+	lexer.XItemOperator:       xiOp,
+}
+
+var opPrecedence = map[string]int{
+	"|":   1,
+	"*":   2,
+	"div": 2,
+	"mod": 2,
+	"+":   3,
+	"-":   3,
+	"=":   4,
+	"!=":  4,
+	"<":   4,
+	"<=":  4,
+	">":   4,
+	">=":  4,
+	"and": 5,
+	"or":  6,
 }
 
 //Parse creates an AST tree for XPath expressions.
@@ -129,10 +148,8 @@ func xiXPath(p *parseStack, i lexer.XItem) error {
 	next := newNode(i)
 	p.cur.Add(next)
 	p.push(xpathState)
-	if p.cur.Left != nil {
-		p.cur = p.cur.Left
-	} else if p.cur.Right != nil {
-		p.cur = p.cur.Right
+	if next.Parent == p.cur {
+		p.cur = next
 	}
 	return nil
 }
@@ -140,10 +157,6 @@ func xiXPath(p *parseStack, i lexer.XItem) error {
 func xiEndPath(p *parseStack, i lexer.XItem) error {
 	if err := p.pop(); err != nil {
 		return err
-	}
-
-	if p.cur.Parent != nil {
-		p.cur = p.cur.Parent
 	}
 
 	return nil
@@ -200,5 +213,29 @@ func xiStrLit(p *parseStack, i lexer.XItem) error {
 
 func xiNumLit(p *parseStack, i lexer.XItem) error {
 	p.cur.Add(newNode(i))
+	return nil
+}
+
+func xiOp(p *parseStack, i lexer.XItem) error {
+	if i.Val == "(" {
+		p.push(parenState)
+		p.cur.Push(&Node{})
+		return nil
+	}
+
+	if i.Val == ")" {
+		return p.pop()
+	}
+
+	if p.cur.Val.Typ == lexer.XItemOperator {
+		if opPrecedence[p.cur.Val.Val] <= opPrecedence[i.Val] {
+			p.cur.Add(newNode(i))
+		} else {
+			p.cur.Push(newNode(i))
+		}
+	} else {
+		p.cur.Add(newNode(i))
+	}
+
 	return nil
 }

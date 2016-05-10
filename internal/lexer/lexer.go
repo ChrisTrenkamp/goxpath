@@ -46,6 +46,8 @@ const (
 	XItemStrLit = "string literal"
 	//XItemNumLit marks a numeric literal
 	XItemNumLit = "numeric literal"
+	//XItemOperator marks an operator
+	XItemOperator = "operator"
 )
 
 const (
@@ -201,18 +203,17 @@ func (l *Lexer) errorf(format string, args ...interface{}) stateFn {
 	return nil
 }
 
+func isElemChar(r rune) bool {
+	return string(r) != ":" && string(r) != "/" &&
+		(unicode.Is(first, r) || unicode.Is(second, r) || string(r) == "*") &&
+		r != eof
+}
+
 func startState(l *Lexer) stateFn {
 	l.skipWS(true)
 
-	if string(l.peek()) == `'` || string(l.peek()) == `"` {
-		if err := getStrLit(l, XItemStrLit); err != nil {
-			return l.errorf(err.Error())
-		}
-
-		return nil
-	} else if getNumLit(l) {
-		return nil
-	} else if string(l.next()) == "/" {
+	if string(l.peek()) == "/" {
+		l.next()
 		l.ignore()
 
 		if string(l.next()) == "/" {
@@ -222,10 +223,87 @@ func startState(l *Lexer) stateFn {
 
 		l.backup()
 		return absLocPathState
+	} else if string(l.peek()) == `'` || string(l.peek()) == `"` {
+		if err := getStrLit(l, XItemStrLit); err != nil {
+			return l.errorf(err.Error())
+		}
+
+		return nil
+	} else if getNumLit(l) {
+		l.skipWS(true)
+		if l.peek() != eof {
+			return startState
+		}
+	} else if st := findOperatorState(l); st != nil {
+		return st
+	} else if isElemChar(l.peek()) || string(l.peek()) == "@" {
+		return relLocPathState
 	}
 
-	l.backup()
-	return relLocPathState
+	return nil
+}
+
+func findOperatorState(l *Lexer) stateFn {
+	l.skipWS(true)
+
+	switch string(l.peek()) {
+	case ">", "<", "!":
+		l.next()
+		if string(l.peek()) == "=" {
+			l.next()
+		}
+		l.emit(XItemOperator)
+		return startState
+	case "|", "+", "-", "*", "=":
+		l.next()
+		l.emit(XItemOperator)
+		return startState
+	case "(":
+		l.next()
+		l.emit(XItemOperator)
+		for state := startState; state != nil; {
+			state = state(l)
+		}
+		l.skipWS(true)
+		if string(l.next()) != ")" {
+			return l.errorf("Missing end )")
+		}
+		l.emit(XItemOperator)
+		return startState
+	}
+
+	if string(l.peek()) == "a" && string(l.peekAt(2)) == "n" && string(l.peekAt(3)) == "d" {
+		l.next()
+		l.next()
+		l.next()
+		l.emit(XItemOperator)
+		return startState
+	}
+
+	if string(l.peek()) == "o" && string(l.peekAt(2)) == "r" {
+		l.next()
+		l.next()
+		l.emit(XItemOperator)
+		return startState
+	}
+
+	if string(l.peek()) == "m" && string(l.peekAt(2)) == "o" && string(l.peekAt(3)) == "d" {
+		l.next()
+		l.next()
+		l.next()
+		l.emit(XItemOperator)
+		return startState
+	}
+
+	if string(l.peek()) == "d" && string(l.peekAt(2)) == "i" && string(l.peekAt(3)) == "v" {
+		l.next()
+		l.next()
+		l.next()
+		l.emit(XItemOperator)
+		return startState
+	}
+
+	return nil
 }
 
 func getStrLit(l *Lexer, tok XItemType) error {

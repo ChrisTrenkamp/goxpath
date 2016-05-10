@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ChrisTrenkamp/goxpath/literals/boollit"
+	"github.com/ChrisTrenkamp/goxpath/literals/numlit"
 	"github.com/ChrisTrenkamp/goxpath/literals/strlit"
 	"github.com/ChrisTrenkamp/goxpath/tree"
 )
@@ -35,6 +36,10 @@ func (w Wrap) Call(c Ctx, args ...[]tree.Res) ([]tree.Res, error) {
 			return nil, fmt.Errorf("Too many arguments.")
 		}
 
+		if len(args) == 0 {
+			return w.Fn(c, c.Filter)
+		}
+
 		return w.Fn(c, args...)
 	}
 
@@ -64,6 +69,10 @@ func GetOptArg(c Ctx, args ...[]tree.Res) []tree.Res {
 func GetNode(res []tree.Res, e error) ([]tree.Node, error) {
 	if e != nil {
 		return nil, e
+	}
+
+	if len(res) == 0 {
+		return nil, fmt.Errorf("Argument has no nodes")
 	}
 
 	ret := make([]tree.Node, len(res))
@@ -126,4 +135,22 @@ func GetString(res []tree.Res, e error) (string, error) {
 	}
 
 	return "", fmt.Errorf("Result set is not a single string")
+}
+
+//GetNumber casts the first argument in res to a number.  If the length of res
+//is not 1, then it returns an error.
+func GetNumber(res []tree.Res, e error) (float64, error) {
+	if e != nil {
+		return 0, e
+	}
+
+	if len(res) != 1 {
+		return 0, fmt.Errorf("Result set is not a single number")
+	}
+
+	if s, ok := res[0].(numlit.NumLit); ok {
+		return float64(s), nil
+	}
+
+	return 0, fmt.Errorf("Result set is not a single string")
 }

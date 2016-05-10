@@ -4,6 +4,8 @@ import "github.com/ChrisTrenkamp/goxpath/xfn"
 
 //BuiltIn contains the list of built-in XPath functions
 var BuiltIn = map[string]xfn.Wrap{
+	//String functions
+	"string": xfn.Wrap{Fn: _string, NArgs: -1},
 	//Node set functions
 	"last":          xfn.Wrap{Fn: last},
 	"position":      xfn.Wrap{Fn: position},
@@ -16,4 +18,10 @@ var BuiltIn = map[string]xfn.Wrap{
 	"not":     xfn.Wrap{Fn: not, NArgs: 1},
 	"true":    xfn.Wrap{Fn: _true},
 	"false":   xfn.Wrap{Fn: _false},
+	//number functions
+	"number":  xfn.Wrap{Fn: number, NArgs: -1},
+	"sum":     xfn.Wrap{Fn: sum, NArgs: 1},
+	"floor":   xfn.Wrap{Fn: floor, NArgs: 1},
+	"ceiling": xfn.Wrap{Fn: ceiling, NArgs: 1},
+	"round":   xfn.Wrap{Fn: round, NArgs: 1},
 }

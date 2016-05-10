@@ -23,6 +23,13 @@ func (n *Node) swapVals(i *Node) {
 	n.Val, i.Val = i.Val, n.Val
 }
 
+var beginPathType = map[lexer.XItemType]bool{
+	lexer.XItemAbsLocPath:     true,
+	lexer.XItemAbbrAbsLocPath: true,
+	lexer.XItemAbbrRelLocPath: true,
+	lexer.XItemRelLocPath:     true,
+}
+
 //Add appends i into n.
 //If n is empty, i's values are copied over
 //If n's left child is empty, i is appended to the left and the value's are swapped
@@ -32,6 +39,11 @@ func (n *Node) Add(i *Node) {
 	if n.Val.Typ == Empty {
 		n.Val = i.Val
 	} else if n.Left == nil {
+		n.Left = i
+		i.Parent = n
+		n.swapVals(i)
+	} else if beginPathType[n.Val.Typ] {
+		i.Left = n.Left
 		n.Left = i
 		i.Parent = n
 		n.swapVals(i)
