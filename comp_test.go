@@ -68,6 +68,13 @@ func TestEqualsStr(t *testing.T) {
 	execComp(p, x, exp, nil, t)
 }
 
+func TestEqualsStr2(t *testing.T) {
+	p := `/root[@test="foo"]`
+	x := `<?xml version="1.0" encoding="UTF-8"?><root test="foo">test</root>`
+	exp := []string{"test"}
+	execComp(p, x, exp, nil, t)
+}
+
 func TestUnion(t *testing.T) {
 	p := `/test/test2 | /test/test3`
 	x := `<?xml version="1.0" encoding="UTF-8"?><test><test2>foobar</test2><test3>hamneggs</test3></test>`

@@ -93,7 +93,7 @@ func (x *XMLEle) GetAttrs() []tree.Node {
 	return ret
 }
 
-//String returns the string value of the element and children
+//ResValue returns the string value of the element and children
 func (x *XMLEle) ResValue() string {
 	ret := ""
 	for i := range x.Children {

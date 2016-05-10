@@ -67,12 +67,22 @@ func xfExec(f *xpFilt, n *parser.Node) (err error) {
 
 			n = n.Right
 		} else if n.Val.Typ == lexer.XItemOperator {
-			left, err := Exec(n.Left, f.t, f.ns)
+			lf := xpFilt{
+				t:   f.t,
+				ns:  f.ns,
+				ctx: f.ctx,
+			}
+			left, err := exec(&lf, n.Left)
 			if err != nil {
 				return err
 			}
 
-			right, err := Exec(n.Right, f.t, f.ns)
+			rf := xpFilt{
+				t:   f.t,
+				ns:  f.ns,
+				ctx: f.ctx,
+			}
+			right, err := exec(&rf, n.Right)
 			if err != nil {
 				return err
 			}
@@ -160,36 +170,41 @@ func xfFunction(f *xpFilt, n *parser.Node) error {
 	return fmt.Errorf("Unknown function: %s", n.Val.Val)
 }
 
-var booleanOps = map[string]int{
-	"=":  0,
-	"!=": 0,
-	"<":  0,
-	"<=": 0,
-	">":  0,
-	">=": 0,
+var eqOps = map[string]bool{
+	"=":  true,
+	"!=": true,
 }
 
-var numOps = map[string]int{
-	"*":   0,
-	"div": 0,
-	"mod": 0,
-	"+":   0,
-	"-":   0,
-	"=":   0,
-	"!=":  0,
-	"<":   0,
-	"<=":  0,
-	">":   0,
-	">=":  0,
+var booleanOps = map[string]bool{
+	"=":  true,
+	"!=": true,
+	"<":  true,
+	"<=": true,
+	">":  true,
+	">=": true,
 }
 
-var andOrOps = map[string]int{
-	"and": 0,
-	"or":  0,
+var numOps = map[string]bool{
+	"*":   true,
+	"div": true,
+	"mod": true,
+	"+":   true,
+	"-":   true,
+	"=":   true,
+	"!=":  true,
+	"<":   true,
+	"<=":  true,
+	">":   true,
+	">=":  true,
+}
+
+var andOrOps = map[string]bool{
+	"and": true,
+	"or":  true,
 }
 
 func xfOperator(left, right []tree.Res, f *xpFilt, op string) error {
-	if _, ok := booleanOps[op]; ok {
+	if booleanOps[op] {
 		lNode, lErr := xfn.GetNode(left, nil)
 		rNode, rErr := xfn.GetNode(right, nil)
 		if lErr == nil && rErr == nil {
@@ -204,16 +219,16 @@ func xfOperator(left, right []tree.Res, f *xpFilt, op string) error {
 			return rightNodeOperator(left, rNode, f, op)
 		}
 
-		if op == "=" || op == "!=" {
+		if eqOps[op] {
 			return equalsOperator(left, right, f, op)
 		}
 	}
 
-	if _, ok := numOps[op]; ok {
+	if numOps[op] {
 		return numberOperator(left, right, f, op)
 	}
 
-	if _, ok := andOrOps[op]; ok {
+	if andOrOps[op] {
 		return andOrOperator(left, right, f, op)
 	}
 
@@ -223,135 +238,6 @@ func xfOperator(left, right []tree.Res, f *xpFilt, op string) error {
 
 	return fmt.Errorf("Unknown operator " + op)
 }
-
-/*
-var numOps = map[string]int{
-	"*":   0,
-	"div": 0,
-	"mod": 0,
-	"+":   0,
-	"-":   0,
-}
-
-var andOrOps = map[string]int{
-	"and": 0,
-	"or":  0,
-}
-
-var equalityOps = map[string]int{
-	"=":  0,
-	"!=": 0,
-	"<":  0,
-	"<=": 0,
-	">":  0,
-	">=": 0,
-}
-
-func xfOperator(left, right []tree.Res, f *xpFilt, op string) error {
-	if _, ok := numOps[op]; ok {
-		return numberOp(left, right, f, op)
-	} else if _, ok := andOrOps[op]; ok {
-		l := intfns.BooleanFunc(left)
-		r := intfns.BooleanFunc(right)
-
-		if op == "and" {
-			f.res = []tree.Res{boollit.BoolLit(l && r)}
-		} else {
-			f.res = []tree.Res{boollit.BoolLit(l || r)}
-		}
-	} else {
-		_, lErr := xfn.GetNode(left, nil)
-		_, rErr := xfn.GetNode(right, nil)
-		if lErr == nil && rErr == nil {
-			return stringOp(left, right, f, op)
-		}
-
-		if lErr == nil && rErr != nil || lErr != nil && rErr == nil {
-			nonNode := left
-			if lErr != nil {
-				nonNode = right
-			}
-
-			if len(nonNode) == 0 {
-				f.res = []tree.Res{boollit.BoolLit(false)}
-				return nil
-			}
-
-			if len(nonNode) != 1 {
-				return fmt.Errorf("More than one primitive result.")
-			}
-
-			switch nonNode[0].(type) {
-			case numlit.NumLit:
-				return stringOp(left, right, f, op)
-			case boollit.BoolLit:
-			case strlit.StrLit:
-			}
-		}
-	}
-}
-
-func numberOp(left, right []tree.Res, f *xpFilt, op string) error {
-	ln, err := intfns.NumberFunc(left)
-	if err != nil {
-		return err
-	}
-
-	rn, err := intfns.NumberFunc(right)
-	if err != nil {
-		return err
-	}
-
-	switch op {
-	case "*":
-		f.res = []tree.Res{numlit.NumLit(ln * rn)}
-	case "div":
-		f.res = []tree.Res{numlit.NumLit(ln / rn)}
-	case "mod":
-		f.res = []tree.Res{numlit.NumLit(int(ln) % int(rn))}
-	case "+":
-		f.res = []tree.Res{numlit.NumLit(ln + rn)}
-	case "-":
-		f.res = []tree.Res{numlit.NumLit(ln - rn)}
-	case "=":
-		f.res = []tree.Res{boollit.BoolLit(ln == rn)}
-	case "!=":
-		f.res = []tree.Res{boollit.BoolLit(ln != rn)}
-	case "<":
-		f.res = []tree.Res{boollit.BoolLit(ln < rn)}
-	case "<=":
-		f.res = []tree.Res{boollit.BoolLit(ln <= rn)}
-	case ">":
-		f.res = []tree.Res{boollit.BoolLit(ln > rn)}
-	case ">=":
-		f.res = []tree.Res{boollit.BoolLit(ln >= rn)}
-	}
-
-	return nil
-}
-
-func stringOp(left, right []tree.Res, f *xpFilt, op string) error {
-	ln := intfns.StringFunc(left)
-	rn := intfns.StringFunc(right)
-
-	switch op {
-	case "=":
-		f.res = []tree.Res{boollit.BoolLit(ln == rn)}
-	case "!=":
-		f.res = []tree.Res{boollit.BoolLit(ln != rn)}
-	case "<":
-		f.res = []tree.Res{boollit.BoolLit(ln < rn)}
-	case "<=":
-		f.res = []tree.Res{boollit.BoolLit(ln <= rn)}
-	case ">":
-		f.res = []tree.Res{boollit.BoolLit(ln > rn)}
-	case ">=":
-		f.res = []tree.Res{boollit.BoolLit(ln >= rn)}
-	}
-
-	return nil
-}
-*/
 
 func xfAbsLocPath(f *xpFilt, val string) error {
 	f.res = []tree.Res{f.t}

@@ -18,7 +18,7 @@ func bothNodeOperator(left []tree.Node, right []tree.Node, f *xpFilt, op string)
 			lStr := l.ResValue()
 			rStr := r.ResValue()
 
-			if op == "=" || op == "!=" {
+			if eqOps[op] {
 				err = equalsOperator([]tree.Res{strlit.StrLit(lStr)}, []tree.Res{strlit.StrLit(rStr)}, f, op)
 				if err == nil && f.res[0].ResValue() == "true" {
 					return nil
@@ -40,7 +40,7 @@ func leftNodeOperator(left []tree.Node, right []tree.Res, f *xpFilt, op string) 
 	for _, l := range left {
 		lStr := l.ResValue()
 
-		if op == "=" || op == "!=" {
+		if eqOps[op] {
 			err = equalsOperator([]tree.Res{strlit.StrLit(lStr)}, right, f, op)
 			if err == nil && f.res[0].ResValue() == "true" {
 				return nil
@@ -61,7 +61,7 @@ func rightNodeOperator(left []tree.Res, right []tree.Node, f *xpFilt, op string)
 	for _, r := range right {
 		rStr := r.ResValue()
 
-		if op == "=" || op == "!=" {
+		if eqOps[op] {
 			err = equalsOperator(left, []tree.Res{strlit.StrLit(rStr)}, f, op)
 			if err == nil && f.res[0].ResValue() == "true" {
 				return nil

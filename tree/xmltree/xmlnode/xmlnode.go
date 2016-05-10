@@ -28,7 +28,7 @@ func (a XMLNode) GetParent() tree.Elem {
 	return a.Parent
 }
 
-//String returns the string value of the attribute
+//ResValue returns the string value of the attribute
 func (a XMLNode) ResValue() string {
 	switch a.NodeType {
 	case tree.NtAttr:

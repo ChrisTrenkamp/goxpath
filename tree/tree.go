@@ -132,7 +132,7 @@ func (ns NS) GetParent() Elem {
 	return ns.Parent
 }
 
-//String returns the string value of the namespace
+//ResValue returns the string value of the namespace
 func (ns NS) ResValue() string {
 	return ns.Attr.Value
 }
