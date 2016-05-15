@@ -1,85 +1,44 @@
 package goxpath
 
 import (
-	"bytes"
 	"fmt"
 	"math"
 	"testing"
-
-	"github.com/ChrisTrenkamp/goxpath/tree"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
 )
-
-func execComp(xp, x string, exp []string, ns map[string]string, t *testing.T) {
-	res := MustExec(MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns)
-
-	if len(res) != len(exp) {
-		t.Error("Result length not valid.  Recieved:")
-		for i := range res {
-			t.Error(MarshalStr(res[i].(tree.Node)))
-		}
-		return
-	}
-
-	for i := range res {
-		r := res[i].ResValue()
-		valid := false
-		for j := range exp {
-			if r == exp[j] {
-				valid = true
-			}
-		}
-		if !valid {
-			t.Error("Incorrect result:" + r)
-			t.Error("Expecting one of:")
-			for j := range exp {
-				t.Error(exp[j])
-			}
-			return
-		}
-	}
-}
 
 func TestAddition(t *testing.T) {
 	p := `1 + 1`
 	x := `<?xml version="1.0" encoding="UTF-8"?><test></test>`
-	exp := []string{"2"}
-	execComp(p, x, exp, nil, t)
+	exp := "2"
+	execVal(p, x, exp, nil, t)
 }
 
 func TestParenths(t *testing.T) {
 	p := `(1 + 2) * 3`
 	x := `<?xml version="1.0" encoding="UTF-8"?><test></test>`
-	exp := []string{"9"}
-	execComp(p, x, exp, nil, t)
+	exp := "9"
+	execVal(p, x, exp, nil, t)
 }
 
 func TestEquals(t *testing.T) {
 	p := `/test/test2 = 3`
 	x := `<?xml version="1.0" encoding="UTF-8"?><test><test2>3</test2></test>`
-	exp := []string{"true"}
-	execComp(p, x, exp, nil, t)
+	exp := "true"
+	execVal(p, x, exp, nil, t)
 }
 
 func TestEqualsStr(t *testing.T) {
 	p := `/test/test2 = 'foobar'`
 	x := `<?xml version="1.0" encoding="UTF-8"?><test><test2>foobar</test2></test>`
-	exp := []string{"true"}
-	execComp(p, x, exp, nil, t)
+	exp := "true"
+	execVal(p, x, exp, nil, t)
 }
 
 func TestEqualsStr2(t *testing.T) {
 	p := `/root[@test="foo"]`
 	x := `<?xml version="1.0" encoding="UTF-8"?><root test="foo">test</root>`
-	exp := []string{"test"}
-	execComp(p, x, exp, nil, t)
-}
-
-func TestUnion(t *testing.T) {
-	p := `/test/test2 | /test/test3`
-	x := `<?xml version="1.0" encoding="UTF-8"?><test><test2>foobar</test2><test3>hamneggs</test3></test>`
-	exp := []string{"foobar", "hamneggs"}
-	execComp(p, x, exp, nil, t)
+	exp := "test"
+	execVal(p, x, exp, nil, t)
 }
 
 func TestNumberOps(t *testing.T) {
@@ -99,7 +58,7 @@ func TestNumberOps(t *testing.T) {
 	testFloatMap[`round(1.5)`] = 2
 	testFloatMap[`round(0)`] = 0
 	for k, v := range testFloatMap {
-		execComp(k, x, []string{fmt.Sprintf("%g", float64(v))}, nil, t)
+		execVal(k, x, fmt.Sprintf("%g", float64(v)), nil, t)
 	}
 	testBoolMap := make(map[string]string)
 	testBoolMap[`/t/t1 = 2`] = "true"
@@ -115,6 +74,6 @@ func TestNumberOps(t *testing.T) {
 	testBoolMap[`(/t/t1 != /t/t2 or /t/t1 < /t/t4) = true()`] = "true"
 	testBoolMap[`(/t/t1 != /t/t2 and /t/t1 < /t/t4) != true()`] = "true"
 	for k, v := range testBoolMap {
-		execComp(k, x, []string{v}, nil, t)
+		execVal(k, x, v, nil, t)
 	}
 }

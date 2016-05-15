@@ -29,15 +29,10 @@ const (
 	NtPi
 )
 
-//Res is the result of an XPath expression
-type Res interface {
-	//String prints the node's string value
-	ResValue() string
-}
-
 //Node is a XPath result that is a node except elements
 type Node interface {
-	Res
+	//String prints the node's string value
+	ResValue() string
 	//Pos returns the node's position in the document order
 	Pos() int
 	//GetToken returns the xml.Token representation of the node

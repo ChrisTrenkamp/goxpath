@@ -3,22 +3,20 @@ package xfn
 import (
 	"fmt"
 
-	"github.com/ChrisTrenkamp/goxpath/literals/boollit"
-	"github.com/ChrisTrenkamp/goxpath/literals/numlit"
-	"github.com/ChrisTrenkamp/goxpath/literals/strlit"
 	"github.com/ChrisTrenkamp/goxpath/tree"
+	"github.com/ChrisTrenkamp/goxpath/xtypes"
 )
 
 //Ctx represents the current context position, size, node, and the current filtered result
 type Ctx struct {
 	tree.Node
-	Filter []tree.Res
+	Filter xtypes.Result
 	Pos    int
 	Size   int
 }
 
 //Fn is a XPath function, written in Go
-type Fn func(c Ctx, args ...[]tree.Res) ([]tree.Res, error)
+type Fn func(c Ctx, args ...xtypes.Result) (xtypes.Result, error)
 
 //Wrap interfaces XPath function calls with Go
 type Wrap struct {
@@ -30,7 +28,7 @@ type Wrap struct {
 }
 
 //Call checks the arguments and calls Fn if they are valid
-func (w Wrap) Call(c Ctx, args ...[]tree.Res) ([]tree.Res, error) {
+func (w Wrap) Call(c Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	if w.NArgs == -1 {
 		if len(args) != 0 && len(args) != 1 {
 			return nil, fmt.Errorf("Too many arguments.")
@@ -52,105 +50,4 @@ func (w Wrap) Call(c Ctx, args ...[]tree.Res) ([]tree.Res, error) {
 	}
 
 	return w.Fn(c, args...)
-}
-
-//GetOptArg returns the context filter if there is no argument in args.  Otherwise,
-//it returns the first element in args.
-func GetOptArg(c Ctx, args ...[]tree.Res) []tree.Res {
-	if len(args) == 0 {
-		return c.Filter
-	}
-
-	return args[0]
-}
-
-//GetNode casts res into an array of nodes.  If one of the elements is not a
-//node, it will return an error.
-func GetNode(res []tree.Res, e error) ([]tree.Node, error) {
-	if e != nil {
-		return nil, e
-	}
-
-	if len(res) == 0 {
-		return nil, fmt.Errorf("Argument has no nodes")
-	}
-
-	ret := make([]tree.Node, len(res))
-	for i := range res {
-		if n, ok := res[i].(tree.Node); ok {
-			ret[i] = n
-		} else {
-			return nil, fmt.Errorf("One or more arguments are not nodes")
-		}
-	}
-
-	return ret, nil
-}
-
-//GetFirstNode returns the first element in nodes, which will also be the
-//first node in document order.
-func GetFirstNode(nodes []tree.Node, e error) (tree.Node, error) {
-	if e != nil {
-		return nil, e
-	}
-
-	if len(nodes) > 0 {
-		return nodes[0], nil
-	}
-
-	return nil, fmt.Errorf("No nodes in set")
-}
-
-//GetBool casts the first argument in res to a bool.  If the length of res
-//is not 1, then it returns an error.
-func GetBool(res []tree.Res, e error) (bool, error) {
-	if e != nil {
-		return false, e
-	}
-
-	if len(res) != 1 {
-		return false, fmt.Errorf("Result set is not a single boolean")
-	}
-
-	if b, ok := res[0].(boollit.BoolLit); ok {
-		return b.ResValue() == "true", nil
-	}
-
-	return false, fmt.Errorf("Result set is not a single boolean")
-}
-
-//GetString casts the first argument in res to a string.  If the length of res
-//is not 1, then it returns an error.
-func GetString(res []tree.Res, e error) (string, error) {
-	if e != nil {
-		return "", e
-	}
-
-	if len(res) != 1 {
-		return "", fmt.Errorf("Result set is not a single string")
-	}
-
-	if s, ok := res[0].(strlit.StrLit); ok {
-		return s.ResValue(), nil
-	}
-
-	return "", fmt.Errorf("Result set is not a single string")
-}
-
-//GetNumber casts the first argument in res to a number.  If the length of res
-//is not 1, then it returns an error.
-func GetNumber(res []tree.Res, e error) (float64, error) {
-	if e != nil {
-		return 0, e
-	}
-
-	if len(res) != 1 {
-		return 0, fmt.Errorf("Result set is not a single number")
-	}
-
-	if s, ok := res[0].(numlit.NumLit); ok {
-		return float64(s), nil
-	}
-
-	return 0, fmt.Errorf("Result set is not a single string")
 }

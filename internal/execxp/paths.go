@@ -8,11 +8,10 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/internal/parser"
 	"github.com/ChrisTrenkamp/goxpath/internal/parser/findutil"
 	"github.com/ChrisTrenkamp/goxpath/internal/parser/intfns"
-	"github.com/ChrisTrenkamp/goxpath/literals/numlit"
-	"github.com/ChrisTrenkamp/goxpath/literals/strlit"
 	"github.com/ChrisTrenkamp/goxpath/xconst"
 	"github.com/ChrisTrenkamp/goxpath/xfn"
 	"github.com/ChrisTrenkamp/goxpath/xsort"
+	"github.com/ChrisTrenkamp/goxpath/xtypes"
 
 	"github.com/ChrisTrenkamp/goxpath/internal/lexer"
 	"github.com/ChrisTrenkamp/goxpath/internal/parser/pathexpr"
@@ -21,7 +20,7 @@ import (
 
 type xpFilt struct {
 	t       tree.Node
-	res     []tree.Res
+	res     xtypes.Result
 	ctx     tree.Node
 	expr    pathexpr.PathExpr
 	ns      map[string]string
@@ -91,7 +90,7 @@ func xfExec(f *xpFilt, n *parser.Node) (err error) {
 		} else if string(n.Val.Typ) == "" {
 			n = n.Left
 		} else {
-			return fmt.Errorf("Unknown operator " + string(n.Val.Typ))
+			return fmt.Errorf("Cannot process " + string(n.Val.Typ))
 		}
 	}
 
@@ -99,9 +98,14 @@ func xfExec(f *xpFilt, n *parser.Node) (err error) {
 }
 
 func xfPredicate(f *xpFilt, n *parser.Node) (err error) {
-	newRes := []tree.Res{}
+	res, ok := f.res.(xtypes.NodeSet)
+	if !ok {
+		return fmt.Errorf("Cannot run predicate on a data type not a node-set")
+	}
 
-	for i := range f.res {
+	newRes := make(xtypes.NodeSet, 0, len(res))
+
+	for i := range res {
 		pf := xpFilt{
 			t:       f.t,
 			ns:      f.ns,
@@ -109,19 +113,24 @@ func xfPredicate(f *xpFilt, n *parser.Node) (err error) {
 			ctxSize: f.ctxSize,
 		}
 
-		if n, ok := f.res[i].(tree.Node); ok {
+		if n, ok := res[i].(tree.Node); ok {
 			pf.ctx = n
 		} else {
 			return fmt.Errorf("Cannot run predicate on primitive data type")
 		}
 
-		res, err := exec(&pf, n)
+		predRes, err := exec(&pf, n)
 		if err != nil {
 			return err
 		}
 
-		if checkPredRes(res, i) {
-			newRes = append(newRes, f.res[i])
+		ok, err := checkPredRes(predRes, i)
+		if err != nil {
+			return err
+		}
+
+		if ok {
+			newRes = append(newRes, res[i])
 		}
 	}
 
@@ -130,19 +139,21 @@ func xfPredicate(f *xpFilt, n *parser.Node) (err error) {
 	return
 }
 
-func checkPredRes(ret []tree.Res, i int) bool {
-	if len(ret) == 1 {
-		if num, ok := ret[0].(numlit.NumLit); ok {
-			return int(num)-1 == i
-		}
+func checkPredRes(ret xtypes.Result, i int) (bool, error) {
+	if num, ok := ret.(xtypes.Num); ok {
+		return float64(num)-1 == float64(i), nil
 	}
 
-	return intfns.BooleanFunc(ret)
+	if b, ok := ret.(xtypes.IsBool); ok {
+		return bool(b.Bool()), nil
+	}
+
+	return false, fmt.Errorf("Cannot run boolean function on data type")
 }
 
 func xfFunction(f *xpFilt, n *parser.Node) error {
 	if fn, ok := intfns.BuiltIn[n.Val.Val]; ok {
-		args := [][]tree.Res{}
+		args := []xtypes.Result{}
 
 		param := n.Left
 		for param != nil {
@@ -203,19 +214,19 @@ var andOrOps = map[string]bool{
 	"or":  true,
 }
 
-func xfOperator(left, right []tree.Res, f *xpFilt, op string) error {
+func xfOperator(left, right xtypes.Result, f *xpFilt, op string) error {
 	if booleanOps[op] {
-		lNode, lErr := xfn.GetNode(left, nil)
-		rNode, rErr := xfn.GetNode(right, nil)
-		if lErr == nil && rErr == nil {
+		lNode, lOK := left.(xtypes.NodeSet)
+		rNode, rOK := right.(xtypes.NodeSet)
+		if lOK && rOK {
 			return bothNodeOperator(lNode, rNode, f, op)
 		}
 
-		if lErr == nil {
+		if lOK {
 			return leftNodeOperator(lNode, right, f, op)
 		}
 
-		if rErr == nil {
+		if rOK {
 			return rightNodeOperator(left, rNode, f, op)
 		}
 
@@ -240,13 +251,13 @@ func xfOperator(left, right []tree.Res, f *xpFilt, op string) error {
 }
 
 func xfAbsLocPath(f *xpFilt, val string) error {
-	f.res = []tree.Res{f.t}
+	f.res = xtypes.NodeSet{f.t}
 	f.ctx = f.t
 	return nil
 }
 
 func xfAbbrAbsLocPath(f *xpFilt, val string) error {
-	f.res = []tree.Res{f.t}
+	f.res = xtypes.NodeSet{f.t}
 	f.ctx = f.t
 	f.expr = abbrPathExpr()
 	return find(f)
@@ -287,23 +298,18 @@ func xfNodeType(f *xpFilt, val string) error {
 }
 
 func xfProcInstLit(f *xpFilt, val string) error {
-	filt := []tree.Res{}
-	for i := range f.res {
-		if tok, tOk := f.res[i].(tree.Node); tOk {
-			if proc, pOk := tok.GetToken().(xml.ProcInst); pOk {
-				if proc.Target == val {
-					filt = append(filt, f.res[i])
-				}
-			}
+	filt := xtypes.NodeSet{}
+	for _, i := range f.res.(xtypes.NodeSet) {
+		if i.GetToken().(xml.ProcInst).Target == val {
+			filt = append(filt, i)
 		}
 	}
-
 	f.res = filt
 	return nil
 }
 
 func xfStrLit(f *xpFilt, val string) error {
-	f.res = []tree.Res{strlit.StrLit(val)}
+	f.res = xtypes.String(val)
 	return nil
 }
 
@@ -313,7 +319,7 @@ func xfNumLit(f *xpFilt, val string) error {
 		return err
 	}
 
-	f.res = []tree.Res{numlit.NumLit(num)}
+	f.res = xtypes.Num(num)
 	return nil
 }
 
@@ -326,7 +332,7 @@ func abbrPathExpr() pathexpr.PathExpr {
 }
 
 func find(f *xpFilt) error {
-	dupFilt := make(map[int]tree.Res)
+	dupFilt := make(map[int]tree.Node)
 
 	if f.expr.Axis == "" && f.expr.NodeType == "" && f.expr.Name.Space == "" {
 		if f.expr.Name.Local == "." {
@@ -347,30 +353,32 @@ func find(f *xpFilt) error {
 	}
 
 	if f.res == nil {
-		f.res = []tree.Res{f.ctx}
+		f.res = xtypes.NodeSet{f.ctx}
 	}
 
 	f.expr.NS = f.ns
 
-	for _, i := range f.res {
-		if node, ok := i.(tree.Node); ok {
-			for _, j := range findutil.Find(node, f.expr) {
-				dupFilt[j.Pos()] = j
-			}
-		} else {
-			return fmt.Errorf("Cannot run path expression on primitive data type.")
+	nodeSet, ok := f.res.(xtypes.NodeSet)
+	if !ok {
+		return fmt.Errorf("Cannot run path expression on primitive data type")
+	}
+
+	for _, i := range nodeSet {
+		for _, j := range findutil.Find(i, f.expr) {
+			dupFilt[j.Pos()] = j
 		}
 	}
 
-	f.res = make([]tree.Res, 0, len(dupFilt))
+	res := make(xtypes.NodeSet, 0, len(dupFilt))
 	for _, i := range dupFilt {
-		f.res = append(f.res, i)
+		res = append(res, i)
 	}
 
-	xsort.SortRes(f.res)
+	xsort.SortResNode(res)
 
 	f.expr = pathexpr.PathExpr{}
-	f.ctxSize = len(f.res)
+	f.ctxSize = len(res)
+	f.res = res
 
 	return nil
 }

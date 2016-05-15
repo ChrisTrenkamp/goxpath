@@ -6,10 +6,17 @@ import (
 
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
+	"github.com/ChrisTrenkamp/goxpath/xtypes"
 )
 
 func execPath(xp, x string, exp []string, ns map[string]string, t *testing.T) {
-	res := MustExec(MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns)
+	defer func() {
+		if r := recover(); r != nil {
+			t.Error("Panicked: from XPath expr: '" + xp)
+			t.Error(r)
+		}
+	}()
+	res := MustExec(MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns).(xtypes.NodeSet)
 
 	if len(res) != len(exp) {
 		t.Error("Result length not valid.  Recieved:")
@@ -434,7 +441,7 @@ func TestPredicate3(t *testing.T) {
 }
 
 func TestPredicate4(t *testing.T) {
-	p := `/p1/p2[not(@test)]`
+	p := `/p1/p2[not(boolean(@test))]`
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2/><p2 test="foo"/><p2/></p1>`
 	exp := []string{`<p2></p2>`, `<p2></p2>`}
 	execPath(p, x, exp, nil, t)
@@ -458,5 +465,12 @@ func TestPredicate7(t *testing.T) {
 	p := `/p3[//p1]`
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2/><p2 test="t"/><p2><p1>lkj</p1></p2></p1>`
 	exp := []string{}
+	execPath(p, x, exp, nil, t)
+}
+
+func TestUnion(t *testing.T) {
+	p := `/test/test2 | /test/test3`
+	x := `<?xml version="1.0" encoding="UTF-8"?><test><test2>foobar</test2><test3>hamneggs</test3></test>`
+	exp := []string{"<test2>foobar</test2>", "<test3>hamneggs</test3>"}
 	execPath(p, x, exp, nil, t)
 }

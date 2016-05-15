@@ -17,27 +17,14 @@ const (
 	parenState
 )
 
-type nodeStack struct {
-	n    *Node
-	left bool
-}
-
 type parseStack struct {
-	stack      []nodeStack
+	stack      []*Node
 	stateTypes []stateType
 	cur        *Node
 }
 
 func (p *parseStack) push(t stateType) {
-	st := nodeStack{
-		n: p.cur.Parent,
-	}
-	if p.cur.Parent != nil {
-		if p.cur.Parent.Left == p.cur {
-			st.left = true
-		}
-	}
-	p.stack = append(p.stack, st)
+	p.stack = append(p.stack, p.cur)
 	p.stateTypes = append(p.stateTypes, t)
 }
 
@@ -47,20 +34,8 @@ func (p *parseStack) pop() error {
 	}
 
 	stackPos := len(p.stack) - 1
-	st := p.stack[stackPos]
 
-	if st.n == nil {
-		for p.cur.Parent != nil {
-			p.cur = p.cur.Parent
-		}
-	} else {
-		if st.left {
-			p.cur = st.n.Left
-		} else {
-			p.cur = st.n.Right
-		}
-	}
-
+	p.cur = p.stack[stackPos]
 	p.stack = p.stack[:stackPos]
 	p.stateTypes = p.stateTypes[:stackPos]
 	return nil
@@ -119,17 +94,20 @@ var opPrecedence = map[string]int{
 func Parse(xp string) (*Node, error) {
 	var err error
 	c := lexer.Lex(xp)
-	p := &parseStack{cur: &Node{}}
+	n := &Node{}
+	p := &parseStack{cur: n}
 
 	for next := range c {
 		if err == nil {
 			err = parseMap[next.Typ](p, next)
-		}
-	}
+			/*
+				fmt.Println(next, "Parent:", p.cur.Parent, "Left:", p.cur.Left, "Right:", p.cur.Right)
 
-	n := p.cur
-	for n.Parent != nil {
-		n = n.Parent
+				for i := 0; i < 7; i++ {
+					n.prettyPrint(i, 16)
+				}
+			*/
+		}
 	}
 
 	return n, err
@@ -141,47 +119,41 @@ func xiError(p *parseStack, i lexer.XItem) error {
 
 func xiXPath(p *parseStack, i lexer.XItem) error {
 	if p.curState() == xpathState {
-		p.cur.Push(newNode(i))
+		p.cur.push(i)
+		p.cur = p.cur.next
 		return nil
 	}
 
-	next := newNode(i)
-	p.cur.Add(next)
+	p.cur.pushNotEmpty(i)
 	p.push(xpathState)
-	if next.Parent == p.cur {
-		p.cur = next
-	}
+	p.cur = p.cur.next
 	return nil
 }
 
 func xiEndPath(p *parseStack, i lexer.XItem) error {
-	if err := p.pop(); err != nil {
-		return err
-	}
-
-	return nil
+	return p.pop()
 }
 
 func xiFunc(p *parseStack, i lexer.XItem) error {
-	p.cur.Push(newNode(i))
+	p.cur.push(i)
+	p.cur = p.cur.next
 	p.push(funcState)
 	return nil
 }
 
 func xiFuncArg(p *parseStack, i lexer.XItem) error {
-	if p.curState() != paramState {
-		p.cur.Push(newNode(i))
-		p.push(paramState)
-		p.cur.Push(&Node{})
-	} else {
+	if p.curState() != funcState {
 		err := p.pop()
 		if err != nil {
 			return err
 		}
-		p.cur.Add(newNode(i))
-		p.cur = p.cur.Right
-		p.cur.Push(&Node{})
 	}
+
+	p.cur.push(i)
+	p.cur = p.cur.next
+	p.push(paramState)
+	p.cur.push(lexer.XItem{Typ: Empty, Val: ""})
+	p.cur = p.cur.next
 	return nil
 }
 
@@ -196,9 +168,11 @@ func xiEndFunc(p *parseStack, i lexer.XItem) error {
 }
 
 func xiPred(p *parseStack, i lexer.XItem) error {
-	p.cur.Push(newNode(i))
+	p.cur.push(i)
+	p.cur = p.cur.next
 	p.push(predState)
-	p.cur.Push(&Node{})
+	p.cur.push(lexer.XItem{Typ: Empty, Val: ""})
+	p.cur = p.cur.next
 	return nil
 }
 
@@ -207,19 +181,20 @@ func xiEndPred(p *parseStack, i lexer.XItem) error {
 }
 
 func xiStrLit(p *parseStack, i lexer.XItem) error {
-	p.cur.Add(newNode(i))
+	p.cur.add(i)
 	return nil
 }
 
 func xiNumLit(p *parseStack, i lexer.XItem) error {
-	p.cur.Add(newNode(i))
+	p.cur.add(i)
 	return nil
 }
 
 func xiOp(p *parseStack, i lexer.XItem) error {
 	if i.Val == "(" {
+		p.cur.push(lexer.XItem{Typ: Empty, Val: ""})
 		p.push(parenState)
-		p.cur.Push(&Node{})
+		p.cur = p.cur.next
 		return nil
 	}
 
@@ -229,13 +204,14 @@ func xiOp(p *parseStack, i lexer.XItem) error {
 
 	if p.cur.Val.Typ == lexer.XItemOperator {
 		if opPrecedence[p.cur.Val.Val] <= opPrecedence[i.Val] {
-			p.cur.Add(newNode(i))
+			p.cur.add(i)
 		} else {
-			p.cur.Push(newNode(i))
+			p.cur.push(i)
 		}
 	} else {
-		p.cur.Add(newNode(i))
+		p.cur.add(i)
 	}
+	p.cur = p.cur.next
 
 	return nil
 }

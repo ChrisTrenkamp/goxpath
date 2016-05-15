@@ -1,6 +1,10 @@
 package parser
 
-import "github.com/ChrisTrenkamp/goxpath/internal/lexer"
+import (
+	"fmt"
+
+	"github.com/ChrisTrenkamp/goxpath/internal/lexer"
+)
 
 //NodeType enumerations
 const (
@@ -13,14 +17,7 @@ type Node struct {
 	Left   *Node
 	Right  *Node
 	Parent *Node
-}
-
-func newNode(val lexer.XItem) *Node {
-	return &Node{Val: val}
-}
-
-func (n *Node) swapVals(i *Node) {
-	n.Val, i.Val = i.Val, n.Val
+	next   *Node
 }
 
 var beginPathType = map[lexer.XItemType]bool{
@@ -30,68 +27,88 @@ var beginPathType = map[lexer.XItemType]bool{
 	lexer.XItemRelLocPath:     true,
 }
 
-//Add appends i into n.
-//If n is empty, i's values are copied over
-//If n's left child is empty, i is appended to the left and the value's are swapped
-//If n's right child is empty, i is appended to the right
-//Otherwise, the value's are swapped, n's children is moved to i's, and i is set to n's Left
-func (n *Node) Add(i *Node) {
+func (n *Node) add(i lexer.XItem) {
 	if n.Val.Typ == Empty {
-		n.Val = i.Val
+		n.Val = i
 	} else if n.Left == nil {
-		n.Left = i
-		i.Parent = n
-		n.swapVals(i)
+		n.Left = &Node{Val: n.Val, Parent: n}
+		n.Val = i
 	} else if beginPathType[n.Val.Typ] {
-		i.Left = n.Left
-		n.Left = i
-		i.Parent = n
-		n.swapVals(i)
+		next := &Node{Val: n.Val, Left: n.Left, Parent: n}
+		n.Left = next
+		n.Val = i
 	} else if n.Right == nil {
-		n.Right = i
-		i.Parent = n
+		n.Right = &Node{Val: i, Parent: n}
 	} else {
-		n.swapVals(i)
-		i.Left, i.Right = n.Left, n.Right
-		i.Left.Parent, i.Right.Parent = i, i
-		n.Left, n.Right = i, nil
+		next := &Node{Val: n.Val, Left: n.Left, Right: n.Right, Parent: n}
+		n.Left, n.Right = next, nil
+		n.Val = i
+	}
+	n.next = n
+}
+
+func (n *Node) push(i lexer.XItem) {
+	if n.Left == nil {
+		n.Left = &Node{Val: i, Parent: n}
+		n.next = n.Left
+	} else if n.Right == nil {
+		n.Right = &Node{Val: i, Parent: n}
+		n.next = n.Right
+	} else {
+		next := &Node{Val: i, Left: n.Right, Parent: n}
+		n.Right = next
+		n.next = n.Right
 	}
 }
 
-//Push appends i to n's Left if it's empty.  Otherwise, it adds n to i's right.
-func (n *Node) Push(i *Node) {
-	if n.Parent != nil {
-		i.Parent = n.Parent
-		if n.Parent.Left == n {
-			n.Parent.Left = i
-		} else {
-			n.Parent.Right = i
-		}
-		i.Left, i.Right = n.Left, n.Right
-		n.Left, n.Right = nil, nil
-	}
-	n.Parent = i
-	n.swapVals(i)
-
-	if i.Left == nil {
-		i.Left = n
-	} else if i.Right == nil {
-		i.Left.Parent = i
-		i.Right = n
-	} else {
-		i.Left.Parent = i
-		n.Left = i.Right
-		i.Right = n
-		i.Right.Parent = i
-		n.Left.Parent = n
-	}
-}
-
-//PushNotEmpty add's i if n has an empty value.  Othwise, i is pushed.
-func (n *Node) PushNotEmpty(i *Node) {
+func (n *Node) pushNotEmpty(i lexer.XItem) {
 	if n.Val.Typ == Empty {
-		n.Add(i)
+		n.add(i)
 	} else {
-		n.Push(i)
+		n.push(i)
+	}
+}
+
+func (n *Node) prettyPrint(depth, width int) {
+	nodes := []*Node{}
+	n.getLine(depth, &nodes)
+	fmt.Printf("%*s", (width-depth)*2, "")
+	toggle := true
+	if len(nodes) > 1 {
+		for _, i := range nodes {
+			if i != nil {
+				if toggle {
+					fmt.Print("/   ")
+				} else {
+					fmt.Print("\\   ")
+				}
+			}
+			toggle = !toggle
+		}
+		fmt.Println()
+		fmt.Printf("%*s", (width-depth)*2, "")
+	}
+	for _, i := range nodes {
+		if i != nil {
+			fmt.Print(i.Val.Val, "   ")
+		}
+	}
+	fmt.Println()
+}
+
+func (n *Node) getLine(depth int, ret *[]*Node) {
+	if depth <= 0 && n != nil {
+		*ret = append(*ret, n)
+		return
+	}
+	if n.Left != nil {
+		n.Left.getLine(depth-1, ret)
+	} else if depth-1 <= 0 {
+		*ret = append(*ret, nil)
+	}
+	if n.Right != nil {
+		n.Right.getLine(depth-1, ret)
+	} else if depth-1 <= 0 {
+		*ret = append(*ret, nil)
 	}
 }

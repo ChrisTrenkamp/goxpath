@@ -4,107 +4,91 @@ import (
 	"encoding/xml"
 	"fmt"
 
-	"github.com/ChrisTrenkamp/goxpath/literals/numlit"
-	"github.com/ChrisTrenkamp/goxpath/literals/strlit"
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/xfn"
+	"github.com/ChrisTrenkamp/goxpath/xtypes"
 )
 
-func last(c xfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
-	return []tree.Res{numlit.NumLit(c.Size)}, nil
+func last(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
+	return xtypes.Num(c.Size), nil
 }
 
-func position(c xfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
-	return []tree.Res{numlit.NumLit(c.Pos)}, nil
+func position(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
+	return xtypes.Num(c.Pos), nil
 }
 
-func count(c xfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
-	arg, err := xfn.GetNode(xfn.GetOptArg(c, args...), nil)
-
-	if err != nil {
-		return nil, err
+func count(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
+	n, ok := args[0].(xtypes.NodeSet)
+	if !ok {
+		return nil, fmt.Errorf("Cannot convert object to a node-set")
 	}
 
-	ret := 0
-
-	for i := range arg {
-		countArg(arg[i], &ret)
-	}
-
-	return []tree.Res{numlit.NumLit(ret)}, nil
+	return xtypes.Num(len(n)), nil
 }
 
-func countArg(r tree.Res, c *int) {
-	switch t := r.(type) {
-	case tree.Elem:
-		for _, i := range t.GetChildren() {
-			countArg(i, c)
-		}
-		(*c)++
-	default:
-		(*c)++
+func localName(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
+	n, ok := args[0].(xtypes.NodeSet)
+	if !ok {
+		return nil, fmt.Errorf("Cannot convert object to a node-set")
 	}
-}
 
-func localName(c xfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
-	node, err := xfn.GetFirstNode(xfn.GetNode(xfn.GetOptArg(c, args...), nil))
-
-	if err != nil {
-		return nil, err
+	ret := ""
+	node := n.FirstDocOrder()
+	if node == nil {
+		return xtypes.String(ret), nil
 	}
 
 	tok := node.GetToken()
 
 	switch node.GetNodeType() {
-	case tree.NtRoot:
-		return nil, fmt.Errorf("Cannot run local-name on root node.")
 	case tree.NtEle:
-		ret := []tree.Res{strlit.StrLit(tok.(xml.StartElement).Name.Local)}
-		return ret, nil
+		ret = tok.(xml.StartElement).Name.Local
 	case tree.NtAttr:
-		ret := []tree.Res{strlit.StrLit(tok.(xml.Attr).Name.Local)}
-		return ret, nil
+		ret = tok.(xml.Attr).Name.Local
 	case tree.NtPi:
-		ret := []tree.Res{strlit.StrLit(tok.(xml.ProcInst).Target)}
-		return ret, nil
+		ret = tok.(xml.ProcInst).Target
 	}
 
-	return []tree.Res{strlit.StrLit("")}, nil
+	return xtypes.String(ret), nil
 }
 
-func namespaceURI(c xfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
-	node, err := xfn.GetFirstNode(xfn.GetNode(xfn.GetOptArg(c, args...), nil))
+func namespaceURI(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
+	n, ok := args[0].(xtypes.NodeSet)
+	if !ok {
+		return nil, fmt.Errorf("Cannot convert object to a node-set")
+	}
 
-	if err != nil {
-		return nil, err
+	ret := ""
+	node := n.FirstDocOrder()
+	if node == nil {
+		return xtypes.String(ret), nil
 	}
 
 	tok := node.GetToken()
 
 	switch node.GetNodeType() {
-	case tree.NtRoot:
-		return nil, fmt.Errorf("Cannot run namespace-uri on root node.")
 	case tree.NtEle:
-		ret := []tree.Res{strlit.StrLit(tok.(xml.StartElement).Name.Space)}
-		return ret, nil
+		ret = tok.(xml.StartElement).Name.Space
 	case tree.NtAttr:
-		ret := []tree.Res{strlit.StrLit(tok.(xml.Attr).Name.Space)}
-		return ret, nil
+		ret = tok.(xml.Attr).Name.Space
 	}
 
-	return []tree.Res{strlit.StrLit("")}, nil
+	return xtypes.String(ret), nil
 }
 
-func name(c xfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
-	node, err := xfn.GetFirstNode(xfn.GetNode(xfn.GetOptArg(c, args...), nil))
+func name(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
+	n, ok := args[0].(xtypes.NodeSet)
+	if !ok {
+		return nil, fmt.Errorf("Cannot convert object to a node-set")
+	}
 
-	if err != nil {
-		return nil, err
+	ret := ""
+	node := n.FirstDocOrder()
+	if node == nil {
+		return xtypes.String(ret), nil
 	}
 
 	switch node.GetNodeType() {
-	case tree.NtRoot:
-		return nil, fmt.Errorf("Cannot run name on root node.")
 	case tree.NtEle:
 		t := node.GetToken().(xml.StartElement)
 		space := ""
@@ -113,10 +97,7 @@ func name(c xfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
 			space = fmt.Sprintf("{%s}", t.Name.Space)
 		}
 
-		res := fmt.Sprintf("%s%s", space, t.Name.Local)
-		ret := []tree.Res{strlit.StrLit(res)}
-
-		return ret, nil
+		ret = fmt.Sprintf("%s%s", space, t.Name.Local)
 	case tree.NtAttr:
 		t := node.GetToken().(xml.Attr)
 		space := ""
@@ -125,14 +106,10 @@ func name(c xfn.Ctx, args ...[]tree.Res) ([]tree.Res, error) {
 			space = fmt.Sprintf("{%s}", t.Name.Space)
 		}
 
-		res := fmt.Sprintf("%s%s", space, t.Name.Local)
-		ret := []tree.Res{strlit.StrLit(res)}
-		return ret, nil
+		ret = fmt.Sprintf("%s%s", space, t.Name.Local)
 	case tree.NtPi:
-		res := fmt.Sprintf("%s", node.GetToken().(xml.ProcInst).Target)
-		ret := []tree.Res{strlit.StrLit(res)}
-		return ret, nil
+		ret = fmt.Sprintf("%s", node.GetToken().(xml.ProcInst).Target)
 	}
 
-	return []tree.Res{strlit.StrLit("")}, nil
+	return xtypes.String(ret), nil
 }

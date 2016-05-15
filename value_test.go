@@ -4,67 +4,55 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
 )
 
-func execVal(xp, x string, exp []string, ns map[string]string, t *testing.T) {
+func execVal(xp, x string, exp string, ns map[string]string, t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Error("Panicked: from XPath expr: '" + xp)
+			t.Error(r)
+		}
+	}()
 	res := MustExec(MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns)
 
-	if len(res) != len(exp) {
-		t.Error("Result length not valid.  Recieved:")
-		for i := range res {
-			t.Error(MarshalStr(res[i].(tree.Node)))
-		}
+	if res.String() != exp {
+		t.Error("Incorrect result:'" + res.String() + "' from XPath expr: '" + xp + "'.  Expecting: '" + exp + "'")
 		return
-	}
-
-	for i := range res {
-		r := res[i].ResValue()
-		valid := false
-		for j := range exp {
-			if r == exp[j] {
-				valid = true
-			}
-		}
-		if !valid {
-			t.Error("Incorrect result:'" + r + "' from XPath expr: '" + xp + "'")
-			return
-		}
 	}
 }
 
 func TestNodeVal(t *testing.T) {
 	p := `/test`
 	x := `<?xml version="1.0" encoding="UTF-8"?><test>test<path>path</path>test2</test>`
-	exp := []string{"testpathtest2"}
+	exp := "testpathtest2"
 	execVal(p, x, exp, nil, t)
 }
 
 func TestAttrVal(t *testing.T) {
 	p := `/p1/@test`
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1 test="foo" foo="test"><p2/></p1>`
-	exp := []string{"foo"}
+	exp := "foo"
 	execVal(p, x, exp, nil, t)
 }
 
 func TestCommentVal(t *testing.T) {
 	p := `//comment()`
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1><!-- comment --></p1>`
-	exp := []string{` comment `}
+	exp := ` comment `
 	execVal(p, x, exp, nil, t)
 }
 
 func TestProcInstVal(t *testing.T) {
 	p := `//processing-instruction()`
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1><?proc test?></p1>`
-	exp := []string{`test`}
+	exp := `test`
 	execVal(p, x, exp, nil, t)
 }
 
 func TestNodeNamespaceVal(t *testing.T) {
 	p := `/test:p1/namespace::test`
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns:test="http://test"/>`
-	exp := []string{`http://test`}
+	exp := `http://test`
 	execVal(p, x, exp, nil, t)
 }
