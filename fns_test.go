@@ -42,7 +42,6 @@ func TestCount(t *testing.T) {
 	execVal(p, x, exp, nil, t)
 }
 
-/*
 func TestCount2(t *testing.T) {
 	x := `<?xml version="1.0"?>
 <test>
@@ -76,7 +75,6 @@ func TestCount2(t *testing.T) {
 	execVal(`count(//x/y[1])`, x, "4", nil, t)
 	execVal(`count(//x[1]/y[1])`, x, "2", nil, t)
 }
-*/
 
 func TestNames(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?><test xmlns="http://foo.com" xmlns:bar="http://bar.com" bar:attr="val"><?pi pival?><!--comment--></test>`
