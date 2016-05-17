@@ -33,6 +33,7 @@ var rec bool
 var value bool
 var ns = make(namespace)
 var unstrict bool
+var noFileName bool
 var args = []string{}
 var stdin io.Reader = os.Stdin
 var stdout io.ReadWriter = os.Stdout
@@ -45,6 +46,7 @@ func init() {
 	flag.BoolVar(&value, "v", false, "Output the string value of the XPath result")
 	flag.Var(&ns, "ns", "Namespace mappings. e.g. -ns myns=http://example.com")
 	flag.BoolVar(&unstrict, "u", false, "Turns off strict XML validation")
+	flag.BoolVar(&noFileName, "h", false, "Suppress filename prefixes.")
 }
 
 func main() {
@@ -57,25 +59,26 @@ func main() {
 func exec() {
 	if len(args) < 1 {
 		fmt.Fprintf(stdout, "Specify an XPath expression with one or more files, or pipe the XML from stdin.\n")
-		os.Exit(1)
+		retCode = 1
+		return
 	}
 
 	xp, err := goxpath.Parse(args[0])
 
 	if err != nil {
 		fmt.Fprintf(stderr, "%s\n", err.Error())
-		os.Exit(1)
+		retCode = 1
+		return
 	}
 
 	if len(args) == 1 {
 		ret, err := runXPath(xp, stdin, ns, value)
 		if err != nil {
 			fmt.Fprintf(stderr, "%s\n", err.Error())
-			os.Exit(1)
+			retCode = 1
 		}
-		for _, i := range ret {
-			fmt.Fprintf(stdout, "%s\n", i)
-		}
+
+		printResult(ret, "")
 	}
 
 	for i := 1; i < len(args); i++ {
@@ -112,8 +115,12 @@ func procPath(path string, x goxpath.XPathExec, ns namespace, value bool) {
 		retCode = 1
 	}
 
+	printResult(ret, path)
+}
+
+func printResult(ret []string, path string) {
 	for _, j := range ret {
-		if len(flag.Args()) > 2 || rec {
+		if (len(flag.Args()) > 2 || rec) && !noFileName {
 			fmt.Fprintf(stdout, "%s:", path)
 		}
 
