@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -159,24 +158,17 @@ func runXPath(x goxpath.XPathExec, r io.Reader, ns namespace, value bool) ([]str
 
 	var ret []string
 
-	if nodes, ok := res.(xtypes.NodeSet); ok {
+	if nodes, ok := res.(xtypes.NodeSet); ok && !value {
 		ret = make([]string, len(nodes))
 		for i, v := range nodes {
-			if value {
-				ret[i] = v.ResValue()
-			} else {
-				buf := bytes.Buffer{}
-				err = goxpath.Marshal(v, &buf)
-
-				if err != nil {
-					return nil, err
-				}
-
-				ret[i] = buf.String()
+			ret[i], err = goxpath.MarshalStr(v)
+			ret[i] = strings.Replace(ret[i], "\n", "&#10;", -1)
+			if err != nil {
+				return nil, err
 			}
 		}
 	} else {
-		ret = []string{res.String()}
+		ret = strings.Split(res.String(), "\n")
 	}
 
 	return ret, nil
