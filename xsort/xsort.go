@@ -4,7 +4,6 @@ import (
 	"sort"
 
 	"github.com/ChrisTrenkamp/goxpath/tree"
-	"github.com/ChrisTrenkamp/goxpath/xtypes"
 )
 
 type nodeSort []tree.Node
@@ -26,14 +25,6 @@ func (ns nsSort) Less(i, j int) bool {
 	return ns[i].Value < ns[j].Value
 }
 
-type nodeResSort xtypes.NodeSet
-
-func (ns nodeResSort) Len() int      { return len(ns) }
-func (ns nodeResSort) Swap(i, j int) { ns[i], ns[j] = ns[j], ns[i] }
-func (ns nodeResSort) Less(i, j int) bool {
-	return ns[i].Pos() < ns[j].Pos()
-}
-
 //SortNodes sorts the array by the node document order
 func SortNodes(res []tree.Node) {
 	sort.Sort(nodeSort(res))
@@ -43,8 +34,4 @@ func SortNodes(res []tree.Node) {
 //URL and assigns the document position accordingly.
 func SortNS(ns []tree.NS) {
 	sort.Sort(nsSort(ns))
-}
-
-func SortResNode(res xtypes.NodeSet) {
-	sort.Sort(nodeResSort(res))
 }

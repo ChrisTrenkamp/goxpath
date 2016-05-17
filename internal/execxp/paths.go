@@ -26,6 +26,7 @@ type xpFilt struct {
 	ns      map[string]string
 	ctxPos  int
 	ctxSize int
+	proxPos map[int]int
 }
 
 type xpExecFn func(*xpFilt, string) error
@@ -111,12 +112,7 @@ func xfPredicate(f *xpFilt, n *parser.Node) (err error) {
 			ns:      f.ns,
 			ctxPos:  i,
 			ctxSize: f.ctxSize,
-		}
-
-		if n, ok := res[i].(tree.Node); ok {
-			pf.ctx = n
-		} else {
-			return fmt.Errorf("Cannot run predicate on primitive data type")
+			ctx:     res[i],
 		}
 
 		predRes, err := exec(&pf, n)
@@ -124,7 +120,7 @@ func xfPredicate(f *xpFilt, n *parser.Node) (err error) {
 			return err
 		}
 
-		ok, err := checkPredRes(predRes, i)
+		ok, err := checkPredRes(predRes, f, res[i])
 		if err != nil {
 			return err
 		}
@@ -139,9 +135,12 @@ func xfPredicate(f *xpFilt, n *parser.Node) (err error) {
 	return
 }
 
-func checkPredRes(ret xtypes.Result, i int) (bool, error) {
+func checkPredRes(ret xtypes.Result, f *xpFilt, node tree.Node) (bool, error) {
 	if num, ok := ret.(xtypes.Num); ok {
-		return float64(num)-1 == float64(i), nil
+		if float64(f.proxPos[node.Pos()]) == float64(num) {
+			return true, nil
+		}
+		return false, nil
 	}
 
 	if b, ok := ret.(xtypes.IsBool); ok {
@@ -333,6 +332,7 @@ func abbrPathExpr() pathexpr.PathExpr {
 
 func find(f *xpFilt) error {
 	dupFilt := make(map[int]tree.Node)
+	f.proxPos = make(map[int]int)
 
 	if f.expr.Axis == "" && f.expr.NodeType == "" && f.expr.Name.Space == "" {
 		if f.expr.Name.Local == "." {
@@ -364,8 +364,9 @@ func find(f *xpFilt) error {
 	}
 
 	for _, i := range nodeSet {
-		for _, j := range findutil.Find(i, f.expr) {
+		for pos, j := range findutil.Find(i, f.expr) {
 			dupFilt[j.Pos()] = j
+			f.proxPos[j.Pos()] = pos + 1
 		}
 	}
 
@@ -374,7 +375,7 @@ func find(f *xpFilt) error {
 		res = append(res, i)
 	}
 
-	xsort.SortResNode(res)
+	xsort.SortNodes(res)
 
 	f.expr = pathexpr.PathExpr{}
 	f.ctxSize = len(res)
