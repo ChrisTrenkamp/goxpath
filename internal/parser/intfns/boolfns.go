@@ -18,11 +18,11 @@ func boolean(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 }
 
 func not(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	b, ok := args[0].(xtypes.Bool)
+	b, ok := args[0].(xtypes.IsBool)
 	if !ok {
 		return nil, fmt.Errorf("Object is not a boolean")
 	}
-	return !b, nil
+	return !b.Bool(), nil
 }
 
 func _true(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
@@ -34,21 +34,21 @@ func _false(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 }
 
 func lang(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	lStr, ok := args[0].(xtypes.String)
+	lStr, ok := args[0].(xtypes.IsString)
 	if !ok {
 		return nil, fmt.Errorf("Argument is not a string")
 	}
 
 	if elem, ok := c.Node.(tree.Elem); ok {
 		if attr, ok := tree.GetAttribute(elem, "lang", tree.XMLSpace); ok {
-			return checkLang(string(lStr), attr.Value), nil
+			return checkLang(string(lStr.String()), attr.Value), nil
 		}
 	}
 
 	n := c.Node.GetParent()
 	for n.GetNodeType() != tree.NtRoot {
 		if attr, ok := tree.GetAttribute(n, "lang", tree.XMLSpace); ok {
-			return checkLang(string(lStr), attr.Value), nil
+			return checkLang(string(lStr.String()), attr.Value), nil
 		}
 	}
 

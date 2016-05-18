@@ -31,28 +31,30 @@ func sum(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 }
 
 func floor(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	n, ok := args[0].(xtypes.Num)
+	n, ok := args[0].(xtypes.IsNum)
 	if !ok {
 		return nil, fmt.Errorf("Cannot convert object to a number")
 	}
 
-	return xtypes.Num(math.Floor(float64(n))), nil
+	return xtypes.Num(math.Floor(float64(n.Num()))), nil
 }
 
 func ceiling(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	n, ok := args[0].(xtypes.Num)
+	n, ok := args[0].(xtypes.IsNum)
 	if !ok {
 		return nil, fmt.Errorf("Cannot convert object to a number")
 	}
 
-	return xtypes.Num(math.Ceil(float64(n))), nil
+	return xtypes.Num(math.Ceil(float64(n.Num()))), nil
 }
 
 func round(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	n, ok := args[0].(xtypes.Num)
+	isn, ok := args[0].(xtypes.IsNum)
 	if !ok {
 		return nil, fmt.Errorf("Cannot convert object to a number")
 	}
+
+	n := isn.Num()
 
 	if n < -0.5 {
 		n = xtypes.Num(int(n - 0.5))
