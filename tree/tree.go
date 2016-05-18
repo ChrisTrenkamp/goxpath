@@ -2,6 +2,9 @@ package tree
 
 import "encoding/xml"
 
+//XMLSpace is the W3C XML namespace
+const XMLSpace = "http://www.w3.org/XML/1998/namespace"
+
 //NodePos is a helper for representing the node's document order
 type NodePos int
 
@@ -130,4 +133,17 @@ func (ns NS) GetParent() Elem {
 //ResValue returns the string value of the namespace
 func (ns NS) ResValue() string {
 	return ns.Attr.Value
+}
+
+//GetAttribute is a convenience function for getting the specified attribute from an element.
+//false is returned if the attribute is not found.
+func GetAttribute(n Elem, local, space string) (xml.Attr, bool) {
+	attrs := n.GetAttrs()
+	for _, i := range attrs {
+		attr := i.GetToken().(xml.Attr)
+		if local == attr.Name.Local && space == attr.Name.Space {
+			return attr, true
+		}
+	}
+	return xml.Attr{}, false
 }

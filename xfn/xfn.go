@@ -9,7 +9,7 @@ import (
 
 //Ctx represents the current context position, size, node, and the current filtered result
 type Ctx struct {
-	tree.Node
+	Node   tree.Node
 	Filter xtypes.Result
 	Pos    int
 	Size   int

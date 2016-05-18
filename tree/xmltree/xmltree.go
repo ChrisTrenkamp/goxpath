@@ -95,7 +95,7 @@ func ParseXML(r io.Reader, op ...ParseSettings) (tree.Node, error) {
 		case xml.StartElement:
 			setEle(&opts, xmlTree, xt, &ordrPos)
 			if xmlTree.GetNodeType() == tree.NtRoot {
-				opts.NS[xml.Name{Space: "", Local: "xml"}] = "http://www.w3.org/XML/1998/namespace"
+				opts.NS[xml.Name{Space: "", Local: "xml"}] = tree.XMLSpace
 				opts.AttrStartPos++
 				ordrPos++
 			}

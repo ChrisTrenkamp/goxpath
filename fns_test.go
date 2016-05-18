@@ -137,3 +137,16 @@ func TestNot(t *testing.T) {
 	execVal(`not(false())`, x, "true", nil, t)
 	execVal(`not(true())`, x, "false", nil, t)
 }
+
+func TestLang(t *testing.T) {
+	x := `<?xml version="1.0" encoding="UTF-8"?>
+<p1>
+	<p xml:lang="en">I went up a floor.</p>
+	<p xml:lang="en-GB">I took the lift.</p>
+	<p xml:lang="en-US">I rode the elevator.</p>
+</p1>`
+	execVal(`count(//p[lang('en')])`, x, "3", nil, t)
+	execVal(`count(//p[lang('en-GB')])`, x, "1", nil, t)
+	execVal(`count(//p[lang('en-US')])`, x, "1", nil, t)
+	execVal(`count(//p[lang('de')])`, x, "0", nil, t)
+}

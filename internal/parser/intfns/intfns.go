@@ -18,6 +18,7 @@ var BuiltIn = map[string]xfn.Wrap{
 	"not":     xfn.Wrap{Fn: not, NArgs: 1},
 	"true":    xfn.Wrap{Fn: _true},
 	"false":   xfn.Wrap{Fn: _false},
+	"lang":    xfn.Wrap{Fn: lang, NArgs: 1},
 	//number functions
 	"number":  xfn.Wrap{Fn: number, NArgs: -1},
 	"sum":     xfn.Wrap{Fn: sum, NArgs: 1},
