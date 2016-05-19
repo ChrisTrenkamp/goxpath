@@ -146,7 +146,61 @@ func TestLang(t *testing.T) {
 	<p xml:lang="en-US">I rode the elevator.</p>
 </p1>`
 	execVal(`count(//p[lang('en')])`, x, "3", nil, t)
-	execVal(`count(//p[lang('en-GB')])`, x, "1", nil, t)
+	execVal(`count(//text()[lang('en-GB')])`, x, "1", nil, t)
 	execVal(`count(//p[lang('en-US')])`, x, "1", nil, t)
 	execVal(`count(//p[lang('de')])`, x, "0", nil, t)
+	execVal(`count(/p1[lang('en')])`, x, "0", nil, t)
+}
+
+func TestConcat(t *testing.T) {
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
+	execVal(`concat('abc', 'def', 'hij', '123')`, x, "abcdefhij123", nil, t)
+}
+
+func TestStartsWith(t *testing.T) {
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
+	execVal(`starts-with('abcd', 'ab')`, x, "true", nil, t)
+	execVal(`starts-with('abcd', 'abd')`, x, "false", nil, t)
+}
+
+func TestContains(t *testing.T) {
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
+	execVal(`contains('abcd', 'bcd')`, x, "true", nil, t)
+	execVal(`contains('abcd', 'bd')`, x, "false", nil, t)
+}
+
+func TestSubstrBefore(t *testing.T) {
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
+	execVal(`substring-before("1999/04/01","/")`, x, "1999", nil, t)
+	execVal(`substring-before("1999/04/01","2")`, x, "", nil, t)
+}
+
+func TestSubstrAfter(t *testing.T) {
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
+	execVal(`substring-after("1999/04/01","/")`, x, "04/01", nil, t)
+	execVal(`substring-after("1999/04/01","19")`, x, "99/04/01", nil, t)
+}
+
+func TestSubstring(t *testing.T) {
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
+	execVal(`substring("12345",2,3)`, x, "234", nil, t)
+	execVal(`substring("12345",2)`, x, "2345", nil, t)
+}
+
+func TestStrLength(t *testing.T) {
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
+	execVal(`string-length('abc')`, x, "3", nil, t)
+}
+
+func TestNormalizeSpace(t *testing.T) {
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1>
+	  a   b
+</p1>`
+	execVal(`normalize-space(/p1)`, x, "a b", nil, t)
+}
+
+func TestTranslate(t *testing.T) {
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
+	execVal(`translate("bar","abc","ABC")`, x, "BAr", nil, t)
+	execVal(`translate("--aaa--","abc-","ABC")`, x, "AAA", nil, t)
 }

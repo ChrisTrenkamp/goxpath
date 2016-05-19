@@ -100,13 +100,6 @@ func Parse(xp string) (*Node, error) {
 	for next := range c {
 		if err == nil {
 			err = parseMap[next.Typ](p, next)
-			/*
-				fmt.Println(next, "Parent:", p.cur.Parent, "Left:", p.cur.Left, "Right:", p.cur.Right)
-
-				for i := 0; i < 7; i++ {
-					n.prettyPrint(i, 16)
-				}
-			*/
 		}
 	}
 

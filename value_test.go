@@ -2,6 +2,7 @@ package goxpath
 
 import (
 	"bytes"
+	"runtime/debug"
 	"testing"
 
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
@@ -12,6 +13,7 @@ func execVal(xp, x string, exp string, ns map[string]string, t *testing.T) {
 		if r := recover(); r != nil {
 			t.Error("Panicked: from XPath expr: '" + xp)
 			t.Error(r)
+			t.Error(string(debug.Stack()))
 		}
 	}()
 	res := MustExec(MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns)

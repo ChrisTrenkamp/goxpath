@@ -4,11 +4,6 @@ import "fmt"
 
 //Result is used for all data types.  Since
 type Result interface {
-	IsString
-}
-
-//IsString is used for the XPath string function.  It turns the data type to a string.
-type IsString interface {
 	fmt.Stringer
 }
 

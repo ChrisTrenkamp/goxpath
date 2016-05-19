@@ -1,10 +1,6 @@
 package parser
 
-import (
-	"fmt"
-
-	"github.com/ChrisTrenkamp/goxpath/internal/lexer"
-)
+import "github.com/ChrisTrenkamp/goxpath/internal/lexer"
 
 //NodeType enumerations
 const (
@@ -66,49 +62,5 @@ func (n *Node) pushNotEmpty(i lexer.XItem) {
 		n.add(i)
 	} else {
 		n.push(i)
-	}
-}
-
-func (n *Node) prettyPrint(depth, width int) {
-	nodes := []*Node{}
-	n.getLine(depth, &nodes)
-	fmt.Printf("%*s", (width-depth)*2, "")
-	toggle := true
-	if len(nodes) > 1 {
-		for _, i := range nodes {
-			if i != nil {
-				if toggle {
-					fmt.Print("/   ")
-				} else {
-					fmt.Print("\\   ")
-				}
-			}
-			toggle = !toggle
-		}
-		fmt.Println()
-		fmt.Printf("%*s", (width-depth)*2, "")
-	}
-	for _, i := range nodes {
-		if i != nil {
-			fmt.Print(i.Val.Val, "   ")
-		}
-	}
-	fmt.Println()
-}
-
-func (n *Node) getLine(depth int, ret *[]*Node) {
-	if depth <= 0 && n != nil {
-		*ret = append(*ret, n)
-		return
-	}
-	if n.Left != nil {
-		n.Left.getLine(depth-1, ret)
-	} else if depth-1 <= 0 {
-		*ret = append(*ret, nil)
-	}
-	if n.Right != nil {
-		n.Right.getLine(depth-1, ret)
-	} else if depth-1 <= 0 {
-		*ret = append(*ret, nil)
 	}
 }

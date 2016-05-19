@@ -39,17 +39,19 @@ func lang(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 		return nil, fmt.Errorf("Argument is not a string")
 	}
 
-	if elem, ok := c.Node.(tree.Elem); ok {
-		if attr, ok := tree.GetAttribute(elem, "lang", tree.XMLSpace); ok {
-			return checkLang(string(lStr), attr.Value), nil
-		}
+	var n tree.Elem
+
+	if c.Node.GetNodeType() == tree.NtEle {
+		n = c.Node.(tree.Elem)
+	} else {
+		n = c.Node.GetParent()
 	}
 
-	n := c.Node.GetParent()
 	for n.GetNodeType() != tree.NtRoot {
 		if attr, ok := tree.GetAttribute(n, "lang", tree.XMLSpace); ok {
 			return checkLang(string(lStr), attr.Value), nil
 		}
+		n = n.GetParent()
 	}
 
 	return xtypes.Bool(false), nil
@@ -58,16 +60,18 @@ func lang(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 func checkLang(srcStr, targStr string) xtypes.Bool {
 	srcLang := language.Make(string(srcStr))
 	srcRegion, srcRegionConf := srcLang.Region()
-	match := language.NewMatcher([]language.Tag{srcLang})
 
 	targLang := language.Make(targStr)
 	targRegion, targRegionConf := targLang.Region()
+
 	if srcRegionConf == language.Exact && targRegionConf != language.Exact {
 		return xtypes.Bool(false)
 	}
+
 	if srcRegion != targRegion && srcRegionConf == language.Exact && targRegionConf == language.Exact {
 		return xtypes.Bool(false)
 	}
-	_, _, conf := match.Match(targLang)
+
+	_, _, conf := language.NewMatcher([]language.Tag{srcLang}).Match(targLang)
 	return xtypes.Bool(conf >= language.High)
 }
