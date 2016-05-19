@@ -2,7 +2,6 @@ package goxpath
 
 import (
 	"fmt"
-	"math"
 	"testing"
 )
 
@@ -49,7 +48,6 @@ func TestNumberOps(t *testing.T) {
 	testFloatMap[`/t/t2 + /t/t3`] = 3 + 5
 	testFloatMap[`/t/t2 - /t/t3`] = 3 - 5
 	testFloatMap[`/t/t3 mod /t/t1`] = 5 % 2
-	testFloatMap[`/t/t3 div 0`] = math.NaN()
 	testFloatMap[`number('5')`] = 5
 	testFloatMap[`sum(/t/*)`] = 2 + 3 + 5 + 2
 	testFloatMap[`floor(/t/t3 div /t/t1)`] = 2
@@ -60,6 +58,11 @@ func TestNumberOps(t *testing.T) {
 	for k, v := range testFloatMap {
 		execVal(k, x, fmt.Sprintf("%g", float64(v)), nil, t)
 	}
+
+	execVal(`/t/t3 div 0`, x, "Infinity", nil, t)
+	execVal(`-1 div 0`, x, "-Infinity", nil, t)
+	execVal(`0 div 0`, x, "NaN", nil, t)
+
 	testBoolMap := make(map[string]string)
 	testBoolMap[`/t/t1 = 2`] = "true"
 	testBoolMap[`/t/t1 != 2`] = "false"

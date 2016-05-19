@@ -47,7 +47,10 @@ type Num float64
 //ResValue satisfies the tree.Res interface for Num
 func (n Num) String() string {
 	if math.IsInf(float64(n), 0) {
-		return fmt.Sprintf("%g", float64(n)) + "inity"
+		if math.IsInf(float64(n), 1) {
+			return "Infinity"
+		}
+		return "-Infinity"
 	}
 	return fmt.Sprintf("%g", float64(n))
 }

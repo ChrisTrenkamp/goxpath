@@ -152,6 +152,11 @@ func TestLang(t *testing.T) {
 	execVal(`count(/p1[lang('en')])`, x, "0", nil, t)
 }
 
+func TestString(t *testing.T) {
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
+	execVal(`string(2 + 2)`, x, "4", nil, t)
+}
+
 func TestConcat(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
 	execVal(`concat('abc', 'def', 'hij', '123')`, x, "abcdefhij123", nil, t)
@@ -179,12 +184,21 @@ func TestSubstrAfter(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
 	execVal(`substring-after("1999/04/01","/")`, x, "04/01", nil, t)
 	execVal(`substring-after("1999/04/01","19")`, x, "99/04/01", nil, t)
+	execVal(`substring-after("1999/04/01","a")`, x, "", nil, t)
 }
 
 func TestSubstring(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
-	execVal(`substring("12345",2,3)`, x, "234", nil, t)
-	execVal(`substring("12345",2)`, x, "2345", nil, t)
+	execVal(`substring("12345", 2, 3)`, x, "234", nil, t)
+	execVal(`substring("12345", 2)`, x, "2345", nil, t)
+	execVal(`substring('abcd', -2, 5)`, x, "ab", nil, t)
+	execVal(`substring('abcd', 0)`, x, "abcd", nil, t)
+	execVal(`substring('abcd', 1, 4)`, x, "abcd", nil, t)
+	execVal(`substring("12345", 1.5, 2.6)`, x, "234", nil, t)
+	execVal(`substring("12345", 0 div 0, 3)`, x, "", nil, t)
+	execVal(`substring("12345", 1, 0 div 0)`, x, "", nil, t)
+	execVal(`substring("12345", -42, 1 div 0)`, x, "12345", nil, t)
+	execVal(`substring("12345", -1 div 0, 1 div 0)`, x, "", nil, t)
 }
 
 func TestStrLength(t *testing.T) {

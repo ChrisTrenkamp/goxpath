@@ -132,7 +132,13 @@ func numberOperator(left, right xtypes.Result, f *xpFilt, op string) error {
 		if rn != 0 {
 			f.res = xtypes.Num(ln / rn)
 		} else {
-			f.res = xtypes.Num(math.NaN())
+			if ln == 0 {
+				f.res = xtypes.Num(math.NaN())
+			} else if ln >= 0 {
+				f.res = xtypes.Num(math.Inf(1))
+			} else {
+				f.res = xtypes.Num(math.Inf(-1))
+			}
 		}
 	case "mod":
 		f.res = xtypes.Num(int(ln) % int(rn))

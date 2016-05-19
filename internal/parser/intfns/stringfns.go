@@ -1,6 +1,7 @@
 package intfns
 
 import (
+	"math"
 	"regexp"
 	"strings"
 
@@ -60,35 +61,41 @@ func substring(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 		return nil, bErr
 	}
 
-	b := int(bNum.(xtypes.Num).Num()) - 1
+	b := bNum.(xtypes.Num).Num()
 
-	if b < 0 {
-		b = 0
-	}
-
-	if b >= len(str) {
+	if float64(b-1) >= float64(len(str)) || math.IsNaN(float64(b)) {
 		return xtypes.String(""), nil
 	}
 
-	if len(args) == 3 {
-		eNum, eErr := round(c, args[1])
-		if eErr != nil {
-			return nil, eErr
+	if len(args) == 2 {
+		if b <= 1 {
+			b = 1
 		}
 
-		e := int(eNum.(xtypes.Num).Num()) + 1
-		if e <= 0 {
-			return xtypes.String(""), nil
-		}
-
-		if b+e >= len(str) {
-			e = len(str) - b + 1
-		}
-
-		return xtypes.String(str[b : b+e]), nil
+		return xtypes.String(str[int(b)-1:]), nil
 	}
 
-	return xtypes.String(str[b:]), nil
+	eNum, eErr := round(c, args[2])
+	if eErr != nil {
+		return nil, eErr
+	}
+
+	e := eNum.(xtypes.Num).Num()
+
+	if e <= 0 || math.IsNaN(float64(e)) || (math.IsInf(float64(b), 0) && math.IsInf(float64(e), 0)) {
+		return xtypes.String(""), nil
+	}
+
+	if b <= 1 {
+		e = b + e - 1
+		b = 1
+	}
+
+	if float64(b+e-1) >= float64(len(str)) {
+		e = xtypes.Num(len(str)) - b + 1
+	}
+
+	return xtypes.String(str[int(b)-1 : int(b+e)-1]), nil
 }
 
 func stringLength(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {

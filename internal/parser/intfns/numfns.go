@@ -56,6 +56,10 @@ func round(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 
 	n := isn.Num()
 
+	if math.IsNaN(float64(n)) || math.IsInf(float64(n), 0) {
+		return n, nil
+	}
+
 	if n < -0.5 {
 		n = xtypes.Num(int(n - 0.5))
 	} else if n > 0.5 {
