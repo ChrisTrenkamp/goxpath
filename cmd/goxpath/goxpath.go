@@ -175,7 +175,10 @@ func runXPath(x goxpath.XPathExec, r io.Reader, ns namespace, value bool) ([]str
 			}
 		}
 	} else {
-		ret = strings.Split(res.String(), "\n")
+		str := res.String()
+		if str != "" {
+			ret = strings.Split(str, "\n")
+		}
 	}
 
 	return ret, nil

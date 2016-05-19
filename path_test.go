@@ -443,7 +443,7 @@ func TestPredicate3(t *testing.T) {
 }
 
 func TestPredicate4(t *testing.T) {
-	p := `/p1/p2[not(boolean(@test))]`
+	p := `/p1/p2[not(@test)]`
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2/><p2 test="foo"/><p2/></p1>`
 	exp := []string{`<p2></p2>`, `<p2></p2>`}
 	execPath(p, x, exp, nil, t)

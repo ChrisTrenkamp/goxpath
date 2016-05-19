@@ -18,11 +18,11 @@ func boolean(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 }
 
 func not(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	b, ok := args[0].(xtypes.Bool)
+	b, ok := args[0].(xtypes.IsBool)
 	if !ok {
 		return nil, fmt.Errorf("Object is not a boolean")
 	}
-	return !b, nil
+	return !b.Bool(), nil
 }
 
 func _true(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
@@ -34,10 +34,7 @@ func _false(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 }
 
 func lang(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	lStr, ok := args[0].(xtypes.String)
-	if !ok {
-		return nil, fmt.Errorf("Argument is not a string")
-	}
+	lStr := args[0].String()
 
 	var n tree.Elem
 

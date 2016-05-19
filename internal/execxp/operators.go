@@ -29,6 +29,8 @@ func bothNodeOperator(left xtypes.NodeSet, right xtypes.NodeSet, f *xpFilt, op s
 		}
 	}
 
+	f.res = xtypes.Bool(false)
+
 	return nil
 }
 
@@ -50,6 +52,8 @@ func leftNodeOperator(left xtypes.NodeSet, right xtypes.Result, f *xpFilt, op st
 		}
 	}
 
+	f.res = xtypes.Bool(false)
+
 	return nil
 }
 
@@ -70,6 +74,8 @@ func rightNodeOperator(left xtypes.Result, right xtypes.NodeSet, f *xpFilt, op s
 			}
 		}
 	}
+
+	f.res = xtypes.Bool(false)
 
 	return nil
 }
