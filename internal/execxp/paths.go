@@ -90,8 +90,8 @@ func xfExec(f *xpFilt, n *parser.Node) (err error) {
 			return xfOperator(left, right, f, n.Val.Val)
 		} else if string(n.Val.Typ) == "" {
 			n = n.Left
-		} else {
-			return fmt.Errorf("Cannot process " + string(n.Val.Typ))
+			//} else {
+			//	return fmt.Errorf("Cannot process " + string(n.Val.Typ))
 		}
 	}
 
@@ -101,7 +101,7 @@ func xfExec(f *xpFilt, n *parser.Node) (err error) {
 func xfPredicate(f *xpFilt, n *parser.Node) (err error) {
 	res, ok := f.res.(xtypes.NodeSet)
 	if !ok {
-		return fmt.Errorf("Cannot run predicate on a data type not a node-set")
+		return fmt.Errorf("Cannot run predicate on non-node-set")
 	}
 
 	newRes := make(xtypes.NodeSet, 0, len(res))
@@ -242,11 +242,11 @@ func xfOperator(left, right xtypes.Result, f *xpFilt, op string) error {
 		return andOrOperator(left, right, f, op)
 	}
 
-	if op == "|" {
-		return unionOperator(left, right, f, op)
-	}
+	//if op == "|" {
+	return unionOperator(left, right, f, op)
+	//}
 
-	return fmt.Errorf("Unknown operator " + op)
+	//return fmt.Errorf("Unknown operator " + op)
 }
 
 func xfAbsLocPath(f *xpFilt, val string) error {
@@ -360,7 +360,7 @@ func find(f *xpFilt) error {
 
 	nodeSet, ok := f.res.(xtypes.NodeSet)
 	if !ok {
-		return fmt.Errorf("Cannot run path expression on primitive data type")
+		return fmt.Errorf("Cannot run path expression on non-node-set")
 	}
 
 	for _, i := range nodeSet {

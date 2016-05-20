@@ -27,7 +27,13 @@ func count(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 }
 
 func localName(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	n, ok := args[0].(xtypes.NodeSet)
+	var n xtypes.NodeSet
+	var ok bool
+	if len(args) == 1 {
+		n, ok = args[0].(xtypes.NodeSet)
+	} else {
+		n, ok = c.Filter.(xtypes.NodeSet)
+	}
 	if !ok {
 		return nil, fmt.Errorf("Cannot convert object to a node-set")
 	}
@@ -53,7 +59,13 @@ func localName(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 }
 
 func namespaceURI(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	n, ok := args[0].(xtypes.NodeSet)
+	var n xtypes.NodeSet
+	var ok bool
+	if len(args) == 1 {
+		n, ok = args[0].(xtypes.NodeSet)
+	} else {
+		n, ok = c.Filter.(xtypes.NodeSet)
+	}
 	if !ok {
 		return nil, fmt.Errorf("Cannot convert object to a node-set")
 	}
@@ -77,7 +89,13 @@ func namespaceURI(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 }
 
 func name(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	n, ok := args[0].(xtypes.NodeSet)
+	var n xtypes.NodeSet
+	var ok bool
+	if len(args) == 1 {
+		n, ok = args[0].(xtypes.NodeSet)
+	} else {
+		n, ok = c.Filter.(xtypes.NodeSet)
+	}
 	if !ok {
 		return nil, fmt.Errorf("Cannot convert object to a node-set")
 	}

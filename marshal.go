@@ -28,12 +28,7 @@ func marshal(n tree.Node, w io.Writer) error {
 		return err
 	}
 
-	err = e.Flush()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return e.Flush()
 }
 
 func encTok(n tree.Node, e *xml.Encoder) error {

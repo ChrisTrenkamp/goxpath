@@ -138,7 +138,7 @@ func procFunc(l *Lexer, tok string) (XItemType, error) {
 	l.skipWS(true)
 	if string(l.peek()) != ")" {
 		l.emit(XItemArgument)
-		for true {
+		for {
 			for state := startState; state != nil; {
 				state = state(l)
 			}

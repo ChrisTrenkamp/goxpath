@@ -19,6 +19,13 @@ func TestParenths(t *testing.T) {
 	execVal(p, x, exp, nil, t)
 }
 
+func TestParenths2(t *testing.T) {
+	p := `(1 + 2 * 3)`
+	x := `<?xml version="1.0" encoding="UTF-8"?><test></test>`
+	exp := "7"
+	execVal(p, x, exp, nil, t)
+}
+
 func TestEquals(t *testing.T) {
 	p := `/test/test2 = 3`
 	x := `<?xml version="1.0" encoding="UTF-8"?><test><test2>3</test2></test>`
@@ -65,12 +72,14 @@ func TestNumberOps(t *testing.T) {
 
 	testBoolMap := make(map[string]string)
 	testBoolMap[`/t/t1 = 2`] = "true"
+	testBoolMap[`2 = /t/t1`] = "true"
 	testBoolMap[`/t/t1 != 2`] = "false"
 	testBoolMap[`4 = /t/t2`] = "false"
 	testBoolMap[`/t/t1 != /t/t2`] = "true"
 	testBoolMap[`2 < /t/t4`] = "false"
 	testBoolMap[`/t/t1 <= 2`] = "true"
 	testBoolMap[`/t/t1 > /t/t4`] = "false"
+	testBoolMap[`2 >= /t/t4`] = "true"
 	testBoolMap[`/t/t1 >= /t/t4`] = "true"
 	testBoolMap[`/t/t1 != /t/t2 and /t/t1 < /t/t4`] = "false"
 	testBoolMap[`/t/t1 != /t/t2 or /t/t1 < /t/t4`] = "true"

@@ -138,6 +138,14 @@ func TestNot(t *testing.T) {
 	execVal(`not(true())`, x, "false", nil, t)
 }
 
+func TestConversions(t *testing.T) {
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
+	execVal(`number(true())`, x, "1", nil, t)
+	execVal(`number(false())`, x, "0", nil, t)
+	execVal(`string(/p2)`, x, "", nil, t)
+	execVal(`number('abc')`, x, "NaN", nil, t)
+}
+
 func TestLang(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?>
 <p1>
@@ -153,8 +161,9 @@ func TestLang(t *testing.T) {
 }
 
 func TestString(t *testing.T) {
-	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1>text</p1>`
 	execVal(`string(2 + 2)`, x, "4", nil, t)
+	execVal(`/p1/string()`, x, "text", nil, t)
 }
 
 func TestConcat(t *testing.T) {
@@ -202,8 +211,9 @@ func TestSubstring(t *testing.T) {
 }
 
 func TestStrLength(t *testing.T) {
-	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1>abc</p1>`
 	execVal(`string-length('abc')`, x, "3", nil, t)
+	execVal(`/p1/string-length()`, x, "3", nil, t)
 }
 
 func TestNormalizeSpace(t *testing.T) {
@@ -211,6 +221,7 @@ func TestNormalizeSpace(t *testing.T) {
 	  a   b
 </p1>`
 	execVal(`normalize-space(/p1)`, x, "a b", nil, t)
+	execVal(`/p1/normalize-space()`, x, "a b", nil, t)
 }
 
 func TestTranslate(t *testing.T) {

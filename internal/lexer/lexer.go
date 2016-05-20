@@ -157,7 +157,7 @@ func (l *Lexer) peekAt(n int) rune {
 }
 
 func (l *Lexer) accept(valid string) bool {
-	if strings.IndexRune(valid, l.next()) >= 0 {
+	if strings.ContainsRune(valid, l.next()) {
 		return true
 	}
 
@@ -166,7 +166,7 @@ func (l *Lexer) accept(valid string) bool {
 }
 
 func (l *Lexer) acceptRun(valid string) {
-	for strings.IndexRune(valid, l.next()) >= 0 {
+	for strings.ContainsRune(valid, l.next()) {
 	}
 	l.backup()
 }
@@ -179,7 +179,7 @@ func (l *Lexer) skip(num int) {
 }
 
 func (l *Lexer) skipWS(ig bool) {
-	for true {
+	for {
 		n := l.next()
 
 		if n == eof || !unicode.IsSpace(n) {
@@ -243,6 +243,15 @@ func startState(l *Lexer) stateFn {
 	return nil
 }
 
+func strPeek(str string, l *Lexer) bool {
+	for i := 0; i < len(str); i++ {
+		if string(l.peekAt(i+1)) != string(str[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 func findOperatorState(l *Lexer) stateFn {
 	l.skipWS(true)
 
@@ -272,7 +281,7 @@ func findOperatorState(l *Lexer) stateFn {
 		return startState
 	}
 
-	if string(l.peek()) == "a" && string(l.peekAt(2)) == "n" && string(l.peekAt(3)) == "d" {
+	if strPeek("and", l) {
 		l.next()
 		l.next()
 		l.next()
@@ -280,14 +289,14 @@ func findOperatorState(l *Lexer) stateFn {
 		return startState
 	}
 
-	if string(l.peek()) == "o" && string(l.peekAt(2)) == "r" {
+	if strPeek("or", l) {
 		l.next()
 		l.next()
 		l.emit(XItemOperator)
 		return startState
 	}
 
-	if string(l.peek()) == "m" && string(l.peekAt(2)) == "o" && string(l.peekAt(3)) == "d" {
+	if strPeek("mod", l) {
 		l.next()
 		l.next()
 		l.next()
@@ -295,7 +304,7 @@ func findOperatorState(l *Lexer) stateFn {
 		return startState
 	}
 
-	if string(l.peek()) == "d" && string(l.peekAt(2)) == "i" && string(l.peekAt(3)) == "v" {
+	if strPeek("div", l) {
 		l.next()
 		l.next()
 		l.next()

@@ -127,10 +127,10 @@ func numberOperator(left, right xtypes.Result, f *xpFilt, op string) error {
 
 	switch op {
 	case "*":
-		f.res = xtypes.Num(ln * rn)
+		f.res = ln * rn
 	case "div":
 		if rn != 0 {
-			f.res = xtypes.Num(ln / rn)
+			f.res = ln / rn
 		} else {
 			if ln == 0 {
 				f.res = xtypes.Num(math.NaN())
@@ -143,9 +143,9 @@ func numberOperator(left, right xtypes.Result, f *xpFilt, op string) error {
 	case "mod":
 		f.res = xtypes.Num(int(ln) % int(rn))
 	case "+":
-		f.res = xtypes.Num(ln + rn)
+		f.res = ln + rn
 	case "-":
-		f.res = xtypes.Num(ln - rn)
+		f.res = ln - rn
 	case "=":
 		f.res = xtypes.Bool(ln == rn)
 	case "!=":
@@ -173,9 +173,9 @@ func andOrOperator(left, right xtypes.Result, f *xpFilt, op string) error {
 	l, r := lt.Bool(), rt.Bool()
 
 	if op == "and" {
-		f.res = xtypes.Bool(l && r)
+		f.res = l && r
 	} else {
-		f.res = xtypes.Bool(l || r)
+		f.res = l || r
 	}
 
 	return nil

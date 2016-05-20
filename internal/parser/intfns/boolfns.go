@@ -46,7 +46,7 @@ func lang(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 
 	for n.GetNodeType() != tree.NtRoot {
 		if attr, ok := tree.GetAttribute(n, "lang", tree.XMLSpace); ok {
-			return checkLang(string(lStr), attr.Value), nil
+			return checkLang(lStr, attr.Value), nil
 		}
 		n = n.GetParent()
 	}
@@ -55,7 +55,7 @@ func lang(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 }
 
 func checkLang(srcStr, targStr string) xtypes.Bool {
-	srcLang := language.Make(string(srcStr))
+	srcLang := language.Make(srcStr)
 	srcRegion, srcRegionConf := srcLang.Region()
 
 	targLang := language.Make(targStr)

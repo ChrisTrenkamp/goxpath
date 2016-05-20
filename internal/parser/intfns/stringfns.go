@@ -32,7 +32,7 @@ func startsWith(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 }
 
 func contains(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	return xtypes.Bool(strings.Index(args[0].String(), args[1].String()) != -1), nil
+	return xtypes.Bool(strings.Contains(args[0].String(), args[1].String())), nil
 }
 
 func substringBefore(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
@@ -109,7 +109,7 @@ func stringLength(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	return xtypes.Num(len(str)), nil
 }
 
-var spaceTrim = regexp.MustCompile("\\s+")
+var spaceTrim = regexp.MustCompile(`\s+`)
 
 func normalizeSpace(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	var str string
