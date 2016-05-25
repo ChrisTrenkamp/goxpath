@@ -136,10 +136,12 @@ func numberOperator(left, right xtypes.Result, f *xpFilt, op string) error {
 		} else {
 			if ln == 0 {
 				f.ctx = xtypes.Num(math.NaN())
-			} else if ln >= 0 {
-				f.ctx = xtypes.Num(math.Inf(1))
 			} else {
-				f.ctx = xtypes.Num(math.Inf(-1))
+				if math.Signbit(float64(ln)) == math.Signbit(float64(rn)) {
+					f.ctx = xtypes.Num(math.Inf(1))
+				} else {
+					f.ctx = xtypes.Num(math.Inf(-1))
+				}
 			}
 		}
 	case "mod":

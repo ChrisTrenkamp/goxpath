@@ -19,7 +19,7 @@ func number(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 func sum(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	n, ok := args[0].(xtypes.NodeSet)
 	if !ok {
-		return nil, fmt.Errorf("Argument is not a node-set")
+		return nil, fmt.Errorf("Cannot convert object to a node-set")
 	}
 
 	ret := 0.0

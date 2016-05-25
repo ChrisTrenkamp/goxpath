@@ -248,7 +248,7 @@ func startState(l *Lexer) stateFn {
 				if err != nil {
 					return l.errorf(err.Error())
 				}
-				return nil
+				return startState
 			}
 
 			l.pos = l.start

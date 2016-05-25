@@ -433,6 +433,8 @@ func TestPredicate2(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2/><p2><p3/></p2><p2><p4/></p2></p1>`
 	exp := []string{`<p2><p3></p3></p2>`}
 	execPath(p, x, exp, nil, t)
+	p = `/p1/p2 [ position() = 2 ] `
+	execPath(p, x, exp, nil, t)
 }
 
 func TestPredicate3(t *testing.T) {

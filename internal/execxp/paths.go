@@ -67,9 +67,12 @@ func xfExec(f *xpFilt, n *parser.Node) (err error) {
 			n = n.Right
 		} else if n.Val.Typ == lexer.XItemOperator {
 			lf := xpFilt{
-				t:   f.t,
-				ns:  f.ns,
-				ctx: f.ctx,
+				t:       f.t,
+				ns:      f.ns,
+				ctx:     f.ctx,
+				ctxPos:  f.ctxPos,
+				ctxSize: f.ctxSize,
+				proxPos: f.proxPos,
 			}
 			left, err := exec(&lf, n.Left)
 			if err != nil {
@@ -152,8 +155,8 @@ func checkPredRes(ret xtypes.Result, f *xpFilt, node tree.Node) (bool, error) {
 func xfFunction(f *xpFilt, n *parser.Node) error {
 	if fn, ok := intfns.BuiltIn[n.Val.Val]; ok {
 		args := []xtypes.Result{}
-
 		param := n.Left
+
 		for param != nil {
 			pf := xpFilt{
 				t:       f.t,
@@ -171,7 +174,7 @@ func xfFunction(f *xpFilt, n *parser.Node) error {
 			param = param.Right
 		}
 
-		filt, err := fn.Call(xfn.Ctx{NodeSet: f.ctx.(xtypes.NodeSet), Size: f.ctxSize, Pos: f.ctxPos}, args...)
+		filt, err := fn.Call(xfn.Ctx{NodeSet: f.ctx.(xtypes.NodeSet), Size: f.ctxSize, Pos: f.ctxPos + 1}, args...)
 		f.ctx = filt
 		return err
 	}

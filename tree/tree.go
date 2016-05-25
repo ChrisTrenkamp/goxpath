@@ -147,3 +147,56 @@ func GetAttribute(n Elem, local, space string) (xml.Attr, bool) {
 	}
 	return xml.Attr{}, false
 }
+
+//GetAttributeVal is like GetAttribute, except it returns the attribute's value.
+func GetAttributeVal(n Elem, local, space string) (string, bool) {
+	attr, ok := GetAttribute(n, local, space)
+	return attr.Value, ok
+}
+
+//GetAttrValOrEmpty is like GetAttributeVal, except it returns an empty string if
+//the attribute is not found instead of false.
+func GetAttrValOrEmpty(n Elem, local, space string) string {
+	val, ok := GetAttributeVal(n, local, space)
+	if !ok {
+		return ""
+	}
+	return val
+}
+
+//FindNodeByPos finds a node from the given position.  Returns nil if the node
+//is not found.
+func FindNodeByPos(n Node, pos int) Node {
+	if n.Pos() == pos {
+		return n
+	}
+
+	if elem, ok := n.(Elem); ok {
+		chldrn := elem.GetChildren()
+		for i := 1; i < len(chldrn); i++ {
+			if chldrn[i-1].Pos() <= pos && chldrn[i].Pos() > pos {
+				return FindNodeByPos(chldrn[i-1], pos)
+			}
+		}
+
+		if chldrn[len(chldrn)-1].Pos() <= pos {
+			return FindNodeByPos(chldrn[len(chldrn)-1], pos)
+		}
+
+		attrs := elem.GetAttrs()
+		for _, i := range attrs {
+			if i.Pos() == pos {
+				return i
+			}
+		}
+
+		ns := BuildNS(elem)
+		for _, i := range ns {
+			if i.Pos() == pos {
+				return i
+			}
+		}
+	}
+
+	return nil
+}

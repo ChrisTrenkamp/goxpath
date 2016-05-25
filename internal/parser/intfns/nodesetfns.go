@@ -28,7 +28,7 @@ func count(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 
 func localName(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	var n xtypes.NodeSet
-	var ok bool
+	ok := true
 	if len(args) == 1 {
 		n, ok = args[0].(xtypes.NodeSet)
 	} else {
@@ -60,7 +60,7 @@ func localName(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 
 func namespaceURI(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	var n xtypes.NodeSet
-	var ok bool
+	ok := true
 	if len(args) == 1 {
 		n, ok = args[0].(xtypes.NodeSet)
 	} else {
@@ -90,7 +90,7 @@ func namespaceURI(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 
 func name(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	var n xtypes.NodeSet
-	var ok bool
+	ok := true
 	if len(args) == 1 {
 		n, ok = args[0].(xtypes.NodeSet)
 	} else {

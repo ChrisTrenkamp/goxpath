@@ -84,6 +84,11 @@ func TestNames(t *testing.T) {
 	testMap["/*"]["namespace-uri"] = "http://foo.com"
 	testMap["/*"]["name"] = "{http://foo.com}test"
 
+	testMap["/none"] = make(map[string]string)
+	testMap["/none"]["local-name"] = ""
+	testMap["/none"]["namespace-uri"] = ""
+	testMap["/none"]["name"] = ""
+
 	testMap["/*/@*:attr"] = make(map[string]string)
 	testMap["/*/@*:attr"]["local-name"] = "attr"
 	testMap["/*/@*:attr"]["namespace-uri"] = "http://bar.com"
@@ -106,6 +111,11 @@ func TestNames(t *testing.T) {
 			execVal(p, x, exp, nil, t)
 		}
 	}
+
+	x = `<?xml version="1.0" encoding="UTF-8"?><test xmlns="http://foo.com" />`
+	execPath("/*[local-name() = 'test']", x, []string{`<test xmlns="http://foo.com"></test>`}, nil, t)
+	execPath("/*[namespace-uri() = 'http://foo.com']", x, []string{`<test xmlns="http://foo.com"></test>`}, nil, t)
+	execPath("/*[name() = '{http://foo.com}test']", x, []string{`<test xmlns="http://foo.com"></test>`}, nil, t)
 }
 
 func TestBoolean(t *testing.T) {
@@ -139,10 +149,11 @@ func TestNot(t *testing.T) {
 }
 
 func TestConversions(t *testing.T) {
-	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1>foo</p1>`
 	execVal(`number(true())`, x, "1", nil, t)
 	execVal(`number(false())`, x, "0", nil, t)
 	execVal(`string(/p2)`, x, "", nil, t)
+	execVal(`/p1[string() = 'foo']`, x, "foo", nil, t)
 	execVal(`number('abc')`, x, "NaN", nil, t)
 }
 
@@ -212,7 +223,8 @@ func TestSubstring(t *testing.T) {
 
 func TestStrLength(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1>abc</p1>`
-	execVal(`string-length('abc')`, x, "3", nil, t)
+	execVal(`string-length('def')`, x, "3", nil, t)
+	execVal(`/p1[string-length() = 3]`, x, "abc", nil, t)
 }
 
 func TestNormalizeSpace(t *testing.T) {
@@ -220,6 +232,9 @@ func TestNormalizeSpace(t *testing.T) {
 	  a   b
 </p1>`
 	execVal(`normalize-space(/p1)`, x, "a b", nil, t)
+	execVal(`/p1[normalize-space(/p1) = 'a b']`, x, `
+	  a   b
+`, nil, t)
 }
 
 func TestTranslate(t *testing.T) {

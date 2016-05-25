@@ -24,9 +24,16 @@ func execErr(xp, x string, errStr string, ns map[string]string, t *testing.T) {
 	}
 }
 
-func TestErr(t *testing.T) {
+func TestXPathErr(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
 	execErr(`/test/chil::p2`, x, "Invalid Axis specifier, chil", nil, t)
+}
+
+func TestNodeSetConvErr(t *testing.T) {
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
+	for _, i := range []string{"sum", "count", "local-name", "namespace-uri", "name"} {
+		execErr(i+"(1)", x, "Cannot convert object to a node-set", nil, t)
+	}
 }
 
 func TestUnknownFunction(t *testing.T) {
