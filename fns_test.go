@@ -23,16 +23,16 @@ func TestNumLit(t *testing.T) {
 }
 
 func TestLast(t *testing.T) {
-	p := `/p1/*/last()`
+	p := `/p1/*[last()]`
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2/><p3/><p4/></p1>`
-	exp := "3"
-	execVal(p, x, exp, nil, t)
-	p = `/p1/p5/last()`
-	exp = "0"
-	execVal(p, x, exp, nil, t)
-	p = `/p1/last()`
-	exp = "1"
-	execVal(p, x, exp, nil, t)
+	exp := []string{"<p4></p4>"}
+	execPath(p, x, exp, nil, t)
+	p = `/p1/p5[last()]`
+	exp = []string{}
+	execPath(p, x, exp, nil, t)
+	p = `/p1[last()]`
+	exp = []string{"<p1><p2></p2><p3></p3><p4></p4></p1>"}
+	execPath(p, x, exp, nil, t)
 }
 
 func TestCount(t *testing.T) {
@@ -163,7 +163,7 @@ func TestLang(t *testing.T) {
 func TestString(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1>text</p1>`
 	execVal(`string(2 + 2)`, x, "4", nil, t)
-	execVal(`/p1/string()`, x, "text", nil, t)
+	execVal(`string(/p1)`, x, "text", nil, t)
 }
 
 func TestConcat(t *testing.T) {
@@ -213,7 +213,6 @@ func TestSubstring(t *testing.T) {
 func TestStrLength(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1>abc</p1>`
 	execVal(`string-length('abc')`, x, "3", nil, t)
-	execVal(`/p1/string-length()`, x, "3", nil, t)
 }
 
 func TestNormalizeSpace(t *testing.T) {
@@ -221,7 +220,6 @@ func TestNormalizeSpace(t *testing.T) {
 	  a   b
 </p1>`
 	execVal(`normalize-space(/p1)`, x, "a b", nil, t)
-	execVal(`/p1/normalize-space()`, x, "a b", nil, t)
 }
 
 func TestTranslate(t *testing.T) {

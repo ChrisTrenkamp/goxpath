@@ -21,7 +21,7 @@ func execPath(xp, x string, exp []string, ns map[string]string, t *testing.T) {
 	res := MustExec(MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns).(xtypes.NodeSet)
 
 	if len(res) != len(exp) {
-		t.Error("Result length not valid.  Recieved:")
+		t.Error("Result length not valid in XPath expression '"+xp+"':", len(res), ", expecting", len(exp))
 		for i := range res {
 			t.Error(MarshalStr(res[i].(tree.Node)))
 		}
@@ -41,7 +41,7 @@ func execPath(xp, x string, exp []string, ns map[string]string, t *testing.T) {
 			}
 		}
 		if !valid {
-			t.Error("Incorrect result:" + r)
+			t.Error("Incorrect result in XPath expression '" + xp + "':" + r)
 			t.Error("Expecting one of:")
 			for j := range exp {
 				t.Error(exp[j])

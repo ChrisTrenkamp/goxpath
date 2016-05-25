@@ -8,7 +8,7 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/internal/parser"
 	"github.com/ChrisTrenkamp/goxpath/internal/parser/findutil"
 	"github.com/ChrisTrenkamp/goxpath/internal/parser/intfns"
-	"github.com/ChrisTrenkamp/goxpath/xconst"
+	"github.com/ChrisTrenkamp/goxpath/internal/xconst"
 	"github.com/ChrisTrenkamp/goxpath/xfn"
 	"github.com/ChrisTrenkamp/goxpath/xsort"
 	"github.com/ChrisTrenkamp/goxpath/xtypes"

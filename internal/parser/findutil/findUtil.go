@@ -4,8 +4,8 @@ import (
 	"encoding/xml"
 
 	"github.com/ChrisTrenkamp/goxpath/internal/parser/pathexpr"
+	"github.com/ChrisTrenkamp/goxpath/internal/xconst"
 	"github.com/ChrisTrenkamp/goxpath/tree"
-	"github.com/ChrisTrenkamp/goxpath/xconst"
 	"github.com/ChrisTrenkamp/goxpath/xsort"
 )
 

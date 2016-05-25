@@ -236,8 +236,26 @@ func startState(l *Lexer) stateFn {
 		}
 	} else if st := findOperatorState(l); st != nil {
 		return st
-	} else if isElemChar(l.peek()) || string(l.peek()) == "@" {
-		return relLocPathState
+	} else {
+		if isElemChar(l.peek()) {
+			for isElemChar(l.peek()) {
+				l.next()
+			}
+
+			if string(l.peek()) == "(" {
+				tok := l.input[l.start:l.pos]
+				err := procFunc(l, tok)
+				if err != nil {
+					return l.errorf(err.Error())
+				}
+				return nil
+			}
+
+			l.pos = l.start
+			return relLocPathState
+		} else if string(l.peek()) == "@" {
+			return relLocPathState
+		}
 	}
 
 	return nil

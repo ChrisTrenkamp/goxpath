@@ -3,7 +3,7 @@ package lexer
 import (
 	"fmt"
 
-	"github.com/ChrisTrenkamp/goxpath/xconst"
+	"github.com/ChrisTrenkamp/goxpath/internal/xconst"
 )
 
 func absLocPathState(l *Lexer) stateFn {
@@ -67,7 +67,7 @@ func parseSeparators(l *Lexer, tok string) (XItemType, error) {
 		l.skipWS(true)
 	} else if string(r) == "(" {
 		var err error
-		if state, err = getNTOrFunc(l, tok); err != nil {
+		if state, err = getNT(l, tok); err != nil {
 			return state, fmt.Errorf(err.Error())
 		}
 	} else if len(tok) > 0 {
@@ -93,7 +93,7 @@ func getAxis(l *Lexer, tok string) (XItemType, error) {
 	return state, nil
 }
 
-func getNTOrFunc(l *Lexer, tok string) (XItemType, error) {
+func getNT(l *Lexer, tok string) (XItemType, error) {
 	isNT := false
 	for _, i := range xconst.NodeTypes {
 		if tok == i {
@@ -106,7 +106,7 @@ func getNTOrFunc(l *Lexer, tok string) (XItemType, error) {
 		return procNT(l, tok)
 	}
 
-	return procFunc(l, tok)
+	return XItemError, fmt.Errorf("Invalid node-type " + tok)
 }
 
 func procNT(l *Lexer, tok string) (XItemType, error) {
@@ -131,7 +131,7 @@ func procNT(l *Lexer, tok string) (XItemType, error) {
 	return state, nil
 }
 
-func procFunc(l *Lexer, tok string) (XItemType, error) {
+func procFunc(l *Lexer, tok string) error {
 	state := XItemType(XItemFunction)
 	l.emitVal(state, tok)
 	l.skip(1)
@@ -152,7 +152,7 @@ func procFunc(l *Lexer, tok string) (XItemType, error) {
 				l.skip(1)
 				break
 			} else if l.peek() == eof {
-				return state, fmt.Errorf("Missing ) at end of function declaration.")
+				return fmt.Errorf("Missing ) at end of function declaration.")
 			}
 		}
 	} else {
@@ -160,7 +160,7 @@ func procFunc(l *Lexer, tok string) (XItemType, error) {
 		l.skip(1)
 	}
 
-	return state, nil
+	return nil
 }
 
 func getNextPathState(l *Lexer, state XItemType) stateFn {

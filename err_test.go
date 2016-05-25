@@ -29,19 +29,9 @@ func TestErr(t *testing.T) {
 	execErr(`/test/chil::p2`, x, "Invalid Axis specifier, chil", nil, t)
 }
 
-func TestPredicateNonNodeSet(t *testing.T) {
-	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
-	execErr(`boolean(/p1)[true()]`, x, "Cannot run predicate on non-node-set", nil, t)
-}
-
 func TestUnknownFunction(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
 	execErr(`invFunc()`, x, "Unknown function: invFunc", nil, t)
-}
-
-func TestPathOnNonNodeSet(t *testing.T) {
-	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
-	execErr(`boolean(/p1)/text()`, x, "Cannot run path expression on non-node-set", nil, t)
 }
 
 func TestUnterminatedString(t *testing.T) {
@@ -82,10 +72,4 @@ func TestUnterminatedPred(t *testing.T) {
 func TestNotEnoughArgs(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1>text</p1>`
 	execErr(`concat('test')`, x, "Invalid number of arguments", nil, t)
-}
-
-func TestNodeSetConv(t *testing.T) {
-	x := `<?xml version="1.0" encoding="UTF-8"?><p1>text</p1>`
-	execErr(`count(true())`, x, "Cannot convert object to a node-set", nil, t)
-	//execErr(`true()/local-name()`, x, "Cannot convert object to a node-set", nil, t)
 }
