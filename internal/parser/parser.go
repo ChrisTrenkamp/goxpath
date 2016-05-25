@@ -201,11 +201,6 @@ func xiOp(p *parseStack, i lexer.XItem) error {
 		} else {
 			p.cur.push(i)
 		}
-	} else if p.cur.Val.Typ != Empty {
-		opNode := &Node{Val: p.cur.Val, Left: p.cur.Left, Parent: p.cur}
-		p.cur.Val = i
-		p.cur.Left = opNode
-		p.cur.next = p.cur
 	} else {
 		p.cur.add(i)
 	}

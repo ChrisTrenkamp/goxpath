@@ -179,8 +179,10 @@ func FindNodeByPos(n Node, pos int) Node {
 			}
 		}
 
-		if chldrn[len(chldrn)-1].Pos() <= pos {
-			return FindNodeByPos(chldrn[len(chldrn)-1], pos)
+		if len(chldrn) > 0 {
+			if chldrn[len(chldrn)-1].Pos() <= pos {
+				return FindNodeByPos(chldrn[len(chldrn)-1], pos)
+			}
 		}
 
 		attrs := elem.GetAttrs()

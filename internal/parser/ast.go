@@ -21,6 +21,7 @@ var beginPathType = map[lexer.XItemType]bool{
 	lexer.XItemAbbrAbsLocPath: true,
 	lexer.XItemAbbrRelLocPath: true,
 	lexer.XItemRelLocPath:     true,
+	lexer.XItemFunction:       true,
 }
 
 func (n *Node) add(i lexer.XItem) {

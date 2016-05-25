@@ -9,6 +9,13 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/xtypes"
 )
 
+func TestISO_8859_1(t *testing.T) {
+	p := `/test`
+	x := `<?xml version="1.0" encoding="iso-8859-1"?><test>test<path>path</path>test2</test>`
+	exp := "testpathtest2"
+	execVal(p, x, exp, nil, t)
+}
+
 func TestNodePos(t *testing.T) {
 	ns := map[string]string{"test": "http://test", "test2": "http://test2", "test3": "http://test3"}
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns="http://test" attr1="foo"><p2 xmlns="http://test2" xmlns:test="http://test3" attr2="bar">text</p2></p1>`
@@ -49,4 +56,46 @@ func TestNSSort(t *testing.T) {
 	testNS(res[1], ns["test2"])
 	testNS(res[2], ns["test3"])
 	testNS(res[3], "http://www.w3.org/XML/1998/namespace")
+}
+
+func TestFindNodeByPos(t *testing.T) {
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns="http://test" attr1="foo"><p2 xmlns="http://test2" xmlns:test="http://test3" attr2="bar"><p3/>text<p4/></p2></p1>`
+	nt := xmltree.MustParseXML(bytes.NewBufferString(x))
+	if tree.FindNodeByPos(nt, 5).GetNodeType() != tree.NtEle {
+		t.Error("Node 5 not element")
+	}
+	if tree.FindNodeByPos(nt, 15).GetNodeType() != tree.NtChd {
+		t.Error("Node 15 not char data")
+	}
+	if tree.FindNodeByPos(nt, 4).GetNodeType() != tree.NtAttr {
+		t.Error("Node 4 not attribute")
+	}
+	if tree.FindNodeByPos(nt, 3).GetNodeType() != tree.NtNs {
+		t.Error("Node 3 not namespace")
+	}
+	if tree.FindNodeByPos(nt, 20) != nil {
+		t.Error("Invalid node returned")
+	}
+}
+
+func TestFindAttr(t *testing.T) {
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns:test="http://test" attr1="foo" test:attr2="bar" />`
+	nt := xmltree.MustParseXML(bytes.NewBufferString(x))
+	res, _ := ExecStr("/p1", nt, nil)
+	node := res.(xtypes.NodeSet)[0].(tree.Elem)
+	if val, ok := tree.GetAttributeVal(node, "attr1", ""); !ok || val != "foo" {
+		t.Error("attr1 not foo")
+	}
+	if val, ok := tree.GetAttributeVal(node, "attr2", "http://test"); !ok || val != "bar" {
+		t.Error("attr2 not bar")
+	}
+	if val, ok := tree.GetAttributeVal(node, "attr3", ""); ok || val != "" {
+		t.Error("attr3 is set")
+	}
+	if val := tree.GetAttrValOrEmpty(node, "attr3", ""); val != "" {
+		t.Error("attr3 is set")
+	}
+	if val := tree.GetAttrValOrEmpty(node, "attr1", ""); val != "foo" {
+		t.Error("attr1 not foo")
+	}
 }
