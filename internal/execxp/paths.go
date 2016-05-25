@@ -101,11 +101,7 @@ func xfExec(f *xpFilt, n *parser.Node) (err error) {
 }
 
 func xfPredicate(f *xpFilt, n *parser.Node) (err error) {
-	res, ok := f.ctx.(xtypes.NodeSet)
-	if !ok {
-		return fmt.Errorf("Cannot run predicate on non-node-set")
-	}
-
+	res := f.ctx.(xtypes.NodeSet)
 	newRes := make(xtypes.NodeSet, 0, len(res))
 
 	for i := range res {
@@ -358,10 +354,6 @@ func find(f *xpFilt) error {
 				NodeType: xconst.NodeTypeNode,
 			}
 		}
-	}
-
-	if f.ctx == nil {
-		f.ctx = xtypes.NodeSet{f.t}
 	}
 
 	f.expr.NS = f.ns

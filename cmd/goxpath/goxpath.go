@@ -41,24 +41,22 @@ var stderr io.ReadWriter = os.Stderr
 
 var retCode = 0
 
-func init() {
-	flag.BoolVar(&rec, "r", false, "Recursive")
-	flag.BoolVar(&value, "v", false, "Output the string value of the XPath result")
-	flag.Var(&ns, "ns", "Namespace mappings. e.g. -ns myns=http://example.com")
-	flag.BoolVar(&unstrict, "u", false, "Turns off strict XML validation")
-	flag.BoolVar(&noFileName, "h", false, "Suppress filename prefixes.")
-}
-
 func main() {
-	flag.Parse()
-	args = flag.Args()
 	exec()
 	os.Exit(retCode)
 }
 
 func exec() {
+	flag.BoolVar(&rec, "r", false, "Recursive")
+	flag.BoolVar(&value, "v", false, "Output the string value of the XPath result")
+	flag.Var(&ns, "ns", "Namespace mappings. e.g. -ns myns=http://example.com")
+	flag.BoolVar(&unstrict, "u", false, "Turns off strict XML validation")
+	flag.BoolVar(&noFileName, "h", false, "Suppress filename prefixes.")
+	flag.Parse()
+	args = flag.Args()
+
 	if len(args) < 1 {
-		fmt.Fprintf(stdout, "Specify an XPath expression with one or more files, or pipe the XML from stdin.\n")
+		fmt.Fprintf(stderr, "Specify an XPath expression with one or more files, or pipe the XML from stdin.\n")
 		retCode = 1
 		return
 	}
