@@ -235,6 +235,9 @@ func TestNormalizeSpace(t *testing.T) {
 	execVal(`/p1[normalize-space(/p1) = 'a b']`, x, `
 	  a   b
 `, nil, t)
+	execVal(`/p1[normalize-space() = 'a b']`, x, `
+	  a   b
+`, nil, t)
 }
 
 func TestTranslate(t *testing.T) {
