@@ -38,17 +38,19 @@ func lang(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 
 	var n tree.Elem
 
-	if c.Node.GetNodeType() == tree.NtEle {
-		n = c.Node.(tree.Elem)
-	} else {
-		n = c.Node.GetParent()
-	}
-
-	for n.GetNodeType() != tree.NtRoot {
-		if attr, ok := tree.GetAttribute(n, "lang", tree.XMLSpace); ok {
-			return checkLang(lStr, attr.Value), nil
+	for _, i := range c.NodeSet {
+		if i.GetNodeType() == tree.NtEle {
+			n = i.(tree.Elem)
+		} else {
+			n = i.GetParent()
 		}
-		n = n.GetParent()
+
+		for n.GetNodeType() != tree.NtRoot {
+			if attr, ok := tree.GetAttribute(n, "lang", tree.XMLSpace); ok {
+				return checkLang(lStr, attr.Value), nil
+			}
+			n = n.GetParent()
+		}
 	}
 
 	return xtypes.Bool(false), nil

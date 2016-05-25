@@ -12,7 +12,7 @@ func Exec(n *parser.Node, t tree.Node, ns map[string]string) (xtypes.Result, err
 	f := xpFilt{
 		t:   t,
 		ns:  ns,
-		ctx: t,
+		ctx: xtypes.NodeSet{t},
 	}
 
 	return exec(&f, n)
@@ -20,5 +20,5 @@ func Exec(n *parser.Node, t tree.Node, ns map[string]string) (xtypes.Result, err
 
 func exec(f *xpFilt, n *parser.Node) (xtypes.Result, error) {
 	err := xfExec(f, n)
-	return f.res, err
+	return f.ctx, err
 }

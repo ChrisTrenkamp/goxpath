@@ -3,16 +3,14 @@ package xfn
 import (
 	"fmt"
 
-	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/xtypes"
 )
 
 //Ctx represents the current context position, size, node, and the current filtered result
 type Ctx struct {
-	Node   tree.Node
-	Filter xtypes.Result
-	Pos    int
-	Size   int
+	xtypes.NodeSet
+	Pos  int
+	Size int
 }
 
 //Fn is a XPath function, written in Go

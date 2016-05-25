@@ -32,7 +32,7 @@ func localName(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	if len(args) == 1 {
 		n, ok = args[0].(xtypes.NodeSet)
 	} else {
-		n, ok = c.Filter.(xtypes.NodeSet)
+		n = c.NodeSet
 	}
 	if !ok {
 		return nil, fmt.Errorf("Cannot convert object to a node-set")
@@ -64,7 +64,7 @@ func namespaceURI(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	if len(args) == 1 {
 		n, ok = args[0].(xtypes.NodeSet)
 	} else {
-		n, ok = c.Filter.(xtypes.NodeSet)
+		n = c.NodeSet
 	}
 	if !ok {
 		return nil, fmt.Errorf("Cannot convert object to a node-set")
@@ -94,7 +94,7 @@ func name(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	if len(args) == 1 {
 		n, ok = args[0].(xtypes.NodeSet)
 	} else {
-		n, ok = c.Filter.(xtypes.NodeSet)
+		n = c.NodeSet
 	}
 	if !ok {
 		return nil, fmt.Errorf("Cannot convert object to a node-set")

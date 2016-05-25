@@ -20,8 +20,7 @@ import (
 
 type xpFilt struct {
 	t       tree.Node
-	res     xtypes.Result
-	ctx     tree.Node
+	ctx     xtypes.Result
 	expr    pathexpr.PathExpr
 	ns      map[string]string
 	ctxPos  int
@@ -99,7 +98,7 @@ func xfExec(f *xpFilt, n *parser.Node) (err error) {
 }
 
 func xfPredicate(f *xpFilt, n *parser.Node) (err error) {
-	res, ok := f.res.(xtypes.NodeSet)
+	res, ok := f.ctx.(xtypes.NodeSet)
 	if !ok {
 		return fmt.Errorf("Cannot run predicate on non-node-set")
 	}
@@ -112,7 +111,7 @@ func xfPredicate(f *xpFilt, n *parser.Node) (err error) {
 			ns:      f.ns,
 			ctxPos:  i,
 			ctxSize: f.ctxSize,
-			ctx:     res[i],
+			ctx:     xtypes.NodeSet{res[i]},
 		}
 
 		predRes, err := exec(&pf, n)
@@ -130,7 +129,7 @@ func xfPredicate(f *xpFilt, n *parser.Node) (err error) {
 		}
 	}
 
-	f.res = newRes
+	f.ctx = newRes
 
 	return
 }
@@ -172,8 +171,8 @@ func xfFunction(f *xpFilt, n *parser.Node) error {
 			param = param.Right
 		}
 
-		filt, err := fn.Call(xfn.Ctx{Node: f.ctx, Filter: f.res, Size: f.ctxSize, Pos: f.ctxPos}, args...)
-		f.res = filt
+		filt, err := fn.Call(xfn.Ctx{NodeSet: f.ctx.(xtypes.NodeSet), Size: f.ctxSize, Pos: f.ctxPos}, args...)
+		f.ctx = filt
 		return err
 	}
 
@@ -250,14 +249,20 @@ func xfOperator(left, right xtypes.Result, f *xpFilt, op string) error {
 }
 
 func xfAbsLocPath(f *xpFilt, val string) error {
-	f.res = xtypes.NodeSet{f.t}
-	f.ctx = f.t
+	i := f.t
+	for i.GetNodeType() != tree.NtRoot {
+		i = i.GetParent()
+	}
+	f.ctx = xtypes.NodeSet{i}
 	return nil
 }
 
 func xfAbbrAbsLocPath(f *xpFilt, val string) error {
-	f.res = xtypes.NodeSet{f.t}
-	f.ctx = f.t
+	i := f.t
+	for i.GetNodeType() != tree.NtRoot {
+		i = i.GetParent()
+	}
+	f.ctx = xtypes.NodeSet{i}
 	f.expr = abbrPathExpr()
 	return find(f)
 }
@@ -298,17 +303,17 @@ func xfNodeType(f *xpFilt, val string) error {
 
 func xfProcInstLit(f *xpFilt, val string) error {
 	filt := xtypes.NodeSet{}
-	for _, i := range f.res.(xtypes.NodeSet) {
+	for _, i := range f.ctx.(xtypes.NodeSet) {
 		if i.GetToken().(xml.ProcInst).Target == val {
 			filt = append(filt, i)
 		}
 	}
-	f.res = filt
+	f.ctx = filt
 	return nil
 }
 
 func xfStrLit(f *xpFilt, val string) error {
-	f.res = xtypes.String(val)
+	f.ctx = xtypes.String(val)
 	return nil
 }
 
@@ -318,7 +323,7 @@ func xfNumLit(f *xpFilt, val string) error {
 		return err
 	}
 
-	f.res = xtypes.Num(num)
+	f.ctx = xtypes.Num(num)
 	return nil
 }
 
@@ -352,18 +357,13 @@ func find(f *xpFilt) error {
 		}
 	}
 
-	if f.res == nil {
-		f.res = xtypes.NodeSet{f.ctx}
+	if f.ctx == nil {
+		f.ctx = xtypes.NodeSet{f.t}
 	}
 
 	f.expr.NS = f.ns
 
-	nodeSet, ok := f.res.(xtypes.NodeSet)
-	if !ok {
-		return fmt.Errorf("Cannot run path expression on non-node-set")
-	}
-
-	for _, i := range nodeSet {
+	for _, i := range f.ctx.(xtypes.NodeSet) {
 		for pos, j := range findutil.Find(i, f.expr) {
 			dupFilt[j.Pos()] = j
 			f.proxPos[j.Pos()] = pos + 1
@@ -379,7 +379,7 @@ func find(f *xpFilt) error {
 
 	f.expr = pathexpr.PathExpr{}
 	f.ctxSize = len(res)
-	f.res = res
+	f.ctx = res
 
 	return nil
 }

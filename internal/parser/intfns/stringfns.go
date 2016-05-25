@@ -14,7 +14,7 @@ func _string(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 		return xtypes.String(args[0].String()), nil
 	}
 
-	return xtypes.String(c.Node.ResValue()), nil
+	return xtypes.String(c.NodeSet.String()), nil
 }
 
 func concat(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
@@ -103,7 +103,7 @@ func stringLength(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	if len(args) == 1 {
 		str = args[0].String()
 	} else {
-		str = c.Node.ResValue()
+		str = c.NodeSet.String()
 	}
 
 	return xtypes.Num(len(str)), nil
@@ -116,7 +116,7 @@ func normalizeSpace(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	if len(args) == 1 {
 		str = args[0].String()
 	} else {
-		str = c.Node.ResValue()
+		str = c.NodeSet.String()
 	}
 
 	str = strings.TrimSpace(str)
