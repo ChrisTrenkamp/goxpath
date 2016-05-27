@@ -2,10 +2,13 @@ package goxpath
 
 import (
 	"bytes"
+	"encoding/xml"
 	"runtime/debug"
 	"testing"
 
+	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
+	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/xmlele"
 )
 
 func execErr(xp, x string, errStr string, ns map[string]string, t *testing.T) {
@@ -119,4 +122,61 @@ func TestUnterminatedPred(t *testing.T) {
 func TestNotEnoughArgs(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1>text</p1>`
 	execErr(`concat('test')`, x, "Invalid number of arguments", nil, t)
+}
+
+func TestMarshalErr(t *testing.T) {
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2/></p1>`
+	n := xmltree.MustParseXML(bytes.NewBufferString(x))
+	f := tree.FindNodeByPos(n, 4).(*xmlele.XMLEle)
+	f.Name.Local = ""
+	buf := &bytes.Buffer{}
+	err := Marshal(n, buf)
+	if err == nil {
+		t.Error("No error")
+	}
+}
+
+func TestParsePanic(t *testing.T) {
+	errs := 0
+	defer func() {
+		if errs != 1 {
+			t.Error("Err not 1")
+		}
+	}()
+	defer func() {
+		if r := recover(); r != nil {
+			errs++
+		}
+	}()
+	MustParse(`/foo()`)
+}
+
+func TestExecPanic(t *testing.T) {
+	errs := 0
+	defer func() {
+		if errs != 1 {
+			t.Error("Err not 1")
+		}
+	}()
+	defer func() {
+		if r := recover(); r != nil {
+			errs++
+		}
+	}()
+	MustExec(MustParse("foo()"), xmltree.MustParseXML(bytes.NewBufferString(xml.Header+"<root/>")), nil)
+}
+
+func TestParseXMLPanic(t *testing.T) {
+	errs := 0
+	defer func() {
+		if errs != 1 {
+			t.Error("Err not 1")
+		}
+	}()
+	defer func() {
+		if r := recover(); r != nil {
+			errs++
+		}
+	}()
+	xmltree.MustParseXML(bytes.NewBufferString("<root/>"))
 }
