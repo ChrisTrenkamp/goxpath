@@ -61,7 +61,7 @@ func TestNSSort(t *testing.T) {
 func TestFindNodeByPos(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns="http://test" attr1="foo"><p2 xmlns="http://test2" xmlns:test="http://test3" attr2="bar"><p3/>text<p4/></p2></p1>`
 	nt := xmltree.MustParseXML(bytes.NewBufferString(x))
-	if tree.FindNodeByPos(nt, 5).GetNodeType() != tree.NtEle {
+	if tree.FindNodeByPos(nt, 5).GetNodeType() != tree.NtElem {
 		t.Error("Node 5 not element")
 	}
 	if tree.FindNodeByPos(nt, 15).GetNodeType() != tree.NtChd {

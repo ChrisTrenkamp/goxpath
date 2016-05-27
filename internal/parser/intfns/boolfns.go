@@ -39,7 +39,7 @@ func lang(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	var n tree.Elem
 
 	for _, i := range c.NodeSet {
-		if i.GetNodeType() == tree.NtEle {
+		if i.GetNodeType() == tree.NtElem {
 			n = i.(tree.Elem)
 		} else {
 			n = i.GetParent()

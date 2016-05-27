@@ -35,7 +35,7 @@ func encTok(n tree.Node, e *xml.Encoder) error {
 	switch n.GetNodeType() {
 	case tree.NtAttr:
 		return encAttr(n.GetToken().(xml.Attr), e)
-	case tree.NtEle:
+	case tree.NtElem:
 		return encEle(n.(tree.Elem), e)
 	case tree.NtNs:
 		return encNS(n.GetToken().(xml.Attr), e)

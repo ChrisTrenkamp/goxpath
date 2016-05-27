@@ -26,7 +26,7 @@ const (
 	NtAttr NodeType = iota
 	NtChd
 	NtComm
-	NtEle
+	NtElem
 	NtNs
 	NtRoot
 	NtPi

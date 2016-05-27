@@ -182,7 +182,7 @@ func getNextPathState(l *Lexer, state XItemType) stateFn {
 		}
 		l.skipWS(true)
 		return relLocPathState
-	} else if isMultiPart {
+	} else if isMultiPart && isElemChar(l.peek()) {
 		return stepState
 	}
 

@@ -29,6 +29,31 @@ func TestBadAxis(t *testing.T) {
 	execErr(`/test/chil::p2`, x, "Invalid Axis specifier, chil", nil, t)
 }
 
+func TestIncompleteStep(t *testing.T) {
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
+	execErr(`/child::+2`, x, "Step is not complete", nil, t)
+	execErr(`/foo:`, x, "Step is not complete", nil, t)
+}
+
+func TestParseErr(t *testing.T) {
+	_, err := xmltree.ParseXML(bytes.NewBufferString("<p1/>"))
+	if err.Error() != "Malformed XML file" {
+		t.Error("Incorrect error message:", err.Error())
+	}
+
+	_, err = xmltree.ParseXML(bytes.NewBufferString(""))
+	if err.Error() != "EOF" {
+		t.Error("Incorrect error message:", err.Error())
+	}
+
+	_, err = xmltree.ParseXML(bytes.NewBufferString("<p1/>"), func(s *xmltree.ParseOptions) {
+		s.Strict = false
+	})
+	if err != nil {
+		t.Error("Error not nil:", err.Error())
+	}
+}
+
 func TestBadNodeType(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
 	execErr(`/test/foo()`, x, "Invalid node-type foo", nil, t)

@@ -47,7 +47,7 @@ func localName(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	tok := node.GetToken()
 
 	switch node.GetNodeType() {
-	case tree.NtEle:
+	case tree.NtElem:
 		ret = tok.(xml.StartElement).Name.Local
 	case tree.NtAttr:
 		ret = tok.(xml.Attr).Name.Local
@@ -79,7 +79,7 @@ func namespaceURI(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	tok := node.GetToken()
 
 	switch node.GetNodeType() {
-	case tree.NtEle:
+	case tree.NtElem:
 		ret = tok.(xml.StartElement).Name.Space
 	case tree.NtAttr:
 		ret = tok.(xml.Attr).Name.Space
@@ -107,7 +107,7 @@ func name(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	}
 
 	switch node.GetNodeType() {
-	case tree.NtEle:
+	case tree.NtElem:
 		t := node.GetToken().(xml.StartElement)
 		space := ""
 

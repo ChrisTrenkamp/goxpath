@@ -193,7 +193,7 @@ func addNode(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
 		add = evalChd(p)
 	case tree.NtComm:
 		add = evalComm(p)
-	case tree.NtEle, tree.NtRoot:
+	case tree.NtElem, tree.NtRoot:
 		add = evalEle(p, tok.(xml.StartElement))
 	case tree.NtNs:
 		add = evalNS(p, tok.(xml.Attr))

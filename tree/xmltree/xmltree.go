@@ -62,27 +62,20 @@ func ParseXML(r io.Reader, op ...ParseSettings) (tree.Node, error) {
 	t, err := dec.Token()
 
 	if err != nil {
-		if err == io.EOF {
-			return nil, fmt.Errorf("Premature end of XML file")
-		}
 		return nil, err
 	}
 
 	brokenHeader := false
-	switch t := t.(type) {
-	case xml.ProcInst:
-		if t.Target != "xml" {
-			brokenHeader = true
-		}
-	default:
-		brokenHeader = true
-	}
 
-	if brokenHeader {
+	if head, ok := t.(xml.ProcInst); !ok || head.Target != "xml" {
 		if ov.Strict {
 			return nil, fmt.Errorf("Malformed XML file")
 		}
-	} else {
+
+		brokenHeader = true
+	}
+
+	if !brokenHeader {
 		t, err = dec.Token()
 	}
 
@@ -132,7 +125,7 @@ func setEle(opts *xmlbuilder.BuilderOpts, xmlTree xmlbuilder.XMLBuilder, ele xml
 	opts.Tok = ele
 	opts.Attrs = opts.Attrs[0:0:cap(opts.Attrs)]
 	opts.NS = make(map[xml.Name]string)
-	opts.NodeType = tree.NtEle
+	opts.NodeType = tree.NtElem
 
 	*ordrPos++
 

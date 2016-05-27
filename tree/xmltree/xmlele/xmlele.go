@@ -27,7 +27,7 @@ func Root() xmlbuilder.XMLBuilder {
 //CreateNode is an implementation of xmlbuilder.XMLBuilder.  It appends the node
 //specified in opts and returns the child if it is an element.  Otherwise, it returns x.
 func (x *XMLEle) CreateNode(opts *xmlbuilder.BuilderOpts) xmlbuilder.XMLBuilder {
-	if opts.NodeType == tree.NtEle {
+	if opts.NodeType == tree.NtElem {
 		ele := &XMLEle{
 			StartElement: opts.Tok.(xml.StartElement),
 			NSBuilder:    tree.NSBuilder{NS: opts.NS},
@@ -98,7 +98,7 @@ func (x *XMLEle) ResValue() string {
 	ret := ""
 	for i := range x.Children {
 		switch x.Children[i].GetNodeType() {
-		case tree.NtChd, tree.NtEle, tree.NtRoot:
+		case tree.NtChd, tree.NtElem, tree.NtRoot:
 			ret += x.Children[i].ResValue()
 		}
 	}

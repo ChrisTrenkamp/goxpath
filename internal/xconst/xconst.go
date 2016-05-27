@@ -29,7 +29,7 @@ const (
 	AxisSelf = "self"
 )
 
-//AxisNames is all the possible Axis identifers wrapped in an array for convenience
+//AxisNames is all the possible Axis identifiers wrapped in an array for convenience
 var AxisNames = []string{
 	AxisAncestor,
 	AxisAncestorOrSelf,
