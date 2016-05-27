@@ -159,11 +159,8 @@ func runXPath(x goxpath.XPathExec, r io.Reader, ns namespace, value bool) ([]str
 	if nodes, ok := res.(xtypes.NodeSet); ok && !value {
 		ret = make([]string, len(nodes))
 		for i, v := range nodes {
-			ret[i], err = goxpath.MarshalStr(v)
+			ret[i], _ = goxpath.MarshalStr(v)
 			ret[i] = strings.Replace(ret[i], "\n", "&#10;", -1)
-			if err != nil {
-				return nil, err
-			}
 		}
 	} else {
 		str := res.String()

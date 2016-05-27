@@ -1,7 +1,7 @@
 language: go
 
 go:
-  - 1.5
+  - 1.6
 
 before_install:
   - go get -u github.com/ChrisTrenkamp/goxpath
