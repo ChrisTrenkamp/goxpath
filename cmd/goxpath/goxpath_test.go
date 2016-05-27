@@ -16,13 +16,13 @@ func setup(in string, args ...string) (*bytes.Buffer, *bytes.Buffer) {
 	err := &bytes.Buffer{}
 	stdout = out
 	stderr = err
-	stdin = strings.NewReader(xml.Header + in)
+	stdin = strings.NewReader(in)
 	exec()
 	return out, err
 }
 
 func TestStdinVal(t *testing.T) {
-	out, _ := setup("<root><tag>test</tag></root>", "-v", "/root/tag")
+	out, _ := setup(xml.Header+"<root><tag>test</tag></root>", "-v", "/root/tag")
 	if out.String() != "test\n" {
 		t.Error("Expecting 'test' for the result.  Recieved: ", out.String())
 	}
@@ -32,7 +32,7 @@ func TestStdinVal(t *testing.T) {
 }
 
 func TestStdinNonVal(t *testing.T) {
-	out, _ := setup("<root><tag>test</tag></root>", "/root/tag")
+	out, _ := setup(xml.Header+"<root><tag>test</tag></root>", "/root/tag")
 	if out.String() != "<tag>test</tag>\n" {
 		t.Error("Expecting '<tag>test</tag>' for the result.  Recieved: ", out.String())
 	}
@@ -97,6 +97,46 @@ func TestInvalidFilePath(t *testing.T) {
 	_, err := setup("", "/foo", "foo.xml")
 	if err.String() != "Could not open file: foo.xml\n" {
 		t.Error("Invalid error")
+	}
+	if retCode != 1 {
+		t.Error("Incorrect return value")
+	}
+}
+
+func TestXPathExecErr(t *testing.T) {
+	_, err := setup("", "foobar()", "test/1.xml")
+	if err.String() != "test/1.xml: Unknown function: foobar\n" {
+		t.Error("Invalid error", err.String())
+	}
+	if retCode != 1 {
+		t.Error("Incorrect return value")
+	}
+}
+
+func TestXPathExecErrStdin(t *testing.T) {
+	_, err := setup(xml.Header+"<root><tag>test</tag></root>", "foobar()")
+	if err.String() != "Unknown function: foobar\n" {
+		t.Error("Invalid error", err.String())
+	}
+	if retCode != 1 {
+		t.Error("Incorrect return value")
+	}
+}
+
+func TestInvalidXML(t *testing.T) {
+	_, err := setup("<root/>", "/root")
+	if err.String() != "Malformed XML file\n" {
+		t.Error("Invalid error", err.String())
+	}
+	if retCode != 1 {
+		t.Error("Incorrect return value")
+	}
+}
+
+func TestInvalidNSMap(t *testing.T) {
+	_, err := setup(xml.Header+"<root/>", "-ns=foo=http://foo=bar", "/root")
+	if err.String() != "Invalid namespace mapping: foo=http://foo=bar\n" {
+		t.Error("Invalid error", err.String())
 	}
 	if retCode != 1 {
 		t.Error("Incorrect return value")

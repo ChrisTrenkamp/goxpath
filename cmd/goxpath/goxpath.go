@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -23,7 +24,7 @@ func (n *namespace) String() string {
 func (n *namespace) Set(value string) error {
 	nsMap := strings.Split(value, "=")
 	if len(nsMap) != 2 {
-		return fmt.Errorf("Invalid namespace mapping: " + value)
+		nsErr = fmt.Errorf("Invalid namespace mapping: %s\n", value)
 	}
 	(*n)[nsMap[0]] = nsMap[1]
 	return nil
@@ -32,6 +33,7 @@ func (n *namespace) Set(value string) error {
 var rec bool
 var value bool
 var ns = make(namespace)
+var nsErr error
 var unstrict bool
 var noFileName bool
 var args = []string{}
@@ -54,6 +56,12 @@ func exec() {
 	flag.BoolVar(&noFileName, "h", false, "Suppress filename prefixes.")
 	flag.Parse()
 	args = flag.Args()
+
+	if nsErr != nil {
+		fmt.Fprintf(stderr, nsErr.Error())
+		retCode = 1
+		return
+	}
 
 	if len(args) < 1 {
 		fmt.Fprintf(stderr, "Specify an XPath expression with one or more files, or pipe the XML from stdin.\n")
@@ -85,16 +93,7 @@ func exec() {
 }
 
 func procPath(path string, x goxpath.XPathExec, ns namespace, value bool) {
-	f, err := os.Open(path)
-
-	if err != nil {
-		fmt.Fprintf(stderr, "Could not open file: %s\n", path)
-		retCode = 1
-		return
-	}
-
-	fi, err := f.Stat()
-
+	fi, err := os.Stat(path)
 	if err != nil {
 		fmt.Fprintf(stderr, "Could not open file: %s\n", path)
 		retCode = 1
@@ -106,8 +105,8 @@ func procPath(path string, x goxpath.XPathExec, ns namespace, value bool) {
 		return
 	}
 
-	ret, err := runXPath(x, f, ns, value)
-
+	data, _ := ioutil.ReadFile(path)
+	ret, err := runXPath(x, bytes.NewBuffer(data), ns, value)
 	if err != nil {
 		fmt.Fprintf(stderr, "%s: %s\n", path, err.Error())
 		retCode = 1
@@ -133,13 +132,7 @@ func procDir(path string, x goxpath.XPathExec, ns namespace, value bool) {
 		return
 	}
 
-	list, err := ioutil.ReadDir(path)
-
-	if err != nil {
-		fmt.Fprintf(stderr, "Could not read directory: %s\n", path)
-		retCode = 1
-		return
-	}
+	list, _ := ioutil.ReadDir(path)
 
 	for _, i := range list {
 		procPath(filepath.Join(path, i.Name()), x, ns, value)
