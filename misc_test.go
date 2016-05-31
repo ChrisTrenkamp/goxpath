@@ -64,8 +64,8 @@ func TestFindNodeByPos(t *testing.T) {
 	if tree.FindNodeByPos(nt, 5).GetNodeType() != tree.NtElem {
 		t.Error("Node 5 not element")
 	}
-	if tree.FindNodeByPos(nt, 15).GetNodeType() != tree.NtChd {
-		t.Error("Node 15 not char data")
+	if tree.FindNodeByPos(nt, 14).GetNodeType() != tree.NtChd {
+		t.Error("Node 14 not char data")
 	}
 	if tree.FindNodeByPos(nt, 4).GetNodeType() != tree.NtAttr {
 		t.Error("Node 4 not attribute")
@@ -73,7 +73,7 @@ func TestFindNodeByPos(t *testing.T) {
 	if tree.FindNodeByPos(nt, 3).GetNodeType() != tree.NtNs {
 		t.Error("Node 3 not namespace")
 	}
-	if tree.FindNodeByPos(nt, 20) != nil {
+	if tree.FindNodeByPos(nt, 19) != nil {
 		t.Error("Invalid node returned")
 	}
 }

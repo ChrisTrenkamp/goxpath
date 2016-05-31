@@ -127,7 +127,7 @@ func TestNotEnoughArgs(t *testing.T) {
 func TestMarshalErr(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2/></p1>`
 	n := xmltree.MustParseXML(bytes.NewBufferString(x))
-	f := tree.FindNodeByPos(n, 4).(*xmlele.XMLEle)
+	f := tree.FindNodeByPos(n, 3).(*xmlele.XMLEle)
 	f.Name.Local = ""
 	buf := &bytes.Buffer{}
 	err := Marshal(n, buf)

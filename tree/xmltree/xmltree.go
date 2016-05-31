@@ -87,11 +87,6 @@ func ParseXML(r io.Reader, op ...ParseSettings) (tree.Node, error) {
 		switch xt := t.(type) {
 		case xml.StartElement:
 			setEle(&opts, xmlTree, xt, &ordrPos)
-			if xmlTree.GetNodeType() == tree.NtRoot {
-				opts.NS[xml.Name{Space: "", Local: "xml"}] = tree.XMLSpace
-				opts.AttrStartPos++
-				ordrPos++
-			}
 			xmlTree = xmlTree.CreateNode(&opts)
 		case xml.CharData:
 			setNode(&opts, xmlTree, xt, tree.NtChd, &ordrPos)
@@ -127,8 +122,6 @@ func setEle(opts *xmlbuilder.BuilderOpts, xmlTree xmlbuilder.XMLBuilder, ele xml
 	opts.NS = make(map[xml.Name]string)
 	opts.NodeType = tree.NtElem
 
-	*ordrPos++
-
 	for i := range ele.Attr {
 		attr := ele.Attr[i].Name
 		val := ele.Attr[i].Value
@@ -140,27 +133,32 @@ func setEle(opts *xmlbuilder.BuilderOpts, xmlTree xmlbuilder.XMLBuilder, ele xml
 		}
 	}
 
-	attrStart := *ordrPos
-
 	if nstree, ok := xmlTree.(tree.NSElem); ok {
-		ns := tree.BuildNS(nstree)
+		ns := make(map[xml.Name]string)
 
-		for _, i := range ns {
-			if _, ok := opts.NS[i.Attr.Name]; !ok {
-				attrStart++
-			}
+		for _, i := range tree.BuildNS(nstree) {
+			ns[i.Name] = i.Value
 		}
 
-		if _, ok := opts.NS[xml.Name{Space: "", Local: "xmlns"}]; ok {
-			attrStart--
+		for k, v := range opts.NS {
+			ns[k] = v
 		}
 
-		attrStart += len(opts.NS)
+		if ns[xml.Name{Local: "xmlns"}] == "" {
+			delete(ns, xml.Name{Local: "xmlns"})
+		}
+
+		for k, v := range ns {
+			opts.NS[k] = v
+		}
+
+		if xmlTree.GetNodeType() == tree.NtRoot {
+			opts.NS[xml.Name{Space: "xmlns", Local: "xml"}] = tree.XMLSpace
+		}
 	}
 
-	attrStart += len(ele.Attr) - len(opts.NS)
-	opts.AttrStartPos = attrStart
-	*ordrPos = attrStart + 1
+	opts.AttrStartPos = len(opts.NS) + len(opts.Attrs) + *ordrPos
+	*ordrPos = opts.AttrStartPos + 1
 }
 
 func setNode(opts *xmlbuilder.BuilderOpts, xmlTree xmlbuilder.XMLBuilder, tok xml.Token, nt tree.NodeType, ordrPos *int) {

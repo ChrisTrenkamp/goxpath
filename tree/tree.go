@@ -1,6 +1,9 @@
 package tree
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+	"sort"
+)
 
 //XMLSpace is the W3C XML namespace
 const XMLSpace = "http://www.w3.org/XML/1998/namespace"
@@ -72,6 +75,16 @@ func (ns NSBuilder) GetNS() map[xml.Name]string {
 	return ns.NS
 }
 
+type nsValueSort []NS
+
+func (ns nsValueSort) Len() int { return len(ns) }
+func (ns nsValueSort) Swap(i, j int) {
+	ns[i], ns[j] = ns[j], ns[i]
+}
+func (ns nsValueSort) Less(i, j int) bool {
+	return ns[i].Value < ns[j].Value
+}
+
 //BuildNS resolves all the namespace nodes of the element and returns them
 func BuildNS(t Elem) (ret []NS) {
 	vals := make(map[xml.Name]string)
@@ -87,11 +100,15 @@ func BuildNS(t Elem) (ret []NS) {
 				ret = append(ret, NS{
 					Attr:     xml.Attr{Name: k, Value: v},
 					Parent:   t,
-					NodePos:  NodePos(t.Pos() + i),
 					NodeType: NtNs,
 				})
 				i++
 			}
+		}
+
+		sort.Sort(nsValueSort(ret))
+		for i := range ret {
+			ret[i].NodePos = NodePos(t.Pos() + i + 1)
 		}
 	}
 
