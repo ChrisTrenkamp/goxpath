@@ -9,7 +9,20 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/xmlele"
+	"github.com/ChrisTrenkamp/goxpath/xfn"
+	"github.com/ChrisTrenkamp/goxpath/xtypes"
 )
+
+type dummyType string
+
+func (d dummyType) String() string {
+	return string(d)
+}
+func dummyFunc(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
+	return dummyType(""), nil
+}
+
+var custFns = map[xml.Name]xfn.Wrap{xml.Name{Local: "dummy"}: xfn.Wrap{Fn: dummyFunc}}
 
 func execErr(xp, x string, errStr string, ns map[string]string, t *testing.T) {
 	defer func() {
@@ -19,7 +32,7 @@ func execErr(xp, x string, errStr string, ns map[string]string, t *testing.T) {
 			t.Error(string(debug.Stack()))
 		}
 	}()
-	_, err := ExecStr(xp, xmltree.MustParseXML(bytes.NewBufferString(x)), ns)
+	_, err := ExecStr(xp, xmltree.MustParseXML(bytes.NewBufferString(x)), func(o *Opts) { o.NS = ns; o.Funcs = custFns })
 
 	if err.Error() != errStr {
 		t.Error("Incorrect result:'" + err.Error() + "' from XPath expr: '" + xp + "'.  Expecting: '" + errStr + "'")
@@ -163,7 +176,7 @@ func TestExecPanic(t *testing.T) {
 			errs++
 		}
 	}()
-	MustExec(MustParse("foo()"), xmltree.MustParseXML(bytes.NewBufferString(xml.Header+"<root/>")), nil)
+	MustExec(MustParse("foo()"), xmltree.MustParseXML(bytes.NewBufferString(xml.Header+"<root/>")))
 }
 
 func TestParseXMLPanic(t *testing.T) {
@@ -179,4 +192,23 @@ func TestParseXMLPanic(t *testing.T) {
 		}
 	}()
 	xmltree.MustParseXML(bytes.NewBufferString("<root/>"))
+}
+
+func TestDummyType(t *testing.T) {
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2/></p1>`
+	execErr(`dummy() = 1`, x, "Cannot convert data type to number", nil, t)
+	execErr(`dummy() = true()`, x, "Cannot convert argument to boolean", nil, t)
+	execErr(`dummy() and true()`, x, "Cannot convert argument to boolean", nil, t)
+	execErr(`not(dummy()) = 1`, x, "Cannot convert object to a boolean", nil, t)
+	execErr(`1 = not(dummy())`, x, "Cannot convert object to a boolean", nil, t)
+	execErr(`not(dummy() = 1)`, x, "Cannot convert data type to number", nil, t)
+	execErr(`/p1[dummy()]`, x, "Cannot convert argument to boolean", nil, t)
+	for _, i := range []string{"boolean", "not"} {
+		execErr(i+`(dummy())`, x, "Cannot convert object to a boolean", nil, t)
+	}
+	for _, i := range []string{"number", "floor", "ceiling", "round"} {
+		execErr(i+`(dummy())`, x, "Cannot convert object to a number", nil, t)
+	}
+	execErr(`substring("12345", dummy(), 2)`, x, "Cannot convert object to a number", nil, t)
+	execErr(`substring("12345", 2, dummy())`, x, "Cannot convert object to a number", nil, t)
 }

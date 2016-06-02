@@ -28,17 +28,12 @@ func (p *parseStack) push(t stateType) {
 	p.stateTypes = append(p.stateTypes, t)
 }
 
-func (p *parseStack) pop() error {
-	if len(p.stack) == 0 {
-		return fmt.Errorf("Malformed XPath expression.")
-	}
-
+func (p *parseStack) pop() {
 	stackPos := len(p.stack) - 1
 
 	p.cur = p.stack[stackPos]
 	p.stack = p.stack[:stackPos]
 	p.stateTypes = p.stateTypes[:stackPos]
-	return nil
 }
 
 func (p *parseStack) curState() stateType {
@@ -48,10 +43,9 @@ func (p *parseStack) curState() stateType {
 	return p.stateTypes[len(p.stateTypes)-1]
 }
 
-type lexFn func(*parseStack, lexer.XItem) error
+type lexFn func(*parseStack, lexer.XItem)
 
 var parseMap = map[lexer.XItemType]lexFn{
-	lexer.XItemError:          xiError,
 	lexer.XItemAbsLocPath:     xiXPath,
 	lexer.XItemAbbrAbsLocPath: xiXPath,
 	lexer.XItemAbbrRelLocPath: xiXPath,
@@ -98,48 +92,41 @@ func Parse(xp string) (*Node, error) {
 	p := &parseStack{cur: n}
 
 	for next := range c {
-		if err == nil {
-			err = parseMap[next.Typ](p, next)
+		if next.Typ != lexer.XItemError {
+			parseMap[next.Typ](p, next)
+		} else if err == nil {
+			err = fmt.Errorf(next.Val)
 		}
 	}
 
 	return n, err
 }
 
-func xiError(p *parseStack, i lexer.XItem) error {
-	return fmt.Errorf(i.Val)
-}
-
-func xiXPath(p *parseStack, i lexer.XItem) error {
+func xiXPath(p *parseStack, i lexer.XItem) {
 	if p.curState() == xpathState {
 		p.cur.push(i)
 		p.cur = p.cur.next
-		return nil
+		return
 	}
 
 	p.cur.pushNotEmpty(i)
 	p.push(xpathState)
 	p.cur = p.cur.next
-	return nil
 }
 
-func xiEndPath(p *parseStack, i lexer.XItem) error {
-	return p.pop()
+func xiEndPath(p *parseStack, i lexer.XItem) {
+	p.pop()
 }
 
-func xiFunc(p *parseStack, i lexer.XItem) error {
+func xiFunc(p *parseStack, i lexer.XItem) {
 	p.cur.push(i)
 	p.cur = p.cur.next
 	p.push(funcState)
-	return nil
 }
 
-func xiFuncArg(p *parseStack, i lexer.XItem) error {
+func xiFuncArg(p *parseStack, i lexer.XItem) {
 	if p.curState() != funcState {
-		err := p.pop()
-		if err != nil {
-			return err
-		}
+		p.pop()
 	}
 
 	p.cur.push(i)
@@ -147,52 +134,46 @@ func xiFuncArg(p *parseStack, i lexer.XItem) error {
 	p.push(paramState)
 	p.cur.push(lexer.XItem{Typ: Empty, Val: ""})
 	p.cur = p.cur.next
-	return nil
 }
 
-func xiEndFunc(p *parseStack, i lexer.XItem) error {
+func xiEndFunc(p *parseStack, i lexer.XItem) {
 	if p.curState() == paramState {
-		err := p.pop()
-		if err != nil {
-			return err
-		}
+		p.pop()
 	}
-	return p.pop()
+	p.pop()
 }
 
-func xiPred(p *parseStack, i lexer.XItem) error {
+func xiPred(p *parseStack, i lexer.XItem) {
 	p.cur.push(i)
 	p.cur = p.cur.next
 	p.push(predState)
 	p.cur.push(lexer.XItem{Typ: Empty, Val: ""})
 	p.cur = p.cur.next
-	return nil
 }
 
-func xiEndPred(p *parseStack, i lexer.XItem) error {
-	return p.pop()
+func xiEndPred(p *parseStack, i lexer.XItem) {
+	p.pop()
 }
 
-func xiStrLit(p *parseStack, i lexer.XItem) error {
+func xiStrLit(p *parseStack, i lexer.XItem) {
 	p.cur.add(i)
-	return nil
 }
 
-func xiNumLit(p *parseStack, i lexer.XItem) error {
+func xiNumLit(p *parseStack, i lexer.XItem) {
 	p.cur.add(i)
-	return nil
 }
 
-func xiOp(p *parseStack, i lexer.XItem) error {
+func xiOp(p *parseStack, i lexer.XItem) {
 	if i.Val == "(" {
 		p.cur.push(lexer.XItem{Typ: Empty, Val: ""})
 		p.push(parenState)
 		p.cur = p.cur.next
-		return nil
+		return
 	}
 
 	if i.Val == ")" {
-		return p.pop()
+		p.pop()
+		return
 	}
 
 	if p.cur.Val.Typ == lexer.XItemOperator {
@@ -205,6 +186,4 @@ func xiOp(p *parseStack, i lexer.XItem) error {
 		p.cur.add(i)
 	}
 	p.cur = p.cur.next
-
-	return nil
 }

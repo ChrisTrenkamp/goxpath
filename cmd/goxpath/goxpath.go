@@ -148,7 +148,7 @@ func runXPath(x goxpath.XPathExec, r io.Reader, ns namespace, value bool) ([]str
 		return nil, err
 	}
 
-	res, err := goxpath.Exec(x, t, ns)
+	res, err := goxpath.Exec(x, t, func(o *goxpath.Opts) { o.NS = ns })
 
 	if err != nil {
 		return nil, err

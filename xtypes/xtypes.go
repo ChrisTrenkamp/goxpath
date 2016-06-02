@@ -95,21 +95,6 @@ func GetNodeNum(n tree.Node) Num {
 	return String(n.ResValue()).Num()
 }
 
-//FirstDocOrder returns the node that is first in document order in the node-set
-func (n NodeSet) FirstDocOrder() tree.Node {
-	if len(n) == 0 {
-		return nil
-	}
-
-	ret := n[0]
-	for i := 1; i < len(n); i++ {
-		if n[i].Pos() < ret.Pos() {
-			ret = n[i]
-		}
-	}
-	return ret
-}
-
 //String satisfies the tree.Res interface for NodeSet
 func (n NodeSet) String() string {
 	if len(n) == 0 {

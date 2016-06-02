@@ -39,10 +39,10 @@ func localName(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	}
 
 	ret := ""
-	node := n.FirstDocOrder()
-	if node == nil {
+	if len(n) == 0 {
 		return xtypes.String(ret), nil
 	}
+	node := n[0]
 
 	tok := node.GetToken()
 
@@ -71,10 +71,10 @@ func namespaceURI(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	}
 
 	ret := ""
-	node := n.FirstDocOrder()
-	if node == nil {
+	if len(n) == 0 {
 		return xtypes.String(ret), nil
 	}
+	node := n[0]
 
 	tok := node.GetToken()
 
@@ -101,10 +101,10 @@ func name(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	}
 
 	ret := ""
-	node := n.FirstDocOrder()
-	if node == nil {
+	if len(n) == 0 {
 		return xtypes.String(ret), nil
 	}
+	node := n[0]
 
 	switch node.GetNodeType() {
 	case tree.NtElem:

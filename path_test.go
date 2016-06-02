@@ -18,7 +18,7 @@ func execPath(xp, x string, exp []string, ns map[string]string, t *testing.T) {
 			t.Error(string(debug.Stack()))
 		}
 	}()
-	res := MustExec(MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), ns).(xtypes.NodeSet)
+	res := MustExec(MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), func(o *Opts) { o.NS = ns }).(xtypes.NodeSet)
 
 	if len(res) != len(exp) {
 		t.Error("Result length not valid in XPath expression '"+xp+"':", len(res), ", expecting", len(exp))
@@ -56,6 +56,20 @@ func TestRoot(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?><test><path/></test>`
 	exp := []string{"<test><path></path></test>"}
 	execPath(p, x, exp, nil, t)
+}
+
+func TestRoot2(t *testing.T) {
+	x := xmltree.MustParseXML(bytes.NewBufferString(`<?xml version="1.0" encoding="UTF-8"?><test><path/></test>`))
+	x = MustExec(MustParse("/test/path"), x).(xtypes.NodeSet)[0]
+	for _, i := range []string{"/", "//test"} {
+		res, err := MarshalStr(MustExec(MustParse(i), x).(xtypes.NodeSet)[0])
+		if err != nil {
+			t.Error(err)
+		}
+		if res != "<test><path></path></test>" {
+			t.Error("Incorrect result", res)
+		}
+	}
 }
 
 func TestAbsPath(t *testing.T) {
@@ -212,10 +226,24 @@ func TestPrecedingSibling(t *testing.T) {
 	execPath(p, x, exp, nil, t)
 }
 
+func TestPrecedingSibling2(t *testing.T) {
+	p := `/preceding-sibling::node()`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1></p1>`
+	exp := []string{}
+	execPath(p, x, exp, nil, t)
+}
+
 func TestFollowingSibling(t *testing.T) {
 	p := `//p2/following-sibling::node()`
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p21/><p2><p3/><p4/></p2><p5><p6/></p5></p1>`
 	exp := []string{`<p5><p6></p6></p5>`}
+	execPath(p, x, exp, nil, t)
+}
+
+func TestFollowingSibling2(t *testing.T) {
+	p := `/following-sibling::node()`
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1></p1>`
+	exp := []string{}
 	execPath(p, x, exp, nil, t)
 }
 

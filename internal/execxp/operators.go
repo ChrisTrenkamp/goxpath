@@ -172,7 +172,7 @@ func andOrOperator(left, right xtypes.Result, f *xpFilt, op string) error {
 	rt, rOK := right.(xtypes.IsBool)
 
 	if !lOK || !rOK {
-		return fmt.Errorf("Cannot convert data type to number")
+		return fmt.Errorf("Cannot convert argument to boolean")
 	}
 
 	l, r := lt.Bool(), rt.Bool()

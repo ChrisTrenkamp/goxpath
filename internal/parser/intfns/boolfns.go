@@ -20,7 +20,7 @@ func boolean(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 func not(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	b, ok := args[0].(xtypes.IsBool)
 	if !ok {
-		return nil, fmt.Errorf("Object is not a boolean")
+		return nil, fmt.Errorf("Cannot convert object to a boolean")
 	}
 	return !b.Bool(), nil
 }
