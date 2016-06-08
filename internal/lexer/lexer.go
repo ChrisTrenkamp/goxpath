@@ -238,11 +238,20 @@ func startState(l *Lexer) stateFn {
 		return st
 	} else {
 		if isElemChar(l.peek()) {
-			for isElemChar(l.peek()) {
-				l.next()
+			colons := 0
+
+			for {
+				if isElemChar(l.peek()) {
+					l.next()
+				} else if string(l.peek()) == ":" {
+					l.next()
+					colons++
+				} else {
+					break
+				}
 			}
 
-			if string(l.peek()) == "(" {
+			if string(l.peek()) == "(" && colons <= 1 {
 				tok := l.input[l.start:l.pos]
 				err := procFunc(l, tok)
 				if err != nil {

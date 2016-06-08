@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/ChrisTrenkamp/goxpath/internal/parser"
 	"github.com/ChrisTrenkamp/goxpath/internal/parser/findutil"
@@ -150,9 +151,17 @@ func checkPredRes(ret xtypes.Result, f *xpFilt, node tree.Node) (bool, error) {
 }
 
 func xfFunction(f *xpFilt, n *parser.Node) error {
-	fn, ok := intfns.BuiltIn[n.Val.Val]
+	spl := strings.Split(n.Val.Val, ":")
+	var name xml.Name
+	if len(spl) == 1 {
+		name.Local = spl[0]
+	} else {
+		name.Space = f.ns[spl[0]]
+		name.Local = spl[1]
+	}
+	fn, ok := intfns.BuiltIn[name]
 	if !ok {
-		fn, ok = f.fns[xml.Name{Local: n.Val.Val}]
+		fn, ok = f.fns[name]
 	}
 
 	if ok {

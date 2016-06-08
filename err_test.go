@@ -22,7 +22,10 @@ func dummyFunc(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	return dummyType(""), nil
 }
 
-var custFns = map[xml.Name]xfn.Wrap{xml.Name{Local: "dummy"}: xfn.Wrap{Fn: dummyFunc}}
+var custFns = map[xml.Name]xfn.Wrap{
+	{Local: "dummy"}:                               {Fn: dummyFunc},
+	{Space: "http://foo.com", Local: "spaceDummy"}: {Fn: dummyFunc},
+}
 
 func execErr(xp, x string, errStr string, ns map[string]string, t *testing.T) {
 	defer func() {
@@ -195,6 +198,7 @@ func TestParseXMLPanic(t *testing.T) {
 }
 
 func TestDummyType(t *testing.T) {
+	ns := map[string]string{"foo": "http://foo.com"}
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1><p2/></p1>`
 	execErr(`dummy() = 1`, x, "Cannot convert data type to number", nil, t)
 	execErr(`dummy() = true()`, x, "Cannot convert argument to boolean", nil, t)
@@ -211,4 +215,5 @@ func TestDummyType(t *testing.T) {
 	}
 	execErr(`substring("12345", dummy(), 2)`, x, "Cannot convert object to a number", nil, t)
 	execErr(`substring("12345", 2, dummy())`, x, "Cannot convert object to a number", nil, t)
+	execErr(`foo:spaceDummy() = 1`, x, "Cannot convert data type to number", ns, t)
 }
