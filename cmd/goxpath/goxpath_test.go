@@ -75,7 +75,7 @@ func TestDirNonRec(t *testing.T) {
 
 func TestNoXPath(t *testing.T) {
 	_, err := setup("")
-	if err.String() != "Specify an XPath expression with one or more files, or pipe the XML from stdin.\n" {
+	if err.String() != "Specify an XPath expression with one or more files, or pipe the XML from stdin.  Run 'goxpath --help' for more information.\n" {
 		t.Error("No XPath error")
 	}
 	if retCode != 1 {

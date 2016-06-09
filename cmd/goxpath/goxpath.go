@@ -64,7 +64,7 @@ func exec() {
 	}
 
 	if len(args) < 1 {
-		fmt.Fprintf(stderr, "Specify an XPath expression with one or more files, or pipe the XML from stdin.\n")
+		fmt.Fprintf(stderr, "Specify an XPath expression with one or more files, or pipe the XML from stdin.  Run 'goxpath --help' for more information.\n")
 		retCode = 1
 		return
 	}
