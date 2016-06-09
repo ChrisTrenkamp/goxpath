@@ -5,32 +5,30 @@ import (
 	"fmt"
 
 	"github.com/ChrisTrenkamp/goxpath/tree"
-	"github.com/ChrisTrenkamp/goxpath/xfn"
-	"github.com/ChrisTrenkamp/goxpath/xtypes"
 )
 
-func last(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	return xtypes.Num(c.Size), nil
+func last(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+	return tree.Num(c.Size), nil
 }
 
-func position(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	return xtypes.Num(c.Pos), nil
+func position(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+	return tree.Num(c.Pos), nil
 }
 
-func count(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	n, ok := args[0].(xtypes.NodeSet)
+func count(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+	n, ok := args[0].(tree.NodeSet)
 	if !ok {
 		return nil, fmt.Errorf("Cannot convert object to a node-set")
 	}
 
-	return xtypes.Num(len(n)), nil
+	return tree.Num(len(n)), nil
 }
 
-func localName(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	var n xtypes.NodeSet
+func localName(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+	var n tree.NodeSet
 	ok := true
 	if len(args) == 1 {
-		n, ok = args[0].(xtypes.NodeSet)
+		n, ok = args[0].(tree.NodeSet)
 	} else {
 		n = c.NodeSet
 	}
@@ -40,7 +38,7 @@ func localName(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 
 	ret := ""
 	if len(n) == 0 {
-		return xtypes.String(ret), nil
+		return tree.String(ret), nil
 	}
 	node := n[0]
 
@@ -55,14 +53,14 @@ func localName(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 		ret = tok.(xml.ProcInst).Target
 	}
 
-	return xtypes.String(ret), nil
+	return tree.String(ret), nil
 }
 
-func namespaceURI(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	var n xtypes.NodeSet
+func namespaceURI(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+	var n tree.NodeSet
 	ok := true
 	if len(args) == 1 {
-		n, ok = args[0].(xtypes.NodeSet)
+		n, ok = args[0].(tree.NodeSet)
 	} else {
 		n = c.NodeSet
 	}
@@ -72,7 +70,7 @@ func namespaceURI(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 
 	ret := ""
 	if len(n) == 0 {
-		return xtypes.String(ret), nil
+		return tree.String(ret), nil
 	}
 	node := n[0]
 
@@ -85,14 +83,14 @@ func namespaceURI(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 		ret = tok.(xml.Attr).Name.Space
 	}
 
-	return xtypes.String(ret), nil
+	return tree.String(ret), nil
 }
 
-func name(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	var n xtypes.NodeSet
+func name(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+	var n tree.NodeSet
 	ok := true
 	if len(args) == 1 {
-		n, ok = args[0].(xtypes.NodeSet)
+		n, ok = args[0].(tree.NodeSet)
 	} else {
 		n = c.NodeSet
 	}
@@ -102,7 +100,7 @@ func name(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 
 	ret := ""
 	if len(n) == 0 {
-		return xtypes.String(ret), nil
+		return tree.String(ret), nil
 	}
 	node := n[0]
 
@@ -129,5 +127,5 @@ func name(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 		ret = fmt.Sprintf("%s", node.GetToken().(xml.ProcInst).Target)
 	}
 
-	return xtypes.String(ret), nil
+	return tree.String(ret), nil
 }

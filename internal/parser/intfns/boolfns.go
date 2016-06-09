@@ -4,36 +4,34 @@ import (
 	"fmt"
 
 	"github.com/ChrisTrenkamp/goxpath/tree"
-	"github.com/ChrisTrenkamp/goxpath/xfn"
-	"github.com/ChrisTrenkamp/goxpath/xtypes"
 	"golang.org/x/text/language"
 )
 
-func boolean(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	if b, ok := args[0].(xtypes.IsBool); ok {
+func boolean(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+	if b, ok := args[0].(tree.IsBool); ok {
 		return b.Bool(), nil
 	}
 
 	return nil, fmt.Errorf("Cannot convert object to a boolean")
 }
 
-func not(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	b, ok := args[0].(xtypes.IsBool)
+func not(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+	b, ok := args[0].(tree.IsBool)
 	if !ok {
 		return nil, fmt.Errorf("Cannot convert object to a boolean")
 	}
 	return !b.Bool(), nil
 }
 
-func _true(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	return xtypes.Bool(true), nil
+func _true(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+	return tree.Bool(true), nil
 }
 
-func _false(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	return xtypes.Bool(false), nil
+func _false(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+	return tree.Bool(false), nil
 }
 
-func lang(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
+func lang(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	lStr := args[0].String()
 
 	var n tree.Elem
@@ -53,10 +51,10 @@ func lang(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 		}
 	}
 
-	return xtypes.Bool(false), nil
+	return tree.Bool(false), nil
 }
 
-func checkLang(srcStr, targStr string) xtypes.Bool {
+func checkLang(srcStr, targStr string) tree.Bool {
 	srcLang := language.Make(srcStr)
 	srcRegion, srcRegionConf := srcLang.Region()
 
@@ -64,13 +62,13 @@ func checkLang(srcStr, targStr string) xtypes.Bool {
 	targRegion, targRegionConf := targLang.Region()
 
 	if srcRegionConf == language.Exact && targRegionConf != language.Exact {
-		return xtypes.Bool(false)
+		return tree.Bool(false)
 	}
 
 	if srcRegion != targRegion && srcRegionConf == language.Exact && targRegionConf == language.Exact {
-		return xtypes.Bool(false)
+		return tree.Bool(false)
 	}
 
 	_, _, conf := language.NewMatcher([]language.Tag{srcLang}).Match(targLang)
-	return xtypes.Bool(conf >= language.High)
+	return tree.Bool(conf >= language.High)
 }

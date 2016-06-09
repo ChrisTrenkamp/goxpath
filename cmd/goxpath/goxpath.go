@@ -11,8 +11,8 @@ import (
 	"strings"
 
 	"github.com/ChrisTrenkamp/goxpath"
+	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
-	"github.com/ChrisTrenkamp/goxpath/xtypes"
 )
 
 type namespace map[string]string
@@ -148,7 +148,7 @@ func runXPath(x goxpath.XPathExec, r io.Reader, ns namespace, value bool) ([]str
 		return nil, err
 	}
 
-	res, err := goxpath.Exec(x, t, func(o *goxpath.Opts) { o.NS = ns })
+	res, err := x.Exec(t, func(o *goxpath.Opts) { o.NS = ns })
 
 	if err != nil {
 		return nil, err
@@ -156,7 +156,7 @@ func runXPath(x goxpath.XPathExec, r io.Reader, ns namespace, value bool) ([]str
 
 	var ret []string
 
-	if nodes, ok := res.(xtypes.NodeSet); ok && !value {
+	if nodes, ok := res.(tree.NodeSet); ok && !value {
 		ret = make([]string, len(nodes))
 		for i, v := range nodes {
 			ret[i], _ = goxpath.MarshalStr(v)

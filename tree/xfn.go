@@ -1,20 +1,18 @@
-package xfn
+package tree
 
 import (
 	"fmt"
-
-	"github.com/ChrisTrenkamp/goxpath/xtypes"
 )
 
 //Ctx represents the current context position, size, node, and the current filtered result
 type Ctx struct {
-	xtypes.NodeSet
+	NodeSet
 	Pos  int
 	Size int
 }
 
 //Fn is a XPath function, written in Go
-type Fn func(c Ctx, args ...xtypes.Result) (xtypes.Result, error)
+type Fn func(c Ctx, args ...Result) (Result, error)
 
 //LastArgOpt sets whether the last argument in a function is optional, variadic, or neither
 type LastArgOpt int
@@ -35,7 +33,7 @@ type Wrap struct {
 }
 
 //Call checks the arguments and calls Fn if they are valid
-func (w Wrap) Call(c Ctx, args ...xtypes.Result) (xtypes.Result, error) {
+func (w Wrap) Call(c Ctx, args ...Result) (Result, error) {
 	switch w.LastArgOpt {
 	case Optional:
 		if len(args) == w.NArgs || len(args) == w.NArgs-1 {

@@ -1,8 +1,8 @@
-package xtypes
+package tree
 
 import "fmt"
 
-//Result is used for all data types.  Since
+//Result is used for all data types.
 type Result interface {
 	fmt.Stringer
 }

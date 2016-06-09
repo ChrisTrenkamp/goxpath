@@ -11,8 +11,6 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/internal/parser/intfns"
 	"github.com/ChrisTrenkamp/goxpath/internal/xconst"
 	"github.com/ChrisTrenkamp/goxpath/internal/xsort"
-	"github.com/ChrisTrenkamp/goxpath/xfn"
-	"github.com/ChrisTrenkamp/goxpath/xtypes"
 
 	"github.com/ChrisTrenkamp/goxpath/internal/lexer"
 	"github.com/ChrisTrenkamp/goxpath/internal/parser/pathexpr"
@@ -21,13 +19,13 @@ import (
 
 type xpFilt struct {
 	t       tree.Node
-	ctx     xtypes.Result
+	ctx     tree.Result
 	expr    pathexpr.PathExpr
 	ns      map[string]string
 	ctxPos  int
 	ctxSize int
 	proxPos map[int]int
-	fns     map[xml.Name]xfn.Wrap
+	fns     map[xml.Name]tree.Wrap
 }
 
 type xpExecFn func(*xpFilt, string)
@@ -102,8 +100,8 @@ func xfExec(f *xpFilt, n *parser.Node) (err error) {
 }
 
 func xfPredicate(f *xpFilt, n *parser.Node) (err error) {
-	res := f.ctx.(xtypes.NodeSet)
-	newRes := make(xtypes.NodeSet, 0, len(res))
+	res := f.ctx.(tree.NodeSet)
+	newRes := make(tree.NodeSet, 0, len(res))
 
 	for i := range res {
 		pf := xpFilt{
@@ -111,7 +109,7 @@ func xfPredicate(f *xpFilt, n *parser.Node) (err error) {
 			ns:      f.ns,
 			ctxPos:  i,
 			ctxSize: f.ctxSize,
-			ctx:     xtypes.NodeSet{res[i]},
+			ctx:     tree.NodeSet{res[i]},
 			fns:     f.fns,
 		}
 
@@ -135,15 +133,15 @@ func xfPredicate(f *xpFilt, n *parser.Node) (err error) {
 	return
 }
 
-func checkPredRes(ret xtypes.Result, f *xpFilt, node tree.Node) (bool, error) {
-	if num, ok := ret.(xtypes.Num); ok {
+func checkPredRes(ret tree.Result, f *xpFilt, node tree.Node) (bool, error) {
+	if num, ok := ret.(tree.Num); ok {
 		if float64(f.proxPos[node.Pos()]) == float64(num) {
 			return true, nil
 		}
 		return false, nil
 	}
 
-	if b, ok := ret.(xtypes.IsBool); ok {
+	if b, ok := ret.(tree.IsBool); ok {
 		return bool(b.Bool()), nil
 	}
 
@@ -165,7 +163,7 @@ func xfFunction(f *xpFilt, n *parser.Node) error {
 	}
 
 	if ok {
-		args := []xtypes.Result{}
+		args := []tree.Result{}
 		param := n.Left
 
 		for param != nil {
@@ -186,7 +184,7 @@ func xfFunction(f *xpFilt, n *parser.Node) error {
 			param = param.Right
 		}
 
-		filt, err := fn.Call(xfn.Ctx{NodeSet: f.ctx.(xtypes.NodeSet), Size: f.ctxSize, Pos: f.ctxPos + 1}, args...)
+		filt, err := fn.Call(tree.Ctx{NodeSet: f.ctx.(tree.NodeSet), Size: f.ctxSize, Pos: f.ctxPos + 1}, args...)
 		f.ctx = filt
 		return err
 	}
@@ -227,10 +225,10 @@ var andOrOps = map[string]bool{
 	"or":  true,
 }
 
-func xfOperator(left, right xtypes.Result, f *xpFilt, op string) error {
+func xfOperator(left, right tree.Result, f *xpFilt, op string) error {
 	if booleanOps[op] {
-		lNode, lOK := left.(xtypes.NodeSet)
-		rNode, rOK := right.(xtypes.NodeSet)
+		lNode, lOK := left.(tree.NodeSet)
+		rNode, rOK := right.(tree.NodeSet)
 		if lOK && rOK {
 			return bothNodeOperator(lNode, rNode, f, op)
 		}
@@ -268,7 +266,7 @@ func xfAbsLocPath(f *xpFilt, val string) {
 	for i.GetNodeType() != tree.NtRoot {
 		i = i.GetParent()
 	}
-	f.ctx = xtypes.NodeSet{i}
+	f.ctx = tree.NodeSet{i}
 }
 
 func xfAbbrAbsLocPath(f *xpFilt, val string) {
@@ -276,7 +274,7 @@ func xfAbbrAbsLocPath(f *xpFilt, val string) {
 	for i.GetNodeType() != tree.NtRoot {
 		i = i.GetParent()
 	}
-	f.ctx = xtypes.NodeSet{i}
+	f.ctx = tree.NodeSet{i}
 	f.expr = abbrPathExpr()
 	find(f)
 }
@@ -312,8 +310,8 @@ func xfNodeType(f *xpFilt, val string) {
 }
 
 func xfProcInstLit(f *xpFilt, val string) {
-	filt := xtypes.NodeSet{}
-	for _, i := range f.ctx.(xtypes.NodeSet) {
+	filt := tree.NodeSet{}
+	for _, i := range f.ctx.(tree.NodeSet) {
 		if i.GetToken().(xml.ProcInst).Target == val {
 			filt = append(filt, i)
 		}
@@ -322,12 +320,12 @@ func xfProcInstLit(f *xpFilt, val string) {
 }
 
 func xfStrLit(f *xpFilt, val string) {
-	f.ctx = xtypes.String(val)
+	f.ctx = tree.String(val)
 }
 
 func xfNumLit(f *xpFilt, val string) {
 	num, _ := strconv.ParseFloat(val, 64)
-	f.ctx = xtypes.Num(num)
+	f.ctx = tree.Num(num)
 }
 
 func abbrPathExpr() pathexpr.PathExpr {
@@ -362,14 +360,14 @@ func find(f *xpFilt) {
 
 	f.expr.NS = f.ns
 
-	for _, i := range f.ctx.(xtypes.NodeSet) {
+	for _, i := range f.ctx.(tree.NodeSet) {
 		for pos, j := range findutil.Find(i, f.expr) {
 			dupFilt[j.Pos()] = j
 			f.proxPos[j.Pos()] = pos + 1
 		}
 	}
 
-	res := make(xtypes.NodeSet, 0, len(dupFilt))
+	res := make(tree.NodeSet, 0, len(dupFilt))
 	for _, i := range dupFilt {
 		res = append(res, i)
 	}

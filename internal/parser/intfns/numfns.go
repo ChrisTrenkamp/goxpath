@@ -4,52 +4,51 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/ChrisTrenkamp/goxpath/xfn"
-	"github.com/ChrisTrenkamp/goxpath/xtypes"
+	"github.com/ChrisTrenkamp/goxpath/tree"
 )
 
-func number(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	if b, ok := args[0].(xtypes.IsNum); ok {
+func number(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+	if b, ok := args[0].(tree.IsNum); ok {
 		return b.Num(), nil
 	}
 
 	return nil, fmt.Errorf("Cannot convert object to a number")
 }
 
-func sum(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	n, ok := args[0].(xtypes.NodeSet)
+func sum(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+	n, ok := args[0].(tree.NodeSet)
 	if !ok {
 		return nil, fmt.Errorf("Cannot convert object to a node-set")
 	}
 
 	ret := 0.0
 	for _, i := range n {
-		ret += float64(xtypes.GetNodeNum(i))
+		ret += float64(tree.GetNodeNum(i))
 	}
 
-	return xtypes.Num(ret), nil
+	return tree.Num(ret), nil
 }
 
-func floor(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	n, ok := args[0].(xtypes.IsNum)
+func floor(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+	n, ok := args[0].(tree.IsNum)
 	if !ok {
 		return nil, fmt.Errorf("Cannot convert object to a number")
 	}
 
-	return xtypes.Num(math.Floor(float64(n.Num()))), nil
+	return tree.Num(math.Floor(float64(n.Num()))), nil
 }
 
-func ceiling(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	n, ok := args[0].(xtypes.IsNum)
+func ceiling(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+	n, ok := args[0].(tree.IsNum)
 	if !ok {
 		return nil, fmt.Errorf("Cannot convert object to a number")
 	}
 
-	return xtypes.Num(math.Ceil(float64(n.Num()))), nil
+	return tree.Num(math.Ceil(float64(n.Num()))), nil
 }
 
-func round(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
-	isn, ok := args[0].(xtypes.IsNum)
+func round(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+	isn, ok := args[0].(tree.IsNum)
 	if !ok {
 		return nil, fmt.Errorf("Cannot convert object to a number")
 	}
@@ -61,9 +60,9 @@ func round(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
 	}
 
 	if n < -0.5 {
-		n = xtypes.Num(int(n - 0.5))
+		n = tree.Num(int(n - 0.5))
 	} else if n > 0.5 {
-		n = xtypes.Num(int(n + 0.5))
+		n = tree.Num(int(n + 0.5))
 	} else {
 		n = 0
 	}

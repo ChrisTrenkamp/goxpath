@@ -16,7 +16,7 @@ func execVal(xp, x string, exp string, ns map[string]string, t *testing.T) {
 			t.Error(string(debug.Stack()))
 		}
 	}()
-	res := MustExec(MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), func(o *Opts) { o.NS = ns })
+	res := MustParse(xp).MustExec(xmltree.MustParseXML(bytes.NewBufferString(x)), func(o *Opts) { o.NS = ns })
 
 	if res.String() != exp {
 		t.Error("Incorrect result:'" + res.String() + "' from XPath expr: '" + xp + "'.  Expecting: '" + exp + "'")

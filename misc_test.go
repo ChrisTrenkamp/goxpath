@@ -6,7 +6,6 @@ import (
 
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
-	"github.com/ChrisTrenkamp/goxpath/xtypes"
 )
 
 func TestISO_8859_1(t *testing.T) {
@@ -20,7 +19,7 @@ func TestNodePos(t *testing.T) {
 	ns := map[string]string{"test": "http://test", "test2": "http://test2", "test3": "http://test3"}
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns="http://test" attr1="foo"><p2 xmlns="http://test2" xmlns:test="http://test3" attr2="bar">text</p2></p1>`
 	testPos := func(path string, pos int) {
-		res := MustExec(MustParse(path), xmltree.MustParseXML(bytes.NewBufferString(x)), func(o *Opts) { o.NS = ns }).(xtypes.NodeSet)
+		res := MustParse(path).MustExec(xmltree.MustParseXML(bytes.NewBufferString(x)), func(o *Opts) { o.NS = ns }).(tree.NodeSet)
 		if len(res) != 1 {
 			t.Errorf("Result length not 1: %s", path)
 			return
@@ -51,7 +50,7 @@ func TestNSSort(t *testing.T) {
 	}
 	ns := map[string]string{"test": "http://test", "test2": "http://test2", "test3": "http://test3"}
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns="http://test" xmlns:test2="http://test2" xmlns:test3="http://test3" attr2="bar"/>`
-	res := MustExec(MustParse("/*:p1/namespace::*"), xmltree.MustParseXML(bytes.NewBufferString(x)), func(o *Opts) { o.NS = ns }).(xtypes.NodeSet)
+	res := MustParse("/*:p1/namespace::*").MustExec(xmltree.MustParseXML(bytes.NewBufferString(x)), func(o *Opts) { o.NS = ns }).(tree.NodeSet)
 	testNS(res[0], ns["test"])
 	testNS(res[1], ns["test2"])
 	testNS(res[2], ns["test3"])
@@ -81,8 +80,8 @@ func TestFindNodeByPos(t *testing.T) {
 func TestFindAttr(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns:test="http://test" attr1="foo" test:attr2="bar" />`
 	nt := xmltree.MustParseXML(bytes.NewBufferString(x))
-	res, _ := ExecStr("/p1", nt)
-	node := res.(xtypes.NodeSet)[0].(tree.Elem)
+	res, _ := ParseExec("/p1", nt)
+	node := res.(tree.NodeSet)[0].(tree.Elem)
 	if val, ok := tree.GetAttributeVal(node, "attr1", ""); !ok || val != "foo" {
 		t.Error("attr1 not foo")
 	}

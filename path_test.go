@@ -7,7 +7,6 @@ import (
 
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
-	"github.com/ChrisTrenkamp/goxpath/xtypes"
 )
 
 func execPath(xp, x string, exp []string, ns map[string]string, t *testing.T) {
@@ -18,7 +17,7 @@ func execPath(xp, x string, exp []string, ns map[string]string, t *testing.T) {
 			t.Error(string(debug.Stack()))
 		}
 	}()
-	res := MustExec(MustParse(xp), xmltree.MustParseXML(bytes.NewBufferString(x)), func(o *Opts) { o.NS = ns }).(xtypes.NodeSet)
+	res := MustParse(xp).MustExec(xmltree.MustParseXML(bytes.NewBufferString(x)), func(o *Opts) { o.NS = ns }).(tree.NodeSet)
 
 	if len(res) != len(exp) {
 		t.Error("Result length not valid in XPath expression '"+xp+"':", len(res), ", expecting", len(exp))
@@ -60,9 +59,9 @@ func TestRoot(t *testing.T) {
 
 func TestRoot2(t *testing.T) {
 	x := xmltree.MustParseXML(bytes.NewBufferString(`<?xml version="1.0" encoding="UTF-8"?><test><path/></test>`))
-	x = MustExec(MustParse("/test/path"), x).(xtypes.NodeSet)[0]
+	x = MustParse("/test/path").MustExec(x).(tree.NodeSet)[0]
 	for _, i := range []string{"/", "//test"} {
-		res, err := MarshalStr(MustExec(MustParse(i), x).(xtypes.NodeSet)[0])
+		res, err := MarshalStr(MustParse(i).MustExec(x).(tree.NodeSet)[0])
 		if err != nil {
 			t.Error(err)
 		}

@@ -9,8 +9,6 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree/xmlele"
-	"github.com/ChrisTrenkamp/goxpath/xfn"
-	"github.com/ChrisTrenkamp/goxpath/xtypes"
 )
 
 type dummyType string
@@ -18,11 +16,11 @@ type dummyType string
 func (d dummyType) String() string {
 	return string(d)
 }
-func dummyFunc(c xfn.Ctx, args ...xtypes.Result) (xtypes.Result, error) {
+func dummyFunc(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	return dummyType(""), nil
 }
 
-var custFns = map[xml.Name]xfn.Wrap{
+var custFns = map[xml.Name]tree.Wrap{
 	{Local: "dummy"}:                               {Fn: dummyFunc},
 	{Space: "http://foo.com", Local: "spaceDummy"}: {Fn: dummyFunc},
 }
@@ -35,7 +33,7 @@ func execErr(xp, x string, errStr string, ns map[string]string, t *testing.T) {
 			t.Error(string(debug.Stack()))
 		}
 	}()
-	_, err := ExecStr(xp, xmltree.MustParseXML(bytes.NewBufferString(x)), func(o *Opts) { o.NS = ns; o.Funcs = custFns })
+	_, err := ParseExec(xp, xmltree.MustParseXML(bytes.NewBufferString(x)), func(o *Opts) { o.NS = ns; o.Funcs = custFns })
 
 	if err.Error() != errStr {
 		t.Error("Incorrect result:'" + err.Error() + "' from XPath expr: '" + xp + "'.  Expecting: '" + errStr + "'")
@@ -179,7 +177,7 @@ func TestExecPanic(t *testing.T) {
 			errs++
 		}
 	}()
-	MustExec(MustParse("foo()"), xmltree.MustParseXML(bytes.NewBufferString(xml.Header+"<root/>")))
+	MustParse("foo()").MustExec(xmltree.MustParseXML(bytes.NewBufferString(xml.Header + "<root/>")))
 }
 
 func TestParseXMLPanic(t *testing.T) {
@@ -216,4 +214,55 @@ func TestDummyType(t *testing.T) {
 	execErr(`substring("12345", dummy(), 2)`, x, "Cannot convert object to a number", nil, t)
 	execErr(`substring("12345", 2, dummy())`, x, "Cannot convert object to a number", nil, t)
 	execErr(`foo:spaceDummy() = 1`, x, "Cannot convert data type to number", ns, t)
+}
+
+func TestGoxpathBool(t *testing.T) {
+	opts := func(o *Opts) { o.Funcs = custFns }
+	x := xmltree.MustParseXML(bytes.NewBufferString(`<?xml version="1.0" encoding="UTF-8"?><p1><p2/></p1>`))
+	_, err := MustParse(`dummy() = 1`).ExecBool(x, opts)
+	if err == nil {
+		t.Error("Error not nil")
+	}
+	_, err = MustParse(`dummy()`).ExecBool(x, opts)
+	if err == nil {
+		t.Error("Error not nil")
+	}
+	b, err := MustParse(`/p1`).ExecBool(x, opts)
+	if !b || err != nil {
+		t.Error("Incorrect result")
+	}
+}
+
+func TestGoxpathNum(t *testing.T) {
+	opts := func(o *Opts) { o.Funcs = custFns }
+	x := xmltree.MustParseXML(bytes.NewBufferString(`<?xml version="1.0" encoding="UTF-8"?><p1><p2/>3</p1>`))
+	_, err := MustParse(`dummy() = 1`).ExecNum(x, opts)
+	if err == nil {
+		t.Error("Error not nil")
+	}
+	_, err = MustParse(`dummy()`).ExecNum(x, opts)
+	if err == nil {
+		t.Error("Error not nil")
+	}
+	n, err := MustParse(`/p1`).ExecNum(x, opts)
+	if n != 3 || err != nil {
+		t.Error("Incorrect result")
+	}
+}
+
+func TestGoxpathNode(t *testing.T) {
+	opts := func(o *Opts) { o.Funcs = custFns }
+	x := xmltree.MustParseXML(bytes.NewBufferString(`<?xml version="1.0" encoding="UTF-8"?><p1><p2/></p1>`))
+	_, err := MustParse(`dummy() = 1`).ExecNode(x, opts)
+	if err == nil {
+		t.Error("Error not nil")
+	}
+	_, err = MustParse(`dummy()`).ExecNode(x, opts)
+	if err == nil {
+		t.Error("Error not nil")
+	}
+	n, err := MustParse(`/p1`).ExecNode(x, opts)
+	if len(n) != 1 || err != nil {
+		t.Error("Incorrect result")
+	}
 }

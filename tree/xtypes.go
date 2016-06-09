@@ -1,12 +1,10 @@
-package xtypes
+package tree
 
 import (
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
-
-	"github.com/ChrisTrenkamp/goxpath/tree"
 )
 
 //Boolean strings
@@ -18,7 +16,7 @@ const (
 //Bool is a boolean XPath type
 type Bool bool
 
-//ResValue satisfies the tree.Res interface for Bool
+//ResValue satisfies the Res interface for Bool
 func (b Bool) String() string {
 	if b {
 		return True
@@ -44,7 +42,7 @@ func (b Bool) Num() Num {
 //Num is a number XPath type
 type Num float64
 
-//ResValue satisfies the tree.Res interface for Num
+//ResValue satisfies the Res interface for Num
 func (n Num) String() string {
 	if math.IsInf(float64(n), 0) {
 		if math.IsInf(float64(n), 1) {
@@ -68,7 +66,7 @@ func (n Num) Num() Num {
 //String is string XPath type
 type String string
 
-//ResValue satisfies the tree.Res interface for String
+//ResValue satisfies the Res interface for String
 func (s String) String() string {
 	return string(s)
 }
@@ -88,14 +86,14 @@ func (s String) Num() Num {
 }
 
 //NodeSet is a node-set XPath type
-type NodeSet []tree.Node
+type NodeSet []Node
 
 //GetNodeNum converts the node to a string-value and to a number
-func GetNodeNum(n tree.Node) Num {
+func GetNodeNum(n Node) Num {
 	return String(n.ResValue()).Num()
 }
 
-//String satisfies the tree.Res interface for NodeSet
+//String satisfies the Res interface for NodeSet
 func (n NodeSet) String() string {
 	if len(n) == 0 {
 		return ""
