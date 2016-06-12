@@ -228,7 +228,9 @@ func startState(l *Lexer) stateFn {
 			return l.errorf(err.Error())
 		}
 
-		return nil
+		if l.peek() != eof {
+			return startState
+		}
 	} else if getNumLit(l) {
 		l.skipWS(true)
 		if l.peek() != eof {

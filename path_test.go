@@ -499,6 +499,13 @@ func TestPredicate7(t *testing.T) {
 	execPath(p, x, exp, nil, t)
 }
 
+func TestPredicate8(t *testing.T) {
+	p := `/test[@attr1='a' and @attr2='b']/a`
+	x := `<?xml version="1.0" encoding="UTF-8"?><test attr1="a" attr2="b"><a>aaaa</a><b>bbb</b></test>`
+	exp := []string{`<a>aaaa</a>`}
+	execPath(p, x, exp, nil, t)
+}
+
 func TestUnion(t *testing.T) {
 	p := `/test/test2 | /test/test3`
 	x := `<?xml version="1.0" encoding="UTF-8"?><test><test2>foobar</test2><test3>hamneggs</test3></test>`
