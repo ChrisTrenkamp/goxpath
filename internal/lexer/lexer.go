@@ -48,6 +48,8 @@ const (
 	XItemNumLit = "numeric literal"
 	//XItemOperator marks an operator
 	XItemOperator = "operator"
+	//XItemVariable marks a variable reference
+	XItemVariable = "variable"
 )
 
 const (
@@ -232,6 +234,23 @@ func startState(l *Lexer) stateFn {
 			return startState
 		}
 	} else if getNumLit(l) {
+		l.skipWS(true)
+		if l.peek() != eof {
+			return startState
+		}
+	} else if string(l.peek()) == "$" {
+		l.next()
+		l.ignore()
+		r := l.peek()
+		for unicode.Is(first, r) || unicode.Is(second, r) {
+			l.next()
+			r = l.peek()
+		}
+		tok := l.input[l.start:l.pos]
+		if len(tok) == 0 {
+			return l.errorf("Empty variable name")
+		}
+		l.emit(XItemVariable)
 		l.skipWS(true)
 		if l.peek() != eof {
 			return startState

@@ -62,9 +62,10 @@ var parseMap = map[lexer.XItemType]lexFn{
 	lexer.XItemEndFunction:    xiEndFunc,
 	lexer.XItemPredicate:      xiPred,
 	lexer.XItemEndPredicate:   xiEndPred,
-	lexer.XItemStrLit:         xiStrLit,
-	lexer.XItemNumLit:         xiNumLit,
+	lexer.XItemStrLit:         xiValue,
+	lexer.XItemNumLit:         xiValue,
 	lexer.XItemOperator:       xiOp,
+	lexer.XItemVariable:       xiValue,
 }
 
 var opPrecedence = map[string]int{
@@ -155,11 +156,7 @@ func xiEndPred(p *parseStack, i lexer.XItem) {
 	p.pop()
 }
 
-func xiStrLit(p *parseStack, i lexer.XItem) {
-	p.cur.add(i)
-}
-
-func xiNumLit(p *parseStack, i lexer.XItem) {
+func xiValue(p *parseStack, i lexer.XItem) {
 	p.cur.add(i)
 }
 

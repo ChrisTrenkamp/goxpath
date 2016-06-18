@@ -13,6 +13,7 @@ import (
 type Opts struct {
 	NS    map[string]string
 	Funcs map[xml.Name]tree.Wrap
+	Vars  map[string]tree.Result
 }
 
 //FuncOpts is a function wrapper for Opts.
@@ -44,11 +45,12 @@ func (xp XPathExec) Exec(t tree.Node, opts ...FuncOpts) (tree.Result, error) {
 	o := &Opts{
 		NS:    make(map[string]string),
 		Funcs: make(map[xml.Name]tree.Wrap),
+		Vars:  make(map[string]tree.Result),
 	}
 	for _, i := range opts {
 		i(o)
 	}
-	return execxp.Exec(xp.n, t, o.NS, o.Funcs)
+	return execxp.Exec(xp.n, t, o.NS, o.Funcs, o.Vars)
 }
 
 //ExecBool is like Exec, except it will attempt to convert the result to its boolean value.

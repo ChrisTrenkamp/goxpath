@@ -2,6 +2,7 @@ package goxpath
 
 import (
 	"bytes"
+	"encoding/xml"
 	"testing"
 
 	"github.com/ChrisTrenkamp/goxpath/tree"
@@ -96,5 +97,24 @@ func TestFindAttr(t *testing.T) {
 	}
 	if val := tree.GetAttrValOrEmpty(node, "attr1", ""); val != "foo" {
 		t.Error("attr1 not foo")
+	}
+}
+
+func TestVariable(t *testing.T) {
+	x := xmltree.MustParseXML(bytes.NewBufferString(xml.Header + "<p1><p2>foo</p2><p3>bar</p3></p1>"))
+	xp := MustParse(`/p1/p2`)
+	res := xp.MustExec(x)
+	opt := func(o *Opts) {
+		o.Vars["prev"] = res
+	}
+	xp = MustParse(`$prev = 'foo'`)
+	if res, err := xp.ExecBool(x, opt); err != nil || !res {
+		t.Error("Incorrect result", res, err)
+	}
+	if _, err := xp.ExecBool(x); err == nil {
+		t.Error("Error not nil")
+	}
+	if _, err := Parse(`$ = 'foo'`); err == nil {
+		t.Error("Parse error not nil")
 	}
 }

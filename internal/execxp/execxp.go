@@ -9,12 +9,13 @@ import (
 
 //Exec executes the XPath expression, xp, against the tree, t, with the
 //namespace mappings, ns.
-func Exec(n *parser.Node, t tree.Node, ns map[string]string, fns map[xml.Name]tree.Wrap) (tree.Result, error) {
+func Exec(n *parser.Node, t tree.Node, ns map[string]string, fns map[xml.Name]tree.Wrap, v map[string]tree.Result) (tree.Result, error) {
 	f := xpFilt{
-		t:   t,
-		ns:  ns,
-		ctx: tree.NodeSet{t},
-		fns: fns,
+		t:         t,
+		ns:        ns,
+		ctx:       tree.NodeSet{t},
+		fns:       fns,
+		variables: v,
 	}
 
 	return exec(&f, n)

@@ -18,14 +18,15 @@ import (
 )
 
 type xpFilt struct {
-	t       tree.Node
-	ctx     tree.Result
-	expr    pathexpr.PathExpr
-	ns      map[string]string
-	ctxPos  int
-	ctxSize int
-	proxPos map[int]int
-	fns     map[xml.Name]tree.Wrap
+	t         tree.Node
+	ctx       tree.Result
+	expr      pathexpr.PathExpr
+	ns        map[string]string
+	ctxPos    int
+	ctxSize   int
+	proxPos   map[int]int
+	fns       map[xml.Name]tree.Wrap
+	variables map[string]tree.Result
 }
 
 type xpExecFn func(*xpFilt, string)
@@ -64,13 +65,14 @@ func xfExec(f *xpFilt, n *parser.Node) (err error) {
 			n = n.Right
 		} else if n.Val.Typ == lexer.XItemOperator {
 			lf := xpFilt{
-				t:       f.t,
-				ns:      f.ns,
-				ctx:     f.ctx,
-				ctxPos:  f.ctxPos,
-				ctxSize: f.ctxSize,
-				proxPos: f.proxPos,
-				fns:     f.fns,
+				t:         f.t,
+				ns:        f.ns,
+				ctx:       f.ctx,
+				ctxPos:    f.ctxPos,
+				ctxSize:   f.ctxSize,
+				proxPos:   f.proxPos,
+				fns:       f.fns,
+				variables: f.variables,
 			}
 			left, err := exec(&lf, n.Left)
 			if err != nil {
@@ -78,10 +80,11 @@ func xfExec(f *xpFilt, n *parser.Node) (err error) {
 			}
 
 			rf := xpFilt{
-				t:   f.t,
-				ns:  f.ns,
-				ctx: f.ctx,
-				fns: f.fns,
+				t:         f.t,
+				ns:        f.ns,
+				ctx:       f.ctx,
+				fns:       f.fns,
+				variables: f.variables,
 			}
 			right, err := exec(&rf, n.Right)
 			if err != nil {
@@ -89,6 +92,12 @@ func xfExec(f *xpFilt, n *parser.Node) (err error) {
 			}
 
 			return xfOperator(left, right, f, n.Val.Val)
+		} else if n.Val.Typ == lexer.XItemVariable {
+			if res, ok := f.variables[n.Val.Val]; ok {
+				f.ctx = res
+				return nil
+			}
+			return fmt.Errorf("Invalid variable '%s'", n.Val.Val)
 		} else if string(n.Val.Typ) == "" {
 			n = n.Left
 			//} else {
@@ -105,12 +114,13 @@ func xfPredicate(f *xpFilt, n *parser.Node) (err error) {
 
 	for i := range res {
 		pf := xpFilt{
-			t:       f.t,
-			ns:      f.ns,
-			ctxPos:  i,
-			ctxSize: f.ctxSize,
-			ctx:     tree.NodeSet{res[i]},
-			fns:     f.fns,
+			t:         f.t,
+			ns:        f.ns,
+			ctxPos:    i,
+			ctxSize:   f.ctxSize,
+			ctx:       tree.NodeSet{res[i]},
+			fns:       f.fns,
+			variables: f.variables,
 		}
 
 		predRes, err := exec(&pf, n)
@@ -168,12 +178,13 @@ func xfFunction(f *xpFilt, n *parser.Node) error {
 
 		for param != nil {
 			pf := xpFilt{
-				t:       f.t,
-				ctx:     f.ctx,
-				ns:      f.ns,
-				ctxPos:  f.ctxPos,
-				ctxSize: f.ctxSize,
-				fns:     f.fns,
+				t:         f.t,
+				ctx:       f.ctx,
+				ns:        f.ns,
+				ctxPos:    f.ctxPos,
+				ctxSize:   f.ctxSize,
+				fns:       f.fns,
+				variables: f.variables,
 			}
 			res, err := exec(&pf, param.Left)
 			if err != nil {
