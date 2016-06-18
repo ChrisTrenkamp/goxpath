@@ -30,9 +30,25 @@ func (n *namespace) Set(value string) error {
 	return nil
 }
 
+type variables map[string]string
+
+func (v *variables) String() string {
+	return fmt.Sprint(*v)
+}
+
+func (v *variables) Set(value string) error {
+	varMap := strings.Split(value, "=")
+	if len(varMap) != 2 {
+		nsErr = fmt.Errorf("Invalid variable mapping: %s\n", value)
+	}
+	(*v)[varMap[0]] = varMap[1]
+	return nil
+}
+
 var rec bool
 var value bool
 var ns = make(namespace)
+var vars = make(variables)
 var nsErr error
 var unstrict bool
 var noFileName bool
@@ -52,6 +68,7 @@ func exec() {
 	flag.BoolVar(&rec, "r", false, "Recursive")
 	flag.BoolVar(&value, "v", false, "Output the string value of the XPath result")
 	flag.Var(&ns, "ns", "Namespace mappings. e.g. -ns myns=http://example.com")
+	flag.Var(&vars, "var", "Variables mappings. e.g. -var myvar=myvalue")
 	flag.BoolVar(&unstrict, "u", false, "Turns off strict XML validation")
 	flag.BoolVar(&noFileName, "h", false, "Suppress filename prefixes.")
 	flag.Parse()
@@ -148,7 +165,12 @@ func runXPath(x goxpath.XPathExec, r io.Reader, ns namespace, value bool) ([]str
 		return nil, err
 	}
 
-	res, err := x.Exec(t, func(o *goxpath.Opts) { o.NS = ns })
+	res, err := x.Exec(t, func(o *goxpath.Opts) {
+		o.NS = ns
+		for k, v := range vars {
+			o.Vars[k] = tree.String(v)
+		}
+	})
 
 	if err != nil {
 		return nil, err

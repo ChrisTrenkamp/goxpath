@@ -10,6 +10,7 @@ import (
 )
 
 func setup(in string, args ...string) (*bytes.Buffer, *bytes.Buffer) {
+	retCode = 0
 	os.Args = append([]string{"test"}, args...)
 	flag.CommandLine = flag.NewFlagSet("test", flag.ExitOnError)
 	out := &bytes.Buffer{}
@@ -133,9 +134,29 @@ func TestInvalidXML(t *testing.T) {
 	}
 }
 
+func TestVarRef(t *testing.T) {
+	out, _ := setup(xml.Header+"<root><tag>test</tag></root>", "-var=foo=test", "/root/tag = $foo")
+	if out.String() != "true\n" {
+		t.Error("Expecting 'true' for the result.  Recieved: ", out.String())
+	}
+	if retCode != 0 {
+		t.Error("Incorrect return value")
+	}
+}
+
 func TestInvalidNSMap(t *testing.T) {
 	_, err := setup(xml.Header+"<root/>", "-ns=foo=http://foo=bar", "/root")
 	if err.String() != "Invalid namespace mapping: foo=http://foo=bar\n" {
+		t.Error("Invalid error", err.String())
+	}
+	if retCode != 1 {
+		t.Error("Incorrect return value")
+	}
+}
+
+func TestInvalidVarMap(t *testing.T) {
+	_, err := setup(xml.Header+"<root/>", "-var=test=blag=foo", "/root")
+	if err.String() != "Invalid variable mapping: test=blag=foo\n" {
 		t.Error("Invalid error", err.String())
 	}
 	if retCode != 1 {
