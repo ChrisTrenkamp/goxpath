@@ -37,7 +37,7 @@ const (
 
 //Node is a XPath result that is a node except elements
 type Node interface {
-	//String prints the node's string value
+	//ResValue prints the node's string value
 	ResValue() string
 	//Pos returns the node's position in the document order
 	Pos() int
