@@ -2,7 +2,6 @@ package xmlstruct
 
 import (
 	"encoding/xml"
-	"fmt"
 	"testing"
 
 	"github.com/ChrisTrenkamp/goxpath"
@@ -47,13 +46,4 @@ func TestSingleFields(t *testing.T) {
 		t.Error(str1)
 		t.Error(str2)
 	}
-	n, err := goxpath.MustParse("//*/@*").ExecNode(x)
-	for _, i := range n {
-		fmt.Println(i.(*XMLNode).Val)
-	}
-	n[0].(*XMLNode).Val.SetString("lkjlkjlkjlkj")
-	n[1].(*XMLNode).Val.SetString("fdhdf")
-	str.CD = "omg"
-	x1, err = xml.Marshal(str)
-	fmt.Println(string(x1))
 }
