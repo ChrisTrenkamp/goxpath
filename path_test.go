@@ -2,6 +2,7 @@ package goxpath
 
 import (
 	"bytes"
+	"encoding/xml"
 	"runtime/debug"
 	"testing"
 
@@ -503,6 +504,19 @@ func TestPredicate8(t *testing.T) {
 	p := `/test[@attr1='a' and @attr2='b']/a`
 	x := `<?xml version="1.0" encoding="UTF-8"?><test attr1="a" attr2="b"><a>aaaa</a><b>bbb</b></test>`
 	exp := []string{`<a>aaaa</a>`}
+	execPath(p, x, exp, nil, t)
+}
+
+func TestPredicate9(t *testing.T) {
+	p := `/root/text[@attr="2"][2]`
+	x := xml.Header + `<root>
+  <text attr="1">This is some text 1.1.</text>
+  <text attr="1">This is some text 1.2.</text>
+  <text attr="2">This is some text. 2.1</text>
+  <text attr="2">This is some text. 2.2</text>
+  <text attr="2">This is some text. 2.3</text>
+</root>`
+	exp := []string{`<text attr="2">This is some text. 2.2</text>`}
 	execPath(p, x, exp, nil, t)
 }
 

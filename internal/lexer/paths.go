@@ -168,7 +168,7 @@ func getNextPathState(l *Lexer, state XItemType) stateFn {
 
 	l.skipWS(true)
 
-	if string(l.peek()) == "[" {
+	for string(l.peek()) == "[" {
 		if err := getPred(l); err != nil {
 			return l.errorf(err.Error())
 		}

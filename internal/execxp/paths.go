@@ -138,6 +138,11 @@ func xfPredicate(f *xpFilt, n *parser.Node) (err error) {
 		}
 	}
 
+	f.proxPos = make(map[int]int)
+	for pos, j := range newRes {
+		f.proxPos[j.Pos()] = pos + 1
+	}
+
 	f.ctx = newRes
 
 	return
