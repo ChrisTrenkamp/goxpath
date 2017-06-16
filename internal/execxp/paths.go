@@ -144,6 +144,7 @@ func xfPredicate(f *xpFilt, n *parser.Node) (err error) {
 	}
 
 	f.ctx = newRes
+	f.ctxSize = len(newRes)
 
 	return
 }

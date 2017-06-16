@@ -520,6 +520,19 @@ func TestPredicate9(t *testing.T) {
 	execPath(p, x, exp, nil, t)
 }
 
+func TestPredicate10(t *testing.T) {
+	p := `/root/text[@attr="2"][last()]`
+	x := xml.Header + `<root>
+  <text attr="1">This is some text 1.1.</text>
+  <text attr="1">This is some text 1.2.</text>
+  <text attr="2">This is some text. 2.1</text>
+  <text attr="2">This is some text. 2.2</text>
+  <text attr="2">This is some text. 2.3</text>
+</root>`
+	exp := []string{`<text attr="2">This is some text. 2.3</text>`}
+	execPath(p, x, exp, nil, t)
+}
+
 func TestUnion(t *testing.T) {
 	p := `/test/test2 | /test/test3`
 	x := `<?xml version="1.0" encoding="UTF-8"?><test><test2>foobar</test2><test3>hamneggs</test3></test>`
