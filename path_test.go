@@ -74,7 +74,7 @@ func TestRoot2(t *testing.T) {
 
 func TestAbsPath(t *testing.T) {
 	p := ` / test / path`
-	x := `<?xml version="1.0" encoding="UTF-8"?><test><path/></test>`
+	x := `<test><path/></test>`
 	exp := []string{"<path></path>"}
 	execPath(p, x, exp, nil, t)
 }

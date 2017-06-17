@@ -52,25 +52,6 @@ func TestIncompleteStep(t *testing.T) {
 	execErr(`/foo:`, x, "Step is not complete", nil, t)
 }
 
-func TestParseErr(t *testing.T) {
-	_, err := xmltree.ParseXML(bytes.NewBufferString("<p1/>"))
-	if err.Error() != "Malformed XML file" {
-		t.Error("Incorrect error message:", err.Error())
-	}
-
-	_, err = xmltree.ParseXML(bytes.NewBufferString(""))
-	if err.Error() != "EOF" {
-		t.Error("Incorrect error message:", err.Error())
-	}
-
-	_, err = xmltree.ParseXML(bytes.NewBufferString("<p1/>"), func(s *xmltree.ParseOptions) {
-		s.Strict = false
-	})
-	if err != nil {
-		t.Error("Error not nil:", err.Error())
-	}
-}
-
 func TestBadNodeType(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
 	execErr(`/test/foo()`, x, "Invalid node-type foo", nil, t)
@@ -178,21 +159,6 @@ func TestExecPanic(t *testing.T) {
 		}
 	}()
 	MustParse("foo()").MustExec(xmltree.MustParseXML(bytes.NewBufferString(xml.Header + "<root/>")))
-}
-
-func TestParseXMLPanic(t *testing.T) {
-	errs := 0
-	defer func() {
-		if errs != 1 {
-			t.Error("Err not 1")
-		}
-	}()
-	defer func() {
-		if r := recover(); r != nil {
-			errs++
-		}
-	}()
-	xmltree.MustParseXML(bytes.NewBufferString("<root/>"))
 }
 
 func TestDummyType(t *testing.T) {
