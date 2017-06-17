@@ -125,8 +125,8 @@ func TestXPathExecErrStdin(t *testing.T) {
 }
 
 func TestInvalidXML(t *testing.T) {
-	_, err := setup("<root/>", "/root")
-	if err.String() != "Malformed XML file\n" {
+	_, err := setup("<root>", "/root")
+	if err.String() != "XML syntax error on line 1: unexpected EOF\n" {
 		t.Error("Invalid error", err.String())
 	}
 	if retCode != 1 {
