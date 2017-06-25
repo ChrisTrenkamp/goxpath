@@ -278,6 +278,22 @@ func startState(l *Lexer) stateFn {
 				if err != nil {
 					return l.errorf(err.Error())
 				}
+
+				l.skipWS(true)
+
+				if string(l.peek()) == "/" {
+					l.next()
+					l.ignore()
+
+					if string(l.next()) == "/" {
+						l.ignore()
+						return abbrRelLocPathState
+					}
+
+					l.backup()
+					return relLocPathState
+				}
+
 				return startState
 			}
 

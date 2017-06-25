@@ -1,8 +1,13 @@
 package goxpath
 
 import (
+	"bytes"
+	"encoding/xml"
 	"fmt"
 	"testing"
+
+	"github.com/ChrisTrenkamp/goxpath/tree"
+	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
 )
 
 func TestStrLit(t *testing.T) {
@@ -244,4 +249,31 @@ func TestTranslate(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1/>`
 	execVal(`translate("bar","abc","ABC")`, x, "BAr", nil, t)
 	execVal(`translate("--aaa--","abc-","ABC")`, x, "AAA", nil, t)
+}
+
+func TestPathAfterFunction(t *testing.T) {
+	x := xmltree.MustParseXML(bytes.NewBufferString(`
+		<root>
+			<a>aa<b>bb</b></a>
+			<c a="bb">cc</c>
+		</root>
+	`))
+
+	current, err := MustParse(`/root/a`).ExecNode(x)
+	if err != nil {
+		t.Error("err not nil")
+	}
+
+	currentFn := func(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+		return current, nil
+	}
+	custFns := map[xml.Name]tree.Wrap{
+		{Local: "current"}: {Fn: currentFn},
+	}
+	opts := func(o *Opts) { o.Funcs = custFns }
+
+	result := MustParse(`/root/c/@a[. = current()/b]`).MustExec(x, opts)
+	if result.String() != `bb` {
+		t.Error("result not foo:", result.String())
+	}
 }

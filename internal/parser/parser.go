@@ -110,6 +110,14 @@ func xiXPath(p *parseStack, i lexer.XItem) {
 		return
 	}
 
+	if p.cur.Val.Typ == lexer.XItemFunction {
+		p.cur.Right = &Node{Val: i, Parent: p.cur}
+		p.cur.next = p.cur.Right
+		p.push(xpathState)
+		p.cur = p.cur.next
+		return
+	}
+
 	p.cur.pushNotEmpty(i)
 	p.push(xpathState)
 	p.cur = p.cur.next
