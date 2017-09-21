@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ChrisTrenkamp/goxpath/internal/parser"
-	"github.com/ChrisTrenkamp/goxpath/internal/parser/findutil"
-	"github.com/ChrisTrenkamp/goxpath/internal/xconst"
+	"github.com/ChrisTrenkamp/goxpath/internal/execxp/findutil"
 	"github.com/ChrisTrenkamp/goxpath/internal/execxp/intfns"
+	"github.com/ChrisTrenkamp/goxpath/internal/parser"
+	"github.com/ChrisTrenkamp/goxpath/internal/xconst"
 	"github.com/ChrisTrenkamp/goxpath/internal/xsort"
 
 	"github.com/ChrisTrenkamp/goxpath/internal/lexer"
