@@ -3,6 +3,7 @@ package goxpath
 import (
 	"encoding/xml"
 	"fmt"
+	"math"
 
 	"github.com/ChrisTrenkamp/goxpath/internal/execxp"
 	"github.com/ChrisTrenkamp/goxpath/parser"
@@ -76,7 +77,7 @@ func (xp XPathExec) ExecNum(t tree.Node, opts ...FuncOpts) (float64, error) {
 	}
 
 	n, ok := res.(tree.IsNum)
-	if !ok {
+	if !ok || math.IsNaN(float64(n.Num())) {
 		return 0, fmt.Errorf("Cannot convert result to a number")
 	}
 
