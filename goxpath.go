@@ -3,6 +3,7 @@ package goxpath
 import (
 	"encoding/xml"
 	"fmt"
+	"math"
 
 	"github.com/ChrisTrenkamp/goxpath/internal/execxp"
 	"github.com/ChrisTrenkamp/goxpath/parser"
@@ -80,7 +81,12 @@ func (xp XPathExec) ExecNum(t tree.Node, opts ...FuncOpts) (float64, error) {
 		return 0, fmt.Errorf("Cannot convert result to a number")
 	}
 
-	return float64(n.Num()), nil
+	v := float64(n.Num())
+	if math.IsNaN(v) {
+		return 0, fmt.Errorf("Cannot convert result to a number")
+	}
+
+	return v, nil
 }
 
 //ExecNode is like Exec, except it will attempt to return the result as a node-set.
