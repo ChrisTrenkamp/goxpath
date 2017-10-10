@@ -77,16 +77,11 @@ func (xp XPathExec) ExecNum(t tree.Node, opts ...FuncOpts) (float64, error) {
 	}
 
 	n, ok := res.(tree.IsNum)
-	if !ok {
+	if !ok || math.IsNaN(float64(n.Num())) {
 		return 0, fmt.Errorf("Cannot convert result to a number")
 	}
 
-	v := float64(n.Num())
-	if math.IsNaN(v) {
-		return 0, fmt.Errorf("Cannot convert result to a number")
-	}
-
-	return v, nil
+	return float64(n.Num()), nil
 }
 
 //ExecNode is like Exec, except it will attempt to return the result as a node-set.
