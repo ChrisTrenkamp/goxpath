@@ -8,7 +8,6 @@ import (
 
 	"github.com/ChrisTrenkamp/goxpath/internal/execxp/findutil"
 	"github.com/ChrisTrenkamp/goxpath/internal/execxp/intfns"
-	"github.com/ChrisTrenkamp/goxpath/internal/xsort"
 	"github.com/ChrisTrenkamp/goxpath/lexer"
 	"github.com/ChrisTrenkamp/goxpath/parser"
 	"github.com/ChrisTrenkamp/goxpath/parser/pathexpr"
@@ -17,7 +16,7 @@ import (
 )
 
 type xpFilt struct {
-	t         tree.Node
+	t         interface{}
 	ctx       tree.Result
 	expr      pathexpr.PathExpr
 	ns        map[string]string
@@ -28,7 +27,7 @@ type xpFilt struct {
 	variables map[string]tree.Result
 }
 
-type xpExecFn func(*xpFilt, string)
+type xpExecFn func(tree.Adapter, *xpFilt, string)
 
 var xpFns = map[lexer.XItemType]xpExecFn{
 	lexer.XItemAbsLocPath:     xfAbsLocPath,
@@ -45,19 +44,19 @@ var xpFns = map[lexer.XItemType]xpExecFn{
 	lexer.XItemNumLit:         xfNumLit,
 }
 
-func xfExec(f *xpFilt, n *parser.Node) (err error) {
+func xfExec(a tree.Adapter, f *xpFilt, n *parser.Node) (err error) {
 	for n != nil {
 		if fn, ok := xpFns[n.Val.Typ]; ok {
-			fn(f, n.Val.Val)
+			fn(a, f, n.Val.Val)
 			n = n.Left
 		} else if n.Val.Typ == lexer.XItemPredicate {
-			if err = xfPredicate(f, n.Left); err != nil {
+			if err = xfPredicate(a, f, n.Left); err != nil {
 				return
 			}
 
 			n = n.Right
 		} else if n.Val.Typ == lexer.XItemFunction {
-			if err = xfFunction(f, n); err != nil {
+			if err = xfFunction(a, f, n); err != nil {
 				return
 			}
 
@@ -73,7 +72,7 @@ func xfExec(f *xpFilt, n *parser.Node) (err error) {
 				fns:       f.fns,
 				variables: f.variables,
 			}
-			left, err := exec(&lf, n.Left)
+			left, err := exec(a, &lf, n.Left)
 			if err != nil {
 				return err
 			}
@@ -85,12 +84,12 @@ func xfExec(f *xpFilt, n *parser.Node) (err error) {
 				fns:       f.fns,
 				variables: f.variables,
 			}
-			right, err := exec(&rf, n.Right)
+			right, err := exec(a, &rf, n.Right)
 			if err != nil {
 				return err
 			}
 
-			return xfOperator(left, right, f, n.Val.Val)
+			return xfOperator(a, left, right, f, n.Val.Val)
 		} else if n.Val.Typ == lexer.XItemVariable {
 			if res, ok := f.variables[n.Val.Val]; ok {
 				f.ctx = res
@@ -107,50 +106,51 @@ func xfExec(f *xpFilt, n *parser.Node) (err error) {
 	return
 }
 
-func xfPredicate(f *xpFilt, n *parser.Node) (err error) {
+func xfPredicate(a tree.Adapter, f *xpFilt, n *parser.Node) (err error) {
 	res := f.ctx.(tree.NodeSet)
-	newRes := make(tree.NodeSet, 0, len(res))
+	nodes := res.GetNodes()
+	newRes := make([]interface{}, 0, len(nodes))
 
-	for i := range res {
+	for i := range nodes {
 		pf := xpFilt{
 			t:         f.t,
 			ns:        f.ns,
 			ctxPos:    i,
 			ctxSize:   f.ctxSize,
-			ctx:       tree.NodeSet{res[i]},
+			ctx:       a.NewNodeSet([]interface{}{nodes[i]}),
 			fns:       f.fns,
 			variables: f.variables,
 		}
 
-		predRes, err := exec(&pf, n)
+		predRes, err := exec(a, &pf, n)
 		if err != nil {
 			return err
 		}
 
-		ok, err := checkPredRes(predRes, f, res[i])
+		ok, err := checkPredRes(a, predRes, f, nodes[i])
 		if err != nil {
 			return err
 		}
 
 		if ok {
-			newRes = append(newRes, res[i])
+			newRes = append(newRes, nodes[i])
 		}
 	}
 
 	f.proxPos = make(map[int]int)
 	for pos, j := range newRes {
-		f.proxPos[j.Pos()] = pos + 1
+		f.proxPos[a.NodePos(j)] = pos + 1
 	}
 
-	f.ctx = newRes
+	f.ctx = a.NewNodeSet(newRes)
 	f.ctxSize = len(newRes)
 
 	return
 }
 
-func checkPredRes(ret tree.Result, f *xpFilt, node tree.Node) (bool, error) {
+func checkPredRes(a tree.Adapter, ret tree.Result, f *xpFilt, node interface{}) (bool, error) {
 	if num, ok := ret.(tree.Num); ok {
-		if float64(f.proxPos[node.Pos()]) == float64(num) {
+		if float64(f.proxPos[a.NodePos(node)]) == float64(num) {
 			return true, nil
 		}
 		return false, nil
@@ -163,7 +163,7 @@ func checkPredRes(ret tree.Result, f *xpFilt, node tree.Node) (bool, error) {
 	return false, fmt.Errorf("Cannot convert argument to boolean")
 }
 
-func xfFunction(f *xpFilt, n *parser.Node) error {
+func xfFunction(a tree.Adapter, f *xpFilt, n *parser.Node) error {
 	spl := strings.Split(n.Val.Val, ":")
 	var name xml.Name
 	if len(spl) == 1 {
@@ -191,7 +191,7 @@ func xfFunction(f *xpFilt, n *parser.Node) error {
 				fns:       f.fns,
 				variables: f.variables,
 			}
-			res, err := exec(&pf, param.Left)
+			res, err := exec(a, &pf, param.Left)
 			if err != nil {
 				return err
 			}
@@ -200,7 +200,7 @@ func xfFunction(f *xpFilt, n *parser.Node) error {
 			param = param.Right
 		}
 
-		filt, err := fn.Call(tree.Ctx{NodeSet: f.ctx.(tree.NodeSet), Size: f.ctxSize, Pos: f.ctxPos + 1}, args...)
+		filt, err := fn.Call(a, tree.Ctx{NodeSet: f.ctx.(tree.NodeSet), Size: f.ctxSize, Pos: f.ctxPos + 1}, args...)
 		f.ctx = filt
 		return err
 	}
@@ -241,20 +241,20 @@ var andOrOps = map[string]bool{
 	"or":  true,
 }
 
-func xfOperator(left, right tree.Result, f *xpFilt, op string) error {
+func xfOperator(a tree.Adapter, left, right tree.Result, f *xpFilt, op string) error {
 	if booleanOps[op] {
 		lNode, lOK := left.(tree.NodeSet)
 		rNode, rOK := right.(tree.NodeSet)
 		if lOK && rOK {
-			return bothNodeOperator(lNode, rNode, f, op)
+			return bothNodeOperator(a, lNode, rNode, f, op)
 		}
 
 		if lOK {
-			return leftNodeOperator(lNode, right, f, op)
+			return leftNodeOperator(a, lNode, right, f, op)
 		}
 
 		if rOK {
-			return rightNodeOperator(left, rNode, f, op)
+			return rightNodeOperator(a, left, rNode, f, op)
 		}
 
 		if eqOps[op] {
@@ -271,75 +271,77 @@ func xfOperator(left, right tree.Result, f *xpFilt, op string) error {
 	}
 
 	//if op == "|" {
-	return unionOperator(left, right, f, op)
+	return unionOperator(a, left, right, f, op)
 	//}
 
 	//return fmt.Errorf("Unknown operator " + op)
 }
 
-func xfAbsLocPath(f *xpFilt, val string) {
+func xfAbsLocPath(a tree.Adapter, f *xpFilt, val string) {
 	i := f.t
-	for i.GetNodeType() != tree.NtRoot {
-		i = i.GetParent()
+	for a.GetNodeType(i) != tree.NtRoot {
+		i = a.GetParent(i)
 	}
-	f.ctx = tree.NodeSet{i}
+	f.ctx = a.NewNodeSet([]interface{}{i})
 }
 
-func xfAbbrAbsLocPath(f *xpFilt, val string) {
+func xfAbbrAbsLocPath(a tree.Adapter, f *xpFilt, val string) {
 	i := f.t
-	for i.GetNodeType() != tree.NtRoot {
-		i = i.GetParent()
+	for a.GetNodeType(i) != tree.NtRoot {
+		i = a.GetParent(i)
 	}
-	f.ctx = tree.NodeSet{i}
+	f.ctx = a.NewNodeSet([]interface{}{i})
 	f.expr = abbrPathExpr()
-	find(f)
+	find(a, f)
 }
 
-func xfRelLocPath(f *xpFilt, val string) {
+func xfRelLocPath(a tree.Adapter, f *xpFilt, val string) {
 }
 
-func xfAbbrRelLocPath(f *xpFilt, val string) {
+func xfAbbrRelLocPath(a tree.Adapter, f *xpFilt, val string) {
 	f.expr = abbrPathExpr()
-	find(f)
+	find(a, f)
 }
 
-func xfAxis(f *xpFilt, val string) {
+func xfAxis(a tree.Adapter, f *xpFilt, val string) {
 	f.expr.Axis = val
 }
 
-func xfAbbrAxis(f *xpFilt, val string) {
+func xfAbbrAxis(a tree.Adapter, f *xpFilt, val string) {
 	f.expr.Axis = xconst.AxisAttribute
 }
 
-func xfNCName(f *xpFilt, val string) {
+func xfNCName(a tree.Adapter, f *xpFilt, val string) {
 	f.expr.Name.Space = val
 }
 
-func xfQName(f *xpFilt, val string) {
+func xfQName(a tree.Adapter, f *xpFilt, val string) {
 	f.expr.Name.Local = val
-	find(f)
+	find(a, f)
 }
 
-func xfNodeType(f *xpFilt, val string) {
+func xfNodeType(a tree.Adapter, f *xpFilt, val string) {
 	f.expr.NodeType = val
-	find(f)
+	find(a, f)
 }
 
-func xfProcInstLit(f *xpFilt, val string) {
-	filt := tree.NodeSet{}
-	for _, i := range f.ctx.(tree.NodeSet) {
-		if i.GetToken().(xml.ProcInst).Target == val {
-			filt = append(filt, i)
+func xfProcInstLit(a tree.Adapter, f *xpFilt, val string) {
+	filt := make([]interface{}, 0)
+	for _, i := range f.ctx.(tree.NodeSet).GetNodes() {
+		if a.GetNodeType(i) == tree.NtPi {
+			if a.GetProcInstTok(i).Target == val {
+				filt = append(filt, i)
+			}
 		}
 	}
-	f.ctx = filt
+	f.ctx = a.NewNodeSet(filt)
 }
 
-func xfStrLit(f *xpFilt, val string) {
+func xfStrLit(a tree.Adapter, f *xpFilt, val string) {
 	f.ctx = tree.String(val)
 }
 
-func xfNumLit(f *xpFilt, val string) {
+func xfNumLit(a tree.Adapter, f *xpFilt, val string) {
 	num, _ := strconv.ParseFloat(val, 64)
 	f.ctx = tree.Num(num)
 }
@@ -352,8 +354,8 @@ func abbrPathExpr() pathexpr.PathExpr {
 	}
 }
 
-func find(f *xpFilt) {
-	dupFilt := make(map[int]tree.Node)
+func find(a tree.Adapter, f *xpFilt) {
+	dupFilt := make(map[int]interface{})
 	f.proxPos = make(map[int]int)
 
 	if f.expr.Axis == "" && f.expr.NodeType == "" && f.expr.Name.Space == "" {
@@ -376,21 +378,22 @@ func find(f *xpFilt) {
 
 	f.expr.NS = f.ns
 
-	for _, i := range f.ctx.(tree.NodeSet) {
-		for pos, j := range findutil.Find(i, f.expr) {
-			dupFilt[j.Pos()] = j
-			f.proxPos[j.Pos()] = pos + 1
+	for _, i := range f.ctx.(tree.NodeSet).GetNodes() {
+		for pos, j := range findutil.Find(a, i, f.expr) {
+			ps := a.NodePos(j)
+			dupFilt[ps] = j
+			f.proxPos[ps] = pos + 1
 		}
 	}
 
-	res := make(tree.NodeSet, 0, len(dupFilt))
+	res := make([]interface{}, 0, len(dupFilt))
 	for _, i := range dupFilt {
 		res = append(res, i)
 	}
 
-	xsort.SortNodes(res)
-
 	f.expr = pathexpr.PathExpr{}
 	f.ctxSize = len(res)
-	f.ctx = res
+	nodeset := a.NewNodeSet(res)
+	nodeset.Sort()
+	f.ctx = nodeset
 }

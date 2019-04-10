@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 
 	"github.com/ChrisTrenkamp/goxpath/tree"
+	"github.com/ChrisTrenkamp/goxpath/treeimpl/xmltree/xmlnode"
 )
 
 //BuilderOpts supplies all the information needed to create an XML node.
@@ -19,7 +20,7 @@ type BuilderOpts struct {
 
 //XMLBuilder is an interface for creating XML structures.
 type XMLBuilder interface {
-	tree.Node
+	xmlnode.Node
 	CreateNode(*BuilderOpts) XMLBuilder
 	EndElem() XMLBuilder
 }

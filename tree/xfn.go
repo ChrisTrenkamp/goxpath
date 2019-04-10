@@ -12,7 +12,7 @@ type Ctx struct {
 }
 
 //Fn is a XPath function, written in Go
-type Fn func(c Ctx, args ...Result) (Result, error)
+type Fn func(a Adapter, c Ctx, args ...Result) (Result, error)
 
 //LastArgOpt sets whether the last argument in a function is optional, variadic, or neither
 type LastArgOpt int
@@ -33,19 +33,19 @@ type Wrap struct {
 }
 
 //Call checks the arguments and calls Fn if they are valid
-func (w Wrap) Call(c Ctx, args ...Result) (Result, error) {
+func (w Wrap) Call(a Adapter, c Ctx, args ...Result) (Result, error) {
 	switch w.LastArgOpt {
 	case Optional:
 		if len(args) == w.NArgs || len(args) == w.NArgs-1 {
-			return w.Fn(c, args...)
+			return w.Fn(a, c, args...)
 		}
 	case Variadic:
 		if len(args) >= w.NArgs-1 {
-			return w.Fn(c, args...)
+			return w.Fn(a, c, args...)
 		}
 	default:
 		if len(args) == w.NArgs {
-			return w.Fn(c, args...)
+			return w.Fn(a, c, args...)
 		}
 	}
 	return nil, fmt.Errorf("Invalid number of arguments")

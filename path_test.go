@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/ChrisTrenkamp/goxpath/tree"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
+	"github.com/ChrisTrenkamp/goxpath/treeimpl/xmltree"
 )
 
 func execPath(xp, x string, exp []string, ns map[string]string, t *testing.T) {
@@ -18,18 +18,18 @@ func execPath(xp, x string, exp []string, ns map[string]string, t *testing.T) {
 			t.Error(string(debug.Stack()))
 		}
 	}()
-	res := MustParse(xp).MustExec(xmltree.MustParseXML(bytes.NewBufferString(x)), func(o *Opts) { o.NS = ns }).(tree.NodeSet)
+	res := MustParse(xp).MustExec(xmltree.Adapter{}, xmltree.MustParseXML(bytes.NewBufferString(x)), func(o *Opts) { o.NS = ns }).(tree.NodeSet)
 
-	if len(res) != len(exp) {
-		t.Error("Result length not valid in XPath expression '"+xp+"':", len(res), ", expecting", len(exp))
-		for i := range res {
-			t.Error(MarshalStr(res[i].(tree.Node)))
+	if len(res.GetNodes()) != len(exp) {
+		t.Error("Result length not valid in XPath expression '"+xp+"':", len(res.GetNodes()), ", expecting", len(exp))
+		for i := range res.GetNodes() {
+			t.Error(MarshalStr(xmltree.Adapter{}, i))
 		}
 		return
 	}
 
-	for i := range res {
-		r, err := MarshalStr(res[i].(tree.Node))
+	for _, i := range res.GetNodes() {
+		r, err := MarshalStr(xmltree.Adapter{}, i)
 		if err != nil {
 			t.Error(err.Error())
 			return
@@ -59,10 +59,11 @@ func TestRoot(t *testing.T) {
 }
 
 func TestRoot2(t *testing.T) {
-	x := xmltree.MustParseXML(bytes.NewBufferString(`<?xml version="1.0" encoding="UTF-8"?><test><path/></test>`))
-	x = MustParse("/test/path").MustExec(x).(tree.NodeSet)[0]
+	var x interface{}
+	x = xmltree.MustParseXML(bytes.NewBufferString(`<?xml version="1.0" encoding="UTF-8"?><test><path/></test>`))
+	x = MustParse("/test/path").MustExec(xmltree.Adapter{}, x).(tree.NodeSet).GetNodes()[0]
 	for _, i := range []string{"/", "//test"} {
-		res, err := MarshalStr(MustParse(i).MustExec(x).(tree.NodeSet)[0])
+		res, err := MarshalStr(xmltree.Adapter{}, MustParse(i).MustExec(xmltree.Adapter{}, x).(tree.NodeSet).GetNodes()[0])
 		if err != nil {
 			t.Error(err)
 		}

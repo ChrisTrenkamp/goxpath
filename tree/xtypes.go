@@ -7,6 +7,21 @@ import (
 	"strings"
 )
 
+//Result is used for all data types.
+type Result interface {
+	fmt.Stringer
+}
+
+//IsBool is used for the XPath boolean function.  It turns the data type to a bool.
+type IsBool interface {
+	Bool() Bool
+}
+
+//IsNum is used for the XPath number function.  It turns the data type to a number.
+type IsNum interface {
+	Num() Num
+}
+
 //Boolean strings
 const (
 	True  = "true"
@@ -86,28 +101,11 @@ func (s String) Num() Num {
 }
 
 //NodeSet is a node-set XPath type
-type NodeSet []Node
-
-//GetNodeNum converts the node to a string-value and to a number
-func GetNodeNum(n Node) Num {
-	return String(n.ResValue()).Num()
-}
-
-//String satisfies the Res interface for NodeSet
-func (n NodeSet) String() string {
-	if len(n) == 0 {
-		return ""
-	}
-
-	return n[0].ResValue()
-}
-
-//Bool satisfies the HasBool interface for node-set's
-func (n NodeSet) Bool() Bool {
-	return Bool(len(n) > 0)
-}
-
-//Num satisfies the HasNum interface for NodeSet's
-func (n NodeSet) Num() Num {
-	return String(n.String()).Num()
+type NodeSet interface {
+	GetNodes() []interface{}
+	String() string
+	Bool() Bool
+	Num() Num
+	Sort()
+	Unique()
 }

@@ -12,7 +12,7 @@ const (
 	wildcard = "*"
 )
 
-type findFunc func(tree.Node, *pathexpr.PathExpr, *[]tree.Node)
+type findFunc func(tree.Adapter, interface{}, *pathexpr.PathExpr, *[]interface{})
 
 var findMap = map[string]findFunc{
 	xconst.AxisAncestor:         findAncestor,
@@ -31,170 +31,157 @@ var findMap = map[string]findFunc{
 }
 
 //Find finds nodes based on the pathexpr.PathExpr
-func Find(x tree.Node, p pathexpr.PathExpr) []tree.Node {
-	ret := []tree.Node{}
+func Find(a tree.Adapter, x interface{}, p pathexpr.PathExpr) []interface{} {
+	ret := []interface{}{}
 
 	if p.Axis == "" {
-		findChild(x, &p, &ret)
+		findChild(a, x, &p, &ret)
 		return ret
 	}
 
 	f := findMap[p.Axis]
-	f(x, &p, &ret)
+	f(a, x, &p, &ret)
 
 	return ret
 }
 
-func findAncestor(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if x.GetNodeType() == tree.NtRoot {
+func findAncestor(a tree.Adapter, x interface{}, p *pathexpr.PathExpr, ret *[]interface{}) {
+	if a.GetNodeType(x) == tree.NtRoot {
 		return
 	}
 
-	addNode(x.GetParent(), p, ret)
-	findAncestor(x.GetParent(), p, ret)
+	addNode(a, a.GetParent(x), p, ret)
+	findAncestor(a, a.GetParent(x), p, ret)
 }
 
-func findAncestorOrSelf(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	findSelf(x, p, ret)
-	findAncestor(x, p, ret)
+func findAncestorOrSelf(a tree.Adapter, x interface{}, p *pathexpr.PathExpr, ret *[]interface{}) {
+	findSelf(a, x, p, ret)
+	findAncestor(a, x, p, ret)
 }
 
-func findAttribute(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if ele, ok := x.(tree.Elem); ok {
-		for _, i := range ele.GetAttrs() {
-			addNode(i, p, ret)
+func findAttribute(a tree.Adapter, x interface{}, p *pathexpr.PathExpr, ret *[]interface{}) {
+	a.ForEachAttr(x, func(attr xml.Attr, ptr interface{}) {
+		if evalAttr(p, attr) {
+			*ret = append(*ret, ptr)
 		}
-	}
+	})
 }
 
-func findChild(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if ele, ok := x.(tree.Elem); ok {
-		ch := ele.GetChildren()
-		for i := range ch {
-			addNode(ch[i], p, ret)
+func findChild(a tree.Adapter, x interface{}, p *pathexpr.PathExpr, ret *[]interface{}) {
+	a.ForEachChild(x, func(ptr interface{}) {
+		addNode(a, ptr, p, ret)
+	})
+}
+
+func findDescendent(a tree.Adapter, x interface{}, p *pathexpr.PathExpr, ret *[]interface{}) {
+	a.ForEachChild(x, func(ptr interface{}) {
+		addNode(a, ptr, p, ret)
+		findDescendent(a, ptr, p, ret)
+	})
+}
+
+func findDescendentOrSelf(a tree.Adapter, x interface{}, p *pathexpr.PathExpr, ret *[]interface{}) {
+	findSelf(a, x, p, ret)
+	findDescendent(a, x, p, ret)
+}
+
+func findFollowing(a tree.Adapter, x interface{}, p *pathexpr.PathExpr, ret *[]interface{}) {
+	if a.GetNodeType(x) == tree.NtRoot {
+		return
+	}
+	par := a.GetParent(x)
+
+	seen := false
+	a.ForEachChild(par, func(ptr interface{}) {
+		if !seen {
+			seen = ptr == x
+		} else {
+			findDescendentOrSelf(a, ptr, p, ret)
 		}
-	}
+	})
+	findFollowing(a, par, p, ret)
 }
 
-func findDescendent(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if ele, ok := x.(tree.Elem); ok {
-		ch := ele.GetChildren()
-		for i := range ch {
-			addNode(ch[i], p, ret)
-			findDescendent(ch[i], p, ret)
+func findFollowingSibling(a tree.Adapter, x interface{}, p *pathexpr.PathExpr, ret *[]interface{}) {
+	if a.GetNodeType(x) == tree.NtRoot {
+		return
+	}
+	par := a.GetParent(x)
+	seen := false
+	a.ForEachChild(par, func(ptr interface{}) {
+		if !seen {
+			seen = ptr == x
+		} else {
+			findSelf(a, ptr, p, ret)
 		}
+	})
+}
+
+func findNamespace(a tree.Adapter, x interface{}, p *pathexpr.PathExpr, ret *[]interface{}) {
+	ns := a.GetNamespaces(x)
+	for _, i := range ns {
+		addNode(a, i, p, ret)
 	}
 }
 
-func findDescendentOrSelf(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	findSelf(x, p, ret)
-	findDescendent(x, p, ret)
+func findParent(a tree.Adapter, x interface{}, p *pathexpr.PathExpr, ret *[]interface{}) {
+	if a.GetNodeType(x) != tree.NtRoot {
+		addNode(a, a.GetParent(x), p, ret)
+	}
 }
 
-func findFollowing(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if x.GetNodeType() == tree.NtRoot {
+func findPreceding(a tree.Adapter, x interface{}, p *pathexpr.PathExpr, ret *[]interface{}) {
+	if a.GetNodeType(x) == tree.NtRoot {
 		return
 	}
-	par := x.GetParent()
-	ch := par.GetChildren()
-	i := 0
-	for x != ch[i] {
-		i++
-	}
-	i++
-	for i < len(ch) {
-		findDescendentOrSelf(ch[i], p, ret)
-		i++
-	}
-	findFollowing(par, p, ret)
-}
-
-func findFollowingSibling(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if x.GetNodeType() == tree.NtRoot {
-		return
-	}
-	par := x.GetParent()
-	ch := par.GetChildren()
-	i := 0
-	for x != ch[i] {
-		i++
-	}
-	i++
-	for i < len(ch) {
-		findSelf(ch[i], p, ret)
-		i++
-	}
-}
-
-func findNamespace(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if ele, ok := x.(tree.NSElem); ok {
-		ns := tree.BuildNS(ele)
-		for _, i := range ns {
-			addNode(i, p, ret)
+	par := a.GetParent(x)
+	seen := false
+	a.ForEachChild(par, func(ptr interface{}) {
+		if !seen {
+			seen = ptr == x
+			if !seen {
+				findDescendentOrSelf(a, ptr, p, ret)
+			}
 		}
-	}
+	})
+	findPreceding(a, par, p, ret)
 }
 
-func findParent(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if x.GetNodeType() != tree.NtRoot {
-		addNode(x.GetParent(), p, ret)
-	}
-}
-
-func findPreceding(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if x.GetNodeType() == tree.NtRoot {
+func findPrecedingSibling(a tree.Adapter, x interface{}, p *pathexpr.PathExpr, ret *[]interface{}) {
+	if a.GetNodeType(x) == tree.NtRoot {
 		return
 	}
-	par := x.GetParent()
-	ch := par.GetChildren()
-	i := len(ch) - 1
-	for x != ch[i] {
-		i--
-	}
-	i--
-	for i >= 0 {
-		findDescendentOrSelf(ch[i], p, ret)
-		i--
-	}
-	findPreceding(par, p, ret)
+	par := a.GetParent(x)
+
+	seen := false
+	a.ForEachChild(par, func(ptr interface{}) {
+		if !seen {
+			seen = ptr == x
+			if !seen {
+				findSelf(a, ptr, p, ret)
+			}
+		}
+	})
 }
 
-func findPrecedingSibling(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	if x.GetNodeType() == tree.NtRoot {
-		return
-	}
-	par := x.GetParent()
-	ch := par.GetChildren()
-	i := len(ch) - 1
-	for x != ch[i] {
-		i--
-	}
-	i--
-	for i >= 0 {
-		findSelf(ch[i], p, ret)
-		i--
-	}
+func findSelf(a tree.Adapter, x interface{}, p *pathexpr.PathExpr, ret *[]interface{}) {
+	addNode(a, x, p, ret)
 }
 
-func findSelf(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
-	addNode(x, p, ret)
-}
-
-func addNode(x tree.Node, p *pathexpr.PathExpr, ret *[]tree.Node) {
+func addNode(a tree.Adapter, x interface{}, p *pathexpr.PathExpr, ret *[]interface{}) {
 	add := false
-	tok := x.GetToken()
 
-	switch x.GetNodeType() {
+	switch a.GetNodeType(x) {
 	case tree.NtAttr:
-		add = evalAttr(p, tok.(xml.Attr))
+		add = evalAttr(p, a.GetAttrTok(x))
 	case tree.NtChd:
 		add = evalChd(p)
 	case tree.NtComm:
 		add = evalComm(p)
 	case tree.NtElem, tree.NtRoot:
-		add = evalEle(p, tok.(xml.StartElement))
+		add = evalEle(p, a.GetElementName(x))
 	case tree.NtNs:
-		add = evalNS(p, tok.(xml.Attr))
+		add = evalNS(p, a.GetNamespaceTok(x))
 	case tree.NtPi:
 		add = evalPI(p)
 	}
@@ -244,7 +231,7 @@ func evalComm(p *pathexpr.PathExpr) bool {
 	return false
 }
 
-func evalEle(p *pathexpr.PathExpr, ele xml.StartElement) bool {
+func evalEle(p *pathexpr.PathExpr, ele xml.Name) bool {
 	if p.NodeType == "" {
 		return checkNameAndSpace(p, ele)
 	}
@@ -256,12 +243,12 @@ func evalEle(p *pathexpr.PathExpr, ele xml.StartElement) bool {
 	return false
 }
 
-func checkNameAndSpace(p *pathexpr.PathExpr, ele xml.StartElement) bool {
+func checkNameAndSpace(p *pathexpr.PathExpr, ele xml.Name) bool {
 	if p.Name.Local == wildcard && p.Name.Space == "" {
 		return true
 	}
 
-	if p.Name.Space != wildcard && ele.Name.Space != p.NS[p.Name.Space] {
+	if p.Name.Space != wildcard && ele.Space != p.NS[p.Name.Space] {
 		return false
 	}
 
@@ -269,7 +256,7 @@ func checkNameAndSpace(p *pathexpr.PathExpr, ele xml.StartElement) bool {
 		return true
 	}
 
-	if p.Name.Local == ele.Name.Local {
+	if p.Name.Local == ele.Local {
 		return true
 	}
 

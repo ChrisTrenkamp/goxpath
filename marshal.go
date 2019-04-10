@@ -9,21 +9,21 @@ import (
 )
 
 //Marshal prints the result tree, r, in XML form to w.
-func Marshal(n tree.Node, w io.Writer) error {
-	return marshal(n, w)
+func Marshal(a tree.Adapter, n interface{}, w io.Writer) error {
+	return marshal(a, n, w)
 }
 
 //MarshalStr is like Marhal, but returns a string.
-func MarshalStr(n tree.Node) (string, error) {
+func MarshalStr(a tree.Adapter, n interface{}) (string, error) {
 	ret := bytes.NewBufferString("")
-	err := marshal(n, ret)
+	err := marshal(a, n, ret)
 
 	return ret.String(), err
 }
 
-func marshal(n tree.Node, w io.Writer) error {
+func marshal(a tree.Adapter, n interface{}, w io.Writer) error {
 	e := xml.NewEncoder(w)
-	err := encTok(n, e)
+	err := encTok(a, n, e)
 	if err != nil {
 		return err
 	}
@@ -31,26 +31,27 @@ func marshal(n tree.Node, w io.Writer) error {
 	return e.Flush()
 }
 
-func encTok(n tree.Node, e *xml.Encoder) error {
-	switch n.GetNodeType() {
+func encTok(a tree.Adapter, n interface{}, e *xml.Encoder) error {
+	switch a.GetNodeType(n) {
 	case tree.NtAttr:
-		return encAttr(n.GetToken().(xml.Attr), e)
+		return encAttr(a.GetAttrTok(n), e)
 	case tree.NtElem:
-		return encEle(n.(tree.Elem), e)
+		return encEle(a, n, e)
 	case tree.NtNs:
-		return encNS(n.GetToken().(xml.Attr), e)
+		return encNS(a.GetNamespaceTok(n), e)
 	case tree.NtRoot:
-		for _, i := range n.(tree.Elem).GetChildren() {
-			err := encTok(i, e)
-			if err != nil {
-				return err
-			}
-		}
+		a.ForEachChild(n, func(in interface{}) {
+			encTok(a, in, e)
+		})
 		return nil
+	case tree.NtChd:
+		return e.EncodeToken(a.GetCharDataTok(n))
+	case tree.NtComm:
+		return e.EncodeToken(a.GetCommentTok(n))
+	case tree.NtPi:
+		return e.EncodeToken(a.GetProcInstTok(n))
 	}
-
-	//case tree.NtChd, tree.NtComm, tree.NtPi:
-	return e.EncodeToken(n.GetToken())
+	return nil
 }
 
 func encAttr(a xml.Attr, e *xml.Encoder) error {
@@ -76,30 +77,24 @@ func encNS(ns xml.Attr, e *xml.Encoder) error {
 	return e.EncodeToken(pi)
 }
 
-func encEle(n tree.Elem, e *xml.Encoder) error {
+func encEle(a tree.Adapter, node interface{}, e *xml.Encoder) error {
+	startEle := a.GetElemTok(node)
 	ele := xml.StartElement{
-		Name: n.GetToken().(xml.StartElement).Name,
+		Name: startEle.Name,
 	}
 
-	attrs := n.GetAttrs()
-	ele.Attr = make([]xml.Attr, len(attrs))
-	for i := range attrs {
-		ele.Attr[i] = attrs[i].GetToken().(xml.Attr)
-	}
+	a.ForEachAttr(node, func(attr xml.Attr, ptr interface{}) {
+		ele.Attr = append(ele.Attr, attr)
+	})
 
 	err := e.EncodeToken(ele)
 	if err != nil {
 		return err
 	}
 
-	if x, ok := n.(tree.Elem); ok {
-		for _, i := range x.GetChildren() {
-			err := encTok(i, e)
-			if err != nil {
-				return err
-			}
-		}
-	}
+	a.ForEachChild(node, func(in interface{}) {
+		encTok(a, in, e)
+	})
 
 	return e.EncodeToken(ele.End())
 }

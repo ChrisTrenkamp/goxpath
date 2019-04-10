@@ -7,12 +7,12 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/tree"
 )
 
-func bothNodeOperator(left tree.NodeSet, right tree.NodeSet, f *xpFilt, op string) error {
+func bothNodeOperator(a tree.Adapter, left tree.NodeSet, right tree.NodeSet, f *xpFilt, op string) error {
 	var err error
-	for _, l := range left {
-		for _, r := range right {
-			lStr := l.ResValue()
-			rStr := r.ResValue()
+	for _, l := range left.GetNodes() {
+		for _, r := range right.GetNodes() {
+			lStr := a.StringValue(l)
+			rStr := a.StringValue(r)
 
 			if eqOps[op] {
 				err = equalsOperator(tree.String(lStr), tree.String(rStr), f, op)
@@ -33,10 +33,10 @@ func bothNodeOperator(left tree.NodeSet, right tree.NodeSet, f *xpFilt, op strin
 	return nil
 }
 
-func leftNodeOperator(left tree.NodeSet, right tree.Result, f *xpFilt, op string) error {
+func leftNodeOperator(a tree.Adapter, left tree.NodeSet, right tree.Result, f *xpFilt, op string) error {
 	var err error
-	for _, l := range left {
-		lStr := l.ResValue()
+	for _, l := range left.GetNodes() {
+		lStr := a.StringValue(l)
 
 		if eqOps[op] {
 			err = equalsOperator(tree.String(lStr), right, f, op)
@@ -56,10 +56,10 @@ func leftNodeOperator(left tree.NodeSet, right tree.Result, f *xpFilt, op string
 	return nil
 }
 
-func rightNodeOperator(left tree.Result, right tree.NodeSet, f *xpFilt, op string) error {
+func rightNodeOperator(a tree.Adapter, left tree.Result, right tree.NodeSet, f *xpFilt, op string) error {
 	var err error
-	for _, r := range right {
-		rStr := r.ResValue()
+	for _, r := range right.GetNodes() {
+		rStr := a.StringValue(r)
 
 		if eqOps[op] {
 			err = equalsOperator(left, tree.String(rStr), f, op)
@@ -185,28 +185,16 @@ func andOrOperator(left, right tree.Result, f *xpFilt, op string) error {
 	return nil
 }
 
-func unionOperator(left, right tree.Result, f *xpFilt, op string) error {
+func unionOperator(a tree.Adapter, left, right tree.Result, f *xpFilt, op string) error {
 	lNode, lOK := left.(tree.NodeSet)
 	rNode, rOK := right.(tree.NodeSet)
 
 	if !lOK || !rOK {
 		return fmt.Errorf("Cannot convert data type to node-set")
 	}
-
-	uniq := make(map[int]tree.Node)
-	for _, i := range lNode {
-		uniq[i.Pos()] = i
-	}
-	for _, i := range rNode {
-		uniq[i.Pos()] = i
-	}
-
-	res := make(tree.NodeSet, 0, len(uniq))
-	for _, v := range uniq {
-		res = append(res, v)
-	}
-
-	f.ctx = res
+	nodeset := a.NewNodeSet(append(lNode.GetNodes(), rNode.GetNodes()...))
+	nodeset.Unique()
+	f.ctx = nodeset
 
 	return nil
 }

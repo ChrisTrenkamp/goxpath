@@ -8,7 +8,7 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/tree"
 )
 
-func _string(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+func _string(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	if len(args) == 1 {
 		return tree.String(args[0].String()), nil
 	}
@@ -16,7 +16,7 @@ func _string(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	return tree.String(c.NodeSet.String()), nil
 }
 
-func concat(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+func concat(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	ret := ""
 
 	for _, i := range args {
@@ -26,15 +26,15 @@ func concat(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	return tree.String(ret), nil
 }
 
-func startsWith(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+func startsWith(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	return tree.Bool(strings.Index(args[0].String(), args[1].String()) == 0), nil
 }
 
-func contains(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+func contains(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	return tree.Bool(strings.Contains(args[0].String(), args[1].String())), nil
 }
 
-func substringBefore(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+func substringBefore(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	ind := strings.Index(args[0].String(), args[1].String())
 	if ind == -1 {
 		return tree.String(""), nil
@@ -43,7 +43,7 @@ func substringBefore(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	return tree.String(args[0].String()[:ind]), nil
 }
 
-func substringAfter(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+func substringAfter(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	ind := strings.Index(args[0].String(), args[1].String())
 	if ind == -1 {
 		return tree.String(""), nil
@@ -52,10 +52,10 @@ func substringAfter(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	return tree.String(args[0].String()[ind+len(args[1].String()):]), nil
 }
 
-func substring(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+func substring(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	str := args[0].String()
 
-	bNum, bErr := round(c, args[1])
+	bNum, bErr := round(a, c, args[1])
 	if bErr != nil {
 		return nil, bErr
 	}
@@ -74,7 +74,7 @@ func substring(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 		return tree.String(str[int(b)-1:]), nil
 	}
 
-	eNum, eErr := round(c, args[2])
+	eNum, eErr := round(a, c, args[2])
 	if eErr != nil {
 		return nil, eErr
 	}
@@ -97,7 +97,7 @@ func substring(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	return tree.String(str[int(b)-1 : int(b+e)-1]), nil
 }
 
-func stringLength(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+func stringLength(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	var str string
 	if len(args) == 1 {
 		str = args[0].String()
@@ -110,7 +110,7 @@ func stringLength(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 
 var spaceTrim = regexp.MustCompile(`\s+`)
 
-func normalizeSpace(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+func normalizeSpace(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	var str string
 	if len(args) == 1 {
 		str = args[0].String()
@@ -123,7 +123,7 @@ func normalizeSpace(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	return tree.String(spaceTrim.ReplaceAllString(str, " ")), nil
 }
 
-func translate(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+func translate(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	ret := args[0].String()
 	src := args[1].String()
 	repl := args[2].String()

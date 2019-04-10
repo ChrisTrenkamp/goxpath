@@ -41,7 +41,7 @@ func MustParse(xp string) XPathExec {
 
 //Exec executes the XPath expression, xp, against the tree, t, with the
 //namespace mappings, ns, and returns the result as a stringer.
-func (xp XPathExec) Exec(t tree.Node, opts ...FuncOpts) (tree.Result, error) {
+func (xp XPathExec) Exec(a tree.Adapter, t interface{}, opts ...FuncOpts) (tree.Result, error) {
 	o := &Opts{
 		NS:    make(map[string]string),
 		Funcs: make(map[xml.Name]tree.Wrap),
@@ -50,12 +50,12 @@ func (xp XPathExec) Exec(t tree.Node, opts ...FuncOpts) (tree.Result, error) {
 	for _, i := range opts {
 		i(o)
 	}
-	return execxp.Exec(xp.n, t, o.NS, o.Funcs, o.Vars)
+	return execxp.Exec(xp.n, a, t, o.NS, o.Funcs, o.Vars)
 }
 
 //ExecBool is like Exec, except it will attempt to convert the result to its boolean value.
-func (xp XPathExec) ExecBool(t tree.Node, opts ...FuncOpts) (bool, error) {
-	res, err := xp.Exec(t, opts...)
+func (xp XPathExec) ExecBool(a tree.Adapter, t interface{}, opts ...FuncOpts) (bool, error) {
+	res, err := xp.Exec(a, t, opts...)
 	if err != nil {
 		return false, err
 	}
@@ -69,8 +69,8 @@ func (xp XPathExec) ExecBool(t tree.Node, opts ...FuncOpts) (bool, error) {
 }
 
 //ExecNum is like Exec, except it will attempt to convert the result to its number value.
-func (xp XPathExec) ExecNum(t tree.Node, opts ...FuncOpts) (float64, error) {
-	res, err := xp.Exec(t, opts...)
+func (xp XPathExec) ExecNum(a tree.Adapter, t interface{}, opts ...FuncOpts) (float64, error) {
+	res, err := xp.Exec(a, t, opts...)
 	if err != nil {
 		return 0, err
 	}
@@ -84,8 +84,8 @@ func (xp XPathExec) ExecNum(t tree.Node, opts ...FuncOpts) (float64, error) {
 }
 
 //ExecNode is like Exec, except it will attempt to return the result as a node-set.
-func (xp XPathExec) ExecNode(t tree.Node, opts ...FuncOpts) (tree.NodeSet, error) {
-	res, err := xp.Exec(t, opts...)
+func (xp XPathExec) ExecNode(a tree.Adapter, t interface{}, opts ...FuncOpts) (tree.NodeSet, error) {
+	res, err := xp.Exec(a, t, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -99,8 +99,8 @@ func (xp XPathExec) ExecNode(t tree.Node, opts ...FuncOpts) (tree.NodeSet, error
 }
 
 //MustExec is like Exec, but panics instead of returning an error.
-func (xp XPathExec) MustExec(t tree.Node, opts ...FuncOpts) tree.Result {
-	res, err := xp.Exec(t, opts...)
+func (xp XPathExec) MustExec(a tree.Adapter, t interface{}, opts ...FuncOpts) tree.Result {
+	res, err := xp.Exec(a, t, opts...)
 	if err != nil {
 		panic(err)
 	}
@@ -108,10 +108,10 @@ func (xp XPathExec) MustExec(t tree.Node, opts ...FuncOpts) tree.Result {
 }
 
 //ParseExec parses the XPath string, xpstr, and runs Exec.
-func ParseExec(xpstr string, t tree.Node, opts ...FuncOpts) (tree.Result, error) {
+func ParseExec(xpstr string, a tree.Adapter, t interface{}, opts ...FuncOpts) (tree.Result, error) {
 	xp, err := Parse(xpstr)
 	if err != nil {
 		return nil, err
 	}
-	return xp.Exec(t, opts...)
+	return xp.Exec(a, t, opts...)
 }

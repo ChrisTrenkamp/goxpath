@@ -7,7 +7,7 @@ import (
 	"github.com/ChrisTrenkamp/goxpath/tree"
 )
 
-func number(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+func number(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	if b, ok := args[0].(tree.IsNum); ok {
 		return b.Num(), nil
 	}
@@ -15,21 +15,21 @@ func number(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	return nil, fmt.Errorf("Cannot convert object to a number")
 }
 
-func sum(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+func sum(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	n, ok := args[0].(tree.NodeSet)
 	if !ok {
 		return nil, fmt.Errorf("Cannot convert object to a node-set")
 	}
 
 	ret := 0.0
-	for _, i := range n {
-		ret += float64(tree.GetNodeNum(i))
+	for _, i := range n.GetNodes() {
+		ret += float64(tree.String(a.StringValue(i)).Num())
 	}
 
 	return tree.Num(ret), nil
 }
 
-func floor(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+func floor(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	n, ok := args[0].(tree.IsNum)
 	if !ok {
 		return nil, fmt.Errorf("Cannot convert object to a number")
@@ -38,7 +38,7 @@ func floor(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	return tree.Num(math.Floor(float64(n.Num()))), nil
 }
 
-func ceiling(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+func ceiling(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	n, ok := args[0].(tree.IsNum)
 	if !ok {
 		return nil, fmt.Errorf("Cannot convert object to a number")
@@ -47,7 +47,7 @@ func ceiling(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	return tree.Num(math.Ceil(float64(n.Num()))), nil
 }
 
-func round(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+func round(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	isn, ok := args[0].(tree.IsNum)
 	if !ok {
 		return nil, fmt.Errorf("Cannot convert object to a number")

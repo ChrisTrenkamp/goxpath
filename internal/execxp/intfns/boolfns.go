@@ -7,7 +7,7 @@ import (
 	"golang.org/x/text/language"
 )
 
-func boolean(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+func boolean(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	if b, ok := args[0].(tree.IsBool); ok {
 		return b.Bool(), nil
 	}
@@ -15,7 +15,7 @@ func boolean(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	return nil, fmt.Errorf("Cannot convert object to a boolean")
 }
 
-func not(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+func not(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	b, ok := args[0].(tree.IsBool)
 	if !ok {
 		return nil, fmt.Errorf("Cannot convert object to a boolean")
@@ -23,31 +23,31 @@ func not(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	return !b.Bool(), nil
 }
 
-func _true(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+func _true(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	return tree.Bool(true), nil
 }
 
-func _false(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+func _false(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	return tree.Bool(false), nil
 }
 
-func lang(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+func lang(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 	lStr := args[0].String()
 
-	var n tree.Elem
+	var n interface{}
 
-	for _, i := range c.NodeSet {
-		if i.GetNodeType() == tree.NtElem {
-			n = i.(tree.Elem)
+	for _, i := range c.NodeSet.GetNodes() {
+		if a.GetNodeType(i) == tree.NtElem {
+			n = i
 		} else {
-			n = i.GetParent()
+			n = a.GetParent(i)
 		}
 
-		for n.GetNodeType() != tree.NtRoot {
-			if attr, ok := tree.GetAttribute(n, "lang", tree.XMLSpace); ok {
+		for a.GetNodeType(n) != tree.NtRoot {
+			if attr, ok := tree.FindAttributeForElement(a, n, "lang", tree.XMLSpace); ok {
 				return checkLang(lStr, attr.Value), nil
 			}
-			n = n.GetParent()
+			n = a.GetParent(n)
 		}
 	}
 

@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/ChrisTrenkamp/goxpath/tree"
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
+	"github.com/ChrisTrenkamp/goxpath/treeimpl/xmltree"
 )
 
 func TestStrLit(t *testing.T) {
@@ -259,12 +259,12 @@ func TestPathAfterFunction(t *testing.T) {
 		</root>
 	`))
 
-	current, err := MustParse(`/root/a`).ExecNode(x)
+	current, err := MustParse(`/root/a`).ExecNode(xmltree.Adapter{}, x)
 	if err != nil {
 		t.Error("err not nil")
 	}
 
-	currentFn := func(c tree.Ctx, args ...tree.Result) (tree.Result, error) {
+	currentFn := func(a tree.Adapter, c tree.Ctx, args ...tree.Result) (tree.Result, error) {
 		return current, nil
 	}
 	custFns := map[xml.Name]tree.Wrap{
@@ -272,7 +272,7 @@ func TestPathAfterFunction(t *testing.T) {
 	}
 	opts := func(o *Opts) { o.Funcs = custFns }
 
-	result := MustParse(`/root/c/@a[. = current()/b]`).MustExec(x, opts)
+	result := MustParse(`/root/c/@a[. = current()/b]`).MustExec(xmltree.Adapter{}, x, opts)
 	if result.String() != `bb` {
 		t.Error("result not foo:", result.String())
 	}

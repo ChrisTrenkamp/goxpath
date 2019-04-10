@@ -5,7 +5,7 @@ import (
 	"runtime/debug"
 	"testing"
 
-	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
+	"github.com/ChrisTrenkamp/goxpath/treeimpl/xmltree"
 )
 
 func execVal(xp, x string, exp string, ns map[string]string, t *testing.T) {
@@ -16,7 +16,9 @@ func execVal(xp, x string, exp string, ns map[string]string, t *testing.T) {
 			t.Error(string(debug.Stack()))
 		}
 	}()
-	res := MustParse(xp).MustExec(xmltree.MustParseXML(bytes.NewBufferString(x)), func(o *Opts) { o.NS = ns })
+	tr := xmltree.MustParseXML(bytes.NewBufferString(x))
+
+	res := MustParse(xp).MustExec(xmltree.Adapter{}, tr, func(o *Opts) { o.NS = ns })
 
 	if res.String() != exp {
 		t.Error("Incorrect result:'" + res.String() + "' from XPath expr: '" + xp + "'.  Expecting: '" + exp + "'")
