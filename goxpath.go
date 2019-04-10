@@ -39,8 +39,10 @@ func MustParse(xp string) XPathExec {
 	return ret
 }
 
-//Exec executes the XPath expression, xp, against the tree, t, with the
-//namespace mappings, ns, and returns the result as a stringer.
+//Exec executes the XPath expression, xp, against the tree, t, with
+//the namespace mappings, ns, and returns the result as a
+//stringer. The adapter 'a' is used to adapt the underlying XML
+//representation to xpath needs.
 func (xp XPathExec) Exec(a tree.Adapter, t interface{}, opts ...FuncOpts) (tree.Result, error) {
 	o := &Opts{
 		NS:    make(map[string]string),
