@@ -7,12 +7,13 @@ import (
 	"strings"
 
 	"github.com/ChrisTrenkamp/goxpath/tree"
+	"github.com/ChrisTrenkamp/goxpath/treeimpl/xmltree/xmlnode"
 )
 
 type XMLEle struct {
 	Val     reflect.Value
 	pos     int
-	prnt    tree.Elem
+	prnt    xmlnode.Elem
 	prntTag string
 }
 
@@ -47,7 +48,7 @@ func (x *XMLEle) GetToken() xml.Token {
 	return ret
 }
 
-func (x *XMLEle) GetParent() tree.Elem {
+func (x *XMLEle) GetParent() xmlnode.Elem {
 	return x.prnt
 }
 
@@ -55,12 +56,12 @@ func (x *XMLEle) GetNodeType() tree.NodeType {
 	return tree.NtElem
 }
 
-func (x *XMLEle) GetChildren() []tree.Node {
+func (x *XMLEle) GetChildren() []xmlnode.Node {
 	n, _ := getChildren(x, x.Val, x.pos, false)
 	return n
 }
 
-func (x *XMLEle) GetAttrs() []tree.Node {
+func (x *XMLEle) GetAttrs() []xmlnode.Node {
 	n, _ := getChildren(x, x.Val, x.pos, true)
 	return n
 }
@@ -114,7 +115,7 @@ func getXMLName(val reflect.Value) xml.Name {
 	return xml.Name{Local: val.Type().Name()}
 }
 
-func getChildren(x *XMLEle, val reflect.Value, pos int, getAttrs bool) ([]tree.Node, int) {
+func getChildren(x *XMLEle, val reflect.Value, pos int, getAttrs bool) ([]xmlnode.Node, int) {
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()
 	}
@@ -125,10 +126,10 @@ func getChildren(x *XMLEle, val reflect.Value, pos int, getAttrs bool) ([]tree.N
 
 	if val.Kind() != reflect.Struct {
 		if getAttrs {
-			return []tree.Node{}, x.pos + 1
+			return []xmlnode.Node{}, x.pos + 1
 		}
 
-		return []tree.Node{&XMLNode{
+		return []xmlnode.Node{&XMLNode{
 			Val:      x.Val,
 			pos:      x.pos + 1,
 			prnt:     x,
@@ -137,7 +138,7 @@ func getChildren(x *XMLEle, val reflect.Value, pos int, getAttrs bool) ([]tree.N
 		}}, x.pos + 2
 	}
 
-	ret := make([]tree.Node, 0, val.NumField())
+	ret := make([]xmlnode.Node, 0, val.NumField())
 
 	for i := 0; i < val.NumField(); i++ {
 		field := val.Field(i)

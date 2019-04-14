@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 
 	"github.com/ChrisTrenkamp/goxpath/tree"
+	"github.com/ChrisTrenkamp/goxpath/treeimpl/xmltree/xmlnode"
 )
 
 type XMLRoot struct {
@@ -22,7 +23,7 @@ func (x *XMLRoot) GetToken() xml.Token {
 	return xml.StartElement{}
 }
 
-func (x *XMLRoot) GetParent() tree.Elem {
+func (x *XMLRoot) GetParent() xmlnode.Elem {
 	return x
 }
 
@@ -30,10 +31,10 @@ func (x *XMLRoot) GetNodeType() tree.NodeType {
 	return tree.NtRoot
 }
 
-func (x *XMLRoot) GetChildren() []tree.Node {
-	return []tree.Node{x.Ele}
+func (x *XMLRoot) GetChildren() []xmlnode.Node {
+	return []xmlnode.Node{x.Ele}
 }
 
-func (x *XMLRoot) GetAttrs() []tree.Node {
+func (x *XMLRoot) GetAttrs() []xmlnode.Node {
 	return nil
 }
