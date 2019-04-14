@@ -7,6 +7,7 @@ import (
 
 	"github.com/ChrisTrenkamp/goxpath/tree"
 	"github.com/ChrisTrenkamp/goxpath/treeimpl/xmltree"
+	"github.com/ChrisTrenkamp/goxpath/treeimpl/xmltree/xmlele"
 	"github.com/ChrisTrenkamp/goxpath/treeimpl/xmltree/xmlnode"
 )
 
@@ -44,20 +45,20 @@ func TestNodePos(t *testing.T) {
 	testPos("//text()", 10)
 }
 
-// func TestNSSort(t *testing.T) {
-// 	testNS := func(n tree.Node, url string) {
-// 		if n.(tree.NS).Value != url {
-// 			t.Errorf("Unexpected namespace %s.  Expecting %s", n.(tree.NS).Value, url)
-// 		}
-// 	}
-// 	ns := map[string]string{"test": "http://test", "test2": "http://test2", "test3": "http://test3"}
-// 	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns="http://test" xmlns:test2="http://test2" xmlns:test3="http://test3" attr2="bar"/>`
-// 	res := MustParse("/*:p1/namespace::*").MustExec(xmltree.MustParseXML(bytes.NewBufferString(x)), func(o *Opts) { o.NS = ns }).(tree.NodeSet)
-// 	testNS(res[0], ns["test"])
-// 	testNS(res[1], ns["test2"])
-// 	testNS(res[2], ns["test3"])
-// 	testNS(res[3], "http://www.w3.org/XML/1998/namespace")
-// }
+func TestNSSort(t *testing.T) {
+	testNS := func(n xmlnode.Node, url string) {
+		if n.(xmlele.NS).Value != url {
+			t.Errorf("Unexpected namespace %s.  Expecting %s", n.(xmlele.NS).Value, url)
+		}
+	}
+	ns := map[string]string{"test": "http://test", "test2": "http://test2", "test3": "http://test3"}
+	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns="http://test" xmlns:test2="http://test2" xmlns:test3="http://test3" attr2="bar"/>`
+	res := MustParse("/*:p1/namespace::*").MustExec(xmltree.Adapter{}, xmltree.MustParseXML(bytes.NewBufferString(x)), func(o *Opts) { o.NS = ns }).(tree.NodeSet)
+	testNS(res.GetNodes()[0].(xmlnode.Node), ns["test"])
+	testNS(res.GetNodes()[1].(xmlnode.Node), ns["test2"])
+	testNS(res.GetNodes()[2].(xmlnode.Node), ns["test3"])
+	testNS(res.GetNodes()[3].(xmlnode.Node), "http://www.w3.org/XML/1998/namespace")
+}
 
 func TestFindNodeByPos(t *testing.T) {
 	x := `<?xml version="1.0" encoding="UTF-8"?><p1 xmlns="http://test" attr1="foo"><p2 xmlns="http://test2" xmlns:test="http://test3" attr2="bar"><p3/>text<p4/></p2></p1>`
